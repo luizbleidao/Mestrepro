@@ -1,0 +1,69 @@
+[build]
+  publish = "."
+
+# Raiz → Landing page
+[[redirects]]
+  from   = "/"
+  to     = "/index.html"
+  status = 200
+
+# Rotas limpas
+[[redirects]]
+  from   = "/entrar"
+  to     = "/pintopro-login.html"
+  status = 200
+
+[[redirects]]
+  from   = "/app"
+  to     = "/pintopro-app.html"
+  status = 200
+
+[[redirects]]
+  from   = "/admin"
+  to     = "/pintopro-admin.html"
+  status = 200
+
+[[redirects]]
+  from   = "/assinar"
+  to     = "/pintopro-assinar.html"
+  status = 200
+
+[[redirects]]
+  from   = "/planos"
+  to     = "/pintopro-planos.html"
+  status = 200
+
+# Headers de segurança
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+    Permissions-Policy     = "camera=(), microphone=(), geolocation=()"
+    Cache-Control          = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/pp-config.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/pintopro-orcamentos.html"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+
+[[headers]]
+  for = "/pintopro-laudos.html"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+
+[[headers]]
+  for = "/pintopro-admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/pintopro-assinar.html"
+  [headers.values]
+    X-Frame-Options = "ALLOWALL"

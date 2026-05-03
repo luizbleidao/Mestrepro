@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MestrePro — Escolha seu plano</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="pp-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+[data-theme="dark"]{--bg:#0a0a09;--surf:#131311;--surf2:#1a1a17;--surf3:#222220;--border:#2a2a26;--text:#f2ede6;--text2:#a09080;--text3:#5a5448;}
+:root{--acc:#e8770a;--acc2:#f59e2b;--green:#22c55e;--red:#ef4444;--r:12px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;}
+
+.top{background:var(--surf);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--acc);text-decoration:none;}
+.top-back{font-size:13px;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--border);transition:.15s;}
+.top-back:hover{color:var(--text);border-color:var(--text3);}
+
+.page-hero{text-align:center;padding:56px 24px 40px;}
+.page-hero h1{font-family:'Syne',sans-serif;font-size:clamp(28px,4vw,44px);font-weight:800;letter-spacing:-.03em;margin-bottom:10px;}
+.page-hero p{font-size:16px;color:var(--text2);}
+.hl{color:var(--acc);}
+
+.toggle-row{display:flex;align-items:center;justify-content:center;gap:14px;margin:24px 0 40px;flex-wrap:wrap;}
+.toggle-label{font-size:14px;color:var(--text2);font-weight:500;}
+.toggle{width:52px;height:28px;background:var(--surf2);border:1px solid var(--border);border-radius:14px;cursor:pointer;position:relative;transition:.2s;flex-shrink:0;}
+.toggle.on{background:var(--acc);border-color:var(--acc);}
+.toggle::after{content:'';position:absolute;width:22px;height:22px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.2s;}
+.toggle.on::after{transform:translateX(24px);}
+.disc-badge{background:rgba(34,197,94,.15);color:var(--green);font-size:12px;font-weight:700;padding:4px 12px;border-radius:99px;}
+
+.plans-wrap{max-width:1020px;margin:0 auto;padding:0 20px 80px;}
+.plans{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+
+.plan{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:26px 20px;position:relative;display:flex;flex-direction:column;transition:.2s;}
+.plan:hover{border-color:rgba(232,119,10,.5);transform:translateY(-2px);}
+.plan.pop{border-color:var(--acc);background:var(--surf2);}
+.pop-tag{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;font-size:11px;font-weight:700;padding:4px 14px;border-radius:99px;white-space:nowrap;}
+
+.p-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:3px;}
+.p-desc{font-size:12px;color:var(--text3);margin-bottom:20px;}
+.p-price{margin-bottom:20px;min-height:64px;}
+.p-price .curr{font-size:14px;color:var(--text2);vertical-align:top;margin-top:5px;display:inline-block;}
+.p-price .amt{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;line-height:1;letter-spacing:-.04em;}
+.p-price .per{font-size:12px;color:var(--text2);}
+.p-price .note{font-size:11px;color:var(--text3);margin-top:5px;min-height:16px;}
+
+.p-div{height:1px;background:var(--border);margin:0 0 18px;}
+.p-feats{list-style:none;flex:1;display:flex;flex-direction:column;gap:9px;margin-bottom:24px;}
+.p-feats li{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text2);line-height:1.4;}
+.p-feats li::before{content:'✓';color:var(--acc);font-weight:700;flex-shrink:0;margin-top:1px;}
+.p-feats li.off{opacity:.3;}
+.p-feats li.off::before{content:'—';color:var(--text3);}
+
+.p-btn{display:block;width:100%;padding:13px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;text-align:center;text-decoration:none;cursor:pointer;border:none;transition:.2s;}
+.p-btn.solid{background:var(--acc);color:#fff;}
+.p-btn.solid:hover{background:#d46b08;transform:translateY(-1px);}
+.p-btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border);}
+.p-btn.ghost:hover{border-color:var(--acc);color:var(--acc);}
+
+.free-note{text-align:center;margin-top:32px;font-size:13px;color:var(--text3);}
+.free-note a{color:var(--acc);text-decoration:none;}
+.free-note a:hover{text-decoration:underline;}
+
+.notif{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;display:none;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.notif.show{display:block;animation:si .3s ease;}
+@keyframes si{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+.curr-badge{display:inline-block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:var(--green);font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;margin-bottom:10px;}
+
+@media(max-width:820px){.plans{grid-template-columns:1fr 1fr;}}
+@media(max-width:500px){.plans{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a href="/" class="brand">MestrePro</a>
+  <a href="/app" class="top-back">← Voltar ao app</a>
+</div>
+
+<div class="page-hero">
+  <h1>Escolha seu plano <span class="hl">MestrePro</span></h1>
+  <p>Comece grátis. Faça upgrade quando quiser. Cancele quando quiser.</p>
+</div>
+
+<div class="toggle-row">
+  <span class="toggle-label" style="font-weight:600;color:var(--text)" id="lbl-mensal">Mensal</span>
+  <div class="toggle" id="cyc-toggle" onclick="setCiclo(this)"></div>
+  <span class="toggle-label" id="lbl-anual">Anual</span>
+  <span class="disc-badge">💰 2 meses grátis</span>
+</div>
+
+<div class="plans-wrap">
+  <div class="plans" id="plans-grid"></div>
+  <div class="free-note">
+    Quer testar antes? <a href="/pintopro-login.html">Crie uma conta grátis</a> sem cartão de crédito.
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+const PLANOS = [
+  {
+    id: 'basico',
+    nome: 'Básico',
+    desc: 'Para quem está começando',
+    mensal: 49, anual: 41, totalAnual: 490,
+    mpMensal: 'https://mpago.la/19VUY91',
+    mpAnual:  'https://mpago.la/2mBWE1i',
+    pop: false,
+    feats: [
+      'Orçamentos ilimitados',
+      '10 laudos por mês',
+      'Contratos e recibos',
+      'Agenda de visitas',
+      'Assinatura digital',
+      {t:'IA para orçamentos', off:true},
+      {t:'WhatsApp automático', off:true},
+    ]
+  },
+  {
+    id: 'pro',
+    nome: 'Pro',
+    desc: 'Para quem quer crescer',
+    mensal: 97, anual: 81, totalAnual: 970,
+    mpMensal: 'https://mpago.la/1ieWwdr',
+    mpAnual:  'https://mpago.la/2YpEhnF',
+    pop: true,
+    feats: [
+      'Tudo do Básico',
+      'Laudos ilimitados',
+      'IA gera orçamento',
+      'PDF com sua marca',
+      'Dashboard financeiro',
+      'Histórico de clientes',
+      {t:'Multi-usuário', off:true},
+    ]
+  },
+  {
+    id: 'equipe',
+    nome: 'Equipe',
+    desc: 'Para times de 2-5 pessoas',
+    mensal: 197, anual: 164, totalAnual: 1970,
+    mpMensal: 'https://mpago.la/1YuzDuc',
+    mpAnual:  'https://mpago.la/15PqKDb',
+    pop: false,
+    feats: [
+      'Tudo do Pro',
+      'Até 5 usuários',
+      'Painéis separados',
+      'Relatórios por equipe',
+      'Suporte prioritário',
+      'Treinamento online',
+      {t:'IA gerador de conteúdo', off:true},
+    ]
+  },
+  {
+    id: 'ia-pro',
+    nome: 'IA Pro',
+    desc: 'Para dominar o mercado',
+    mensal: 297, anual: 247, totalAnual: 2970,
+    mpMensal: 'https://mpago.la/1iWJVWP',
+    mpAnual:  'https://mpago.la/119g9kC',
+    pop: false,
+    feats: [
+      'Tudo do Equipe',
+      'IA WhatsApp automático',
+      'Gerador de posts/reels',
+      'IA cria anúncios',
+      'Afiliados 30% comissão',
+      'API para integrações',
+      'Gerente de conta dedicado',
+    ]
+  },
+];
+
+let anual = false;
+let planoAtual = '';
+
+// Pega plano do usuário logado
+try {
+  planoAtual = sessionStorage.getItem('pp_user_plano') || '';
+} catch {}
+
+function renderPlans() {
+  document.getElementById('lbl-mensal').style.color = anual ? 'var(--text2)' : 'var(--text)';
+  document.getElementById('lbl-anual').style.color  = anual ? 'var(--text)' : 'var(--text2)';
+
+  document.getElementById('plans-grid').innerHTML = PLANOS.map(p => {
+    const preco = anual ? p.anual : p.mensal;
+    const nota  = anual ? `cobrado R$${p.totalAnual.toLocaleString('pt-BR')}/ano` : '&nbsp;';
+    const link  = anual ? p.mpAnual : p.mpMensal;
+    const isAtual = planoAtual === p.id;
+
+    const feats = p.feats.map(f => {
+      const off = typeof f === 'object' && f.off;
+      const txt = typeof f === 'object' ? f.t : f;
+      return `<li class="${off?'off':''}">${txt}</li>`;
+    }).join('');
+
+    const btnLabel = isAtual
+      ? '✓ Plano atual'
+      : p.pop
+        ? '🚀 Começar 7 dias grátis'
+        : 'Assinar agora';
+
+    return `
+    <div class="plan${p.pop?' pop':''}">
+      ${p.pop ? '<div class="pop-tag">⭐ Mais popular</div>' : ''}
+      ${isAtual ? '<div class="curr-badge">✓ Seu plano atual</div>' : ''}
+      <div class="p-name">${p.nome}</div>
+      <div class="p-desc">${p.desc}</div>
+      <div class="p-price">
+        <span class="curr">R$</span><span class="amt">${preco}</span><span class="per">/mês</span>
+        <div class="note">${nota}</div>
+      </div>
+      <div class="p-div"></div>
+      <ul class="p-feats">${feats}</ul>
+      <a href="${isAtual ? '#' : link}"
+         class="p-btn ${p.pop?'solid':'ghost'}"
+         ${isAtual ? 'onclick="notif(\'Você já está neste plano ✓\');return false;"' : 'target="_blank" rel="noopener"'}
+      >${btnLabel}</a>
+    </div>`;
+  }).join('');
+}
+
+function setCiclo(el) {
+  anual = !anual;
+  el.classList.toggle('on', anual);
+  renderPlans();
+}
+
+function notif(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// Init
+renderPlans();
+
+// Pre-seleciona plano se vier da URL (?plano=pro)
+const params = new URLSearchParams(location.search);
+if (params.get('anual') === '1') {
+  anual = true;
+  document.getElementById('cyc-toggle').classList.add('on');
+  renderPlans();
+}
+</script>
+</body>
+</html>

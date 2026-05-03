@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#e8770a">
+<title>PintorPro — Entrar</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="pp-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0f0f0f;--surf:#181818;--surf2:#222;--border:#2e2e2e;--acc:#e8770a;--text:#f0ede8;--text2:#a09890;--text3:#6a6460;--green:#22c55e;--r:12px;--rs:8px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.logo{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:var(--acc);letter-spacing:-1px;text-align:center;margin-bottom:4px;}
+.logo-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:28px;}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:28px;width:100%;max-width:420px;}
+.tabs{display:flex;background:var(--surf2);border-radius:var(--rs);padding:4px;margin-bottom:20px;gap:4px;}
+.tab{flex:1;padding:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;}
+.tab.active{background:var(--acc);color:#fff;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px;letter-spacing:.4px;text-transform:uppercase;}
+.field input,.field select{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:11px 13px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s;}
+.field input:focus,.field select:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,119,10,.15);}
+.field select option{background:var(--surf2);}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{width:100%;border:none;border-radius:var(--rs);padding:13px;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:.2s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn:disabled{opacity:.6;cursor:not-allowed;}
+.btn-acc{background:var(--acc);color:#fff;}
+.btn-acc:hover:not(:disabled){background:#d46b08;}
+.btn-out{background:transparent;border:1px solid var(--border);color:var(--text2);margin-top:8px;font-family:'DM Sans',sans-serif;font-weight:500;}
+.btn-out:hover{border-color:var(--acc);color:var(--acc);}
+.div{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--text3);font-size:12px;}
+.div::before,.div::after{content:'';flex:1;height:1px;background:var(--border);}
+.msg{border-radius:var(--rs);padding:10px 13px;font-size:12px;margin-bottom:12px;display:none;}
+.msg.show{display:block;}
+.msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+.msg.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+.scr{display:none;flex-direction:column;align-items:center;width:100%;min-height:100vh;padding:24px 16px;justify-content:center;}
+.scr.active{display:flex;}
+.ph{text-align:center;margin-bottom:20px;}
+.ph h2{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:5px;}
+.ph p{font-size:14px;color:var(--text2);}
+.pw{width:100%;max-width:980px;}
+
+/* Toggle mensal / anual */
+.billing-toggle{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;font-size:13px;}
+.billing-toggle span{color:var(--text2);transition:.2s;}
+.billing-toggle span.active-lbl{color:var(--text);font-weight:600;}
+.toggle-wrap{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0;}
+.toggle-wrap input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-track{position:absolute;inset:0;background:var(--surf2);border:1px solid var(--border);border-radius:99px;transition:.2s;}
+.toggle-track::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--text3);transition:.2s;}
+.toggle-wrap input:checked ~ .toggle-track{background:var(--acc);border-color:var(--acc);}
+.toggle-wrap input:checked ~ .toggle-track::after{left:21px;background:#fff;}
+.eco{display:inline-flex;align-items:center;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:var(--green);font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;margin-left:4px;vertical-align:middle;}
+
+/* Grid de planos */
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+.pl{background:var(--surf);border:1.5px solid var(--border);border-radius:var(--r);padding:18px 14px;transition:.2s;position:relative;display:flex;flex-direction:column;}
+.pl.pop::before{content:'Popular';position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:0 0 7px 7px;letter-spacing:.5px;}
+.pl.pop{border-color:rgba(232,119,10,.5);}
+.pn{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:1px;}
+.pfor{font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.4;}
+.ppr{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--acc);}
+.ppr span{font-size:12px;font-weight:400;color:var(--text2);}
+.ppr-eq{font-size:11px;color:var(--text3);min-height:15px;margin-top:1px;}
+.pdiv{height:1px;background:var(--border);margin:10px 0;}
+.pfs{display:flex;flex-direction:column;gap:5px;flex:1;}
+.pf{display:flex;align-items:flex-start;gap:5px;font-size:11px;color:var(--text2);line-height:1.4;}
+.ok{color:var(--green);flex-shrink:0;font-size:12px;}
+.no{color:var(--text3);flex-shrink:0;}
+.dim{color:var(--text3);}
+.pbtn{display:block;text-align:center;margin-top:12px;padding:9px;border:1.5px solid var(--border);border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:var(--text2);font-family:'Syne',sans-serif;transition:.2s;width:100%;text-decoration:none;}
+.pbtn:hover,.pl.pop .pbtn{background:var(--acc);border-color:var(--acc);color:#fff;}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;display:inline-block;}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:780px){.pg{grid-template-columns:1fr 1fr;}}
+@media(max-width:460px){.pg{grid-template-columns:1fr;}.f2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ TELA: AUTH ═══════════ -->
+<div class="scr active" id="scr-auth">
+  <div class="logo">PintorPro</div>
+  <div class="logo-sub">Orçamentos · Laudos Técnicos · Gestão</div>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('l')">Entrar</button>
+      <button class="tab" onclick="setTab('c')">Criar conta</button>
+    </div>
+    <div id="tl">
+      <div class="msg err" id="el"></div>
+      <div class="field"><label>E-mail</label><input id="le" type="email" placeholder="seu@email.com" autocomplete="email"></div>
+      <div class="field"><label>Senha</label><input id="ls" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()"></div>
+      <button class="btn btn-acc" id="btn-login" onclick="login()">Entrar na plataforma</button>
+      <div class="div">ou</div>
+      <button class="btn btn-out" onclick="demo()">▶ Entrar como demonstração</button>
+    </div>
+    <div id="tc" style="display:none">
+      <div class="msg err" id="ec"></div>
+      <div class="field"><label>Nome completo</label><input id="cn" type="text" placeholder="João da Silva"></div>
+      <div class="f2">
+        <div class="field"><label>E-mail</label><input id="ce" type="email" placeholder="seu@email.com"></div>
+        <div class="field"><label>WhatsApp</label><input id="ct" type="tel" placeholder="(17) 99999-9999"></div>
+      </div>
+      <div class="f2">
+        <div class="field"><label>Cidade / UF</label><input id="cc" type="text" placeholder="Ex: Franca / SP"></div>
+        <div class="field"><label>Perfil</label>
+          <select id="cp">
+            <option value="pintor">Pintor imobiliário</option>
+            <option value="lojista">Lojista de tintas</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Senha</label><input id="cs" type="password" placeholder="Mínimo 6 caracteres"></div>
+      <button class="btn btn-acc" id="btn-cad" onclick="cadastrar()">Criar conta e escolher plano</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TELA: PLANOS ═══════════ -->
+<div class="scr" id="scr-planos">
+  <div class="ph">
+    <div class="logo" style="margin-bottom:8px">PintorPro</div>
+    <h2>Escolha seu plano</h2>
+    <p id="psub">Comece agora. Cancele quando quiser.</p>
+  </div>
+  <div class="pw">
+
+    <div class="billing-toggle">
+      <span id="lbl-mensal" class="active-lbl">Mensal</span>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="toggle-anual" onchange="setBilling(this.checked)">
+        <div class="toggle-track"></div>
+      </label>
+      <span id="lbl-anual">Anual <span class="eco">-17%</span></span>
+    </div>
+
+    <div class="pg">
+
+      <!-- BÁSICO -->
+      <div class="pl">
+        <div class="pn">Básico</div>
+        <div class="pfor">Para o profissional autônomo</div>
+        <div class="ppr" id="pr-basico">R$49<span>/mês</span></div>
+        <div class="ppr-eq" id="eq-basico"></div>
+        <div class="pdiv"></div>
+        <div class="pfs">
+          <div class="pf"><span class="ok">✓</span>Orçamentos ilimitados</div>
+          <div class="pf"><span class="ok">✓</span>PDF profissional sem marca d'água</div>
+          <div class="pf"><span class="ok">✓</span>Contratos + assinatura digital</div>
+          <div class="pf"><span class="ok">✓</span>Agenda de obras</div>
+          <div class="pf"><span class="ok">✓</span>Recibos de pagamento</div>
+          <div class="pf dim"><span class="no">—</span>Sem laudos técnicos</div>
+          <div class="pf dim"><span class="no">—</span>Sem IA</div>
+        </div>
+        <a class="pbtn" href="#" onclick="irMP('basico',event)">Assinar Básico</a>
+      </div>
+
+      <!-- PRO -->
+      <div class="pl pop">
+        <div class="pn">Pro</div>
+        <div class="pfor">Orçamentos + laudos técnicos</div>
+        <div class="ppr" id="pr-pro">R$97<span>/mês</span></div>
+        <div class="ppr-eq" id="eq-pro"></div>
+        <div class="pdiv"></div>
+        <div class="pfs">
+          <div class="pf"><span class="ok">✓</span>Tudo do Básico</div>
+          <div class="pf"><span class="ok">✓</span>Laudos técnicos ilimitados + PDF</div>
+          <div class="pf"><span class="ok">✓</span>Envio direto por WhatsApp</div>
+          <div class="pf"><span class="ok">✓</span>Relatório mensal</div>
+          <div class="pf"><span class="ok">✓</span>Backup e exportação</div>
+          <div class="pf dim"><span class="no">—</span>Sem IA</div>
+        </div>
+        <a class="pbtn" href="#" onclick="irMP('pro',event)">Assinar Pro</a>
+      </div>
+
+      <!-- EQUIPE -->
+      <div class="pl">
+        <div class="pn">Equipe</div>
+        <div class="pfor">Para lojas e equipes de técnicos</div>
+        <div class="ppr" id="pr-equipe">R$197<span>/mês</span></div>
+        <div class="ppr-eq" id="eq-equipe"></div>
+        <div class="pdiv"></div>
+        <div class="pfs">
+          <div class="pf"><span class="ok">✓</span>Tudo do Pro</div>
+          <div class="pf"><span class="ok">✓</span>Múltiplos técnicos</div>
+          <div class="pf"><span class="ok">✓</span>Dashboard compartilhado</div>
+          <div class="pf"><span class="ok">✓</span>Histórico de clientes</div>
+          <div class="pf"><span class="ok">✓</span>Suporte prioritário</div>
+          <div class="pf dim"><span class="no">—</span>Sem IA</div>
+        </div>
+        <a class="pbtn" href="#" onclick="irMP('equipe',event)">Assinar Equipe</a>
+      </div>
+
+      <!-- IA PRO -->
+      <div class="pl">
+        <div class="pn">IA Pro</div>
+        <div class="pfor">Com inteligência artificial integrada</div>
+        <div class="ppr" id="pr-ia-pro">R$297<span>/mês</span></div>
+        <div class="ppr-eq" id="eq-ia-pro"></div>
+        <div class="pdiv"></div>
+        <div class="pfs">
+          <div class="pf"><span class="ok">✓</span>Tudo do Equipe</div>
+          <div class="pf"><span class="ok">✓</span>IA gera orçamento automático</div>
+          <div class="pf"><span class="ok">✓</span>IA analisa foto de patologia</div>
+          <div class="pf"><span class="ok">✓</span>IA sugere preço de mercado</div>
+          <div class="pf"><span class="ok">✓</span>IA responde clientes</div>
+          <div class="pf"><span class="ok">✓</span>Criativos para Instagram</div>
+        </div>
+        <a class="pbtn" href="#" onclick="irMP('ia-pro',event)">Assinar IA Pro</a>
+      </div>
+
+    </div><!-- /pg -->
+
+    <p style="text-align:center;font-size:11px;color:var(--text3);margin-bottom:12px">
+      Pagamento via Mercado Pago · Cartão de crédito, débito ou PIX · Acesso imediato após confirmação · Cancele quando quiser
+    </p>
+    <p style="text-align:center">
+      <button class="btn btn-out" style="max-width:300px;margin:0 auto" onclick="demo()">▶ Experimentar como demonstração primeiro</button>
+    </p>
+  </div>
+</div>
+
+<script>
+const {createClient} = supabase;
+const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+
+// Links Mercado Pago
+const MP = {
+  'basico':  { mensal:'https://mpago.la/19VUY91',  anual:'https://mpago.la/2mBWE1i'  },
+  'pro':     { mensal:'https://mpago.la/1ieWwdr',  anual:'https://mpago.la/2YpEhnF'  },
+  'equipe':  { mensal:'https://mpago.la/1YuzDuc',  anual:'https://mpago.la/15PqKDb'  },
+  'ia-pro':  { mensal:'https://mpago.la/1iWJVWP',  anual:'https://mpago.la/119g9kC'  },
+};
+
+// Preços para exibição
+const PRECOS = {
+  'basico':  { mensal:49,  anual:490,  eq:41  },
+  'pro':     { mensal:97,  anual:970,  eq:81  },
+  'equipe':  { mensal:197, anual:1970, eq:164 },
+  'ia-pro':  { mensal:297, anual:2970, eq:247 },
+};
+
+let _anual = false;
+
+const showS   = id => { document.querySelectorAll('.scr').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); };
+const gv      = id => document.getElementById(id)?.value?.trim()||'';
+const setBtn  = (id,html,off) => { const b=document.getElementById(id); if(b){b.innerHTML=html;b.disabled=!!off;} };
+const showMsg = (id,msg,t) => { const el=document.getElementById(id); if(el){el.textContent=msg;el.className='msg '+t+' show';} };
+const hideMsg = id => { const el=document.getElementById(id); if(el)el.classList.remove('show'); };
+
+function setTab(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',(t==='l'&&i===0)||(t==='c'&&i===1)));
+  document.getElementById('tl').style.display=t==='l'?'block':'none';
+  document.getElementById('tc').style.display=t==='c'?'block':'none';
+}
+
+function setBilling(anual){
+  _anual=anual;
+  document.getElementById('lbl-mensal').classList.toggle('active-lbl',!anual);
+  document.getElementById('lbl-anual').classList.toggle('active-lbl',anual);
+  ['basico','pro','equipe','ia-pro'].forEach(p=>{
+    const pr=PRECOS[p];
+    const prEl=document.getElementById('pr-'+p);
+    const eqEl=document.getElementById('eq-'+p);
+    if(!prEl)return;
+    if(anual){
+      prEl.innerHTML=`R$${pr.anual.toLocaleString('pt-BR')}<span>/ano</span>`;
+      eqEl.textContent=`≈ R$${pr.eq}/mês`;
+    }else{
+      prEl.innerHTML=`R$${pr.mensal}<span>/mês</span>`;
+      eqEl.textContent='';
+    }
+  });
+}
+
+function irMP(plano, evt){
+  evt&&evt.preventDefault();
+  const tipo=_anual?'anual':'mensal';
+  const url=MP[plano]?.[tipo];
+  if(url) window.open(url,'_blank');
+}
+
+async function login(){
+  const email=gv('le'),senha=gv('ls');
+  hideMsg('el');
+  if(!email||!senha){showMsg('el','Preencha e-mail e senha.','err');return;}
+  setBtn('btn-login','<div class="spin"></div> Entrando...',true);
+  const{error}=await sb.auth.signInWithPassword({email,password:senha});
+  if(error){
+    showMsg('el',error.message==='Invalid login credentials'?'E-mail ou senha incorretos.':error.message,'err');
+    setBtn('btn-login','Entrar na plataforma',false);
+    return;
+  }
+  window.location.href='pintopro-app.html';
+}
+
+async function cadastrar(){
+  const nome=gv('cn'),email=gv('ce'),tel=gv('ct'),cidade=gv('cc');
+  const perfil=document.getElementById('cp').value,senha=gv('cs');
+  hideMsg('ec');
+  if(!nome||!email||!senha||senha.length<6){showMsg('ec','Preencha todos os campos (senha mín. 6 caracteres).','err');return;}
+  setBtn('btn-cad','<div class="spin"></div> Criando conta...',true);
+  const{error}=await sb.auth.signUp({email,password:senha,options:{data:{nome,tel,cidade,perfil}}});
+  if(error){showMsg('ec',error.message,'err');setBtn('btn-cad','Criar conta e escolher plano',false);return;}
+  document.getElementById('psub').textContent=`Bem-vindo, ${nome.split(' ')[0]}! Escolha seu plano abaixo.`;
+  showS('scr-planos');
+}
+
+function demo(){
+  sessionStorage.setItem('pp_demo',JSON.stringify({id:'demo',nome:'Demo PintorPro',perfil:'pintor',plano:'pro',isDemo:true}));
+  window.location.href='pintopro-app.html';
+}
+
+(async()=>{
+  const params=new URLSearchParams(window.location.search);
+  const isUpgrade=params.get('upgrade')==='1';
+  const{data:{session}}=await sb.auth.getSession();
+  if(session&&!isUpgrade){window.location.href='pintopro-app.html';return;}
+  if(session&&isUpgrade){
+    document.getElementById('psub').textContent='Você está logado. Escolha o plano para fazer upgrade.';
+    showS('scr-planos');
+  }
+})();
+</script>
+</body>
+</html>

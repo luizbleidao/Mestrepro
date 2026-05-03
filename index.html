@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#e8770a">
+<title>MestrePro — Trabalhe como profissional. Cobre como empresário.</title>
+<meta name="description" content="Orçamentos, contratos, laudos e assinatura digital para pintores e prestadores de serviço. Pareça uma empresa. Cobre mais. Feche mais.">
+<meta property="og:title" content="MestrePro — Cobre como empresário">
+<meta property="og:description" content="O sistema que faz seu cliente dizer sim na hora. Orçamentos profissionais em 2 minutos.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --acc: #e8770a;
+  --acc2: #f59e2b;
+  --acc3: #ff9500;
+  --bg: #0a0a09;
+  --surf: #131311;
+  --surf2: #1a1a17;
+  --surf3: #222220;
+  --border: #2a2a26;
+  --text: #f2ede6;
+  --text2: #a09080;
+  --text3: #5a5448;
+  --green: #22c55e;
+  --r: 12px;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: .4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── TYPOGRAPHY ── */
+.display { font-family: 'Syne', sans-serif; font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; }
+.brand { font-family: 'Syne', sans-serif; font-weight: 800; }
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(10,10,9,.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-logo-icon {
+  width: 34px; height: 34px;
+  background: var(--acc);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.nav-logo-text { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: var(--text); }
+.nav-logo-text span { color: var(--acc); }
+
+.nav-links { display: flex; align-items: center; gap: 8px; }
+.nav-link {
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 8px;
+  transition: .15s;
+}
+.nav-link:hover { color: var(--text); background: var(--surf2); }
+.nav-cta {
+  background: var(--acc);
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 20px;
+  border-radius: 8px;
+  transition: .15s;
+  white-space: nowrap;
+}
+.nav-cta:hover { background: #d46b08; transform: translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  position: relative;
+}
+
+/* Glow bg */
+.hero::after {
+  content: '';
+  position: absolute;
+  top: 30%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px; height: 400px;
+  background: radial-gradient(ellipse, rgba(232,119,10,.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(232,119,10,.12);
+  border: 1px solid rgba(232,119,10,.3);
+  color: var(--acc2);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 99px;
+  margin-bottom: 32px;
+  letter-spacing: .3px;
+  animation: fadeUp .5s ease both;
+}
+
+.hero-badge::before { content: '✦'; font-size: 10px; }
+
+h1 {
+  font-size: clamp(42px, 7vw, 88px);
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  margin-bottom: 24px;
+  animation: fadeUp .6s .1s ease both;
+}
+
+h1 .hl {
+  background: linear-gradient(135deg, var(--acc) 0%, var(--acc2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: clamp(17px, 2.5vw, 21px);
+  color: var(--text2);
+  max-width: 560px;
+  margin: 0 auto 40px;
+  font-weight: 400;
+  line-height: 1.55;
+  animation: fadeUp .6s .2s ease both;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  animation: fadeUp .6s .3s ease both;
+  margin-bottom: 60px;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--acc);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 10px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: .2s;
+  white-space: nowrap;
+}
+.btn-primary:hover { background: #d46b08; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(232,119,10,.4); }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 14px 24px;
+  border-radius: 10px;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: .2s;
+}
+.btn-secondary:hover { border-color: var(--text3); color: var(--text); }
+
+.hero-social-proof {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  animation: fadeUp .6s .4s ease both;
+}
+
+.sp-avatars {
+  display: flex;
+}
+.sp-av {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  margin-left: -8px;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surf2);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--acc);
+}
+.sp-av:first-child { margin-left: 0; }
+
+.sp-text { font-size: 13px; color: var(--text2); }
+.sp-text strong { color: var(--text); }
+
+/* ── APP PREVIEW ── */
+.app-preview {
+  margin: 0 auto;
+  max-width: 900px;
+  padding: 0 24px;
+  position: relative;
+  animation: fadeUp .8s .5s ease both;
+}
+
+.preview-frame {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 40px 120px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
+}
+
+.preview-topbar {
+  background: var(--surf2);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.r { background: #ef4444; } .dot.y { background: #f59e0b; } .dot.g { background: #22c55e; }
+.preview-url { flex: 1; background: var(--surf3); border-radius: 6px; padding: 5px 12px; font-size: 12px; color: var(--text3); text-align: center; margin: 0 8px; }
+
+.preview-body {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  height: 380px;
+}
+
+.preview-sidebar {
+  background: var(--surf);
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+}
+.p-logo { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--acc); padding: 4px 6px; margin-bottom: 16px; }
+.p-nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 2px;
+}
+.p-nav-item.active { background: rgba(232,119,10,.12); color: var(--acc); font-weight: 600; }
+.p-nav-item .ic { font-size: 14px; }
+
+.preview-content { padding: 16px; overflow: hidden; }
+.p-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+.p-stat {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+.p-stat .lb { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.p-stat .vl { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+.p-stat .sub { font-size: 10px; color: var(--green); margin-top: 2px; }
+
+.p-card { background: var(--surf2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+.p-card-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.p-orc-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.p-orc-item:last-child { border: none; }
+.p-orc-name { font-size: 12px; font-weight: 500; }
+.p-orc-val { font-size: 12px; color: var(--acc); font-weight: 700; }
+.p-badge { font-size: 10px; padding: 2px 7px; border-radius: 99px; background: rgba(34,197,94,.15); color: var(--green); }
+.p-badge.y { background: rgba(245,158,43,.15); color: var(--acc2); }
+
+/* ── SECTIONS ── */
+section { padding: 100px 24px; max-width: 1100px; margin: 0 auto; }
+section.full { max-width: none; }
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--acc);
+  margin-bottom: 12px;
+  display: block;
+}
+
+h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(30px, 4vw, 52px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+
+.section-sub {
+  font-size: 18px;
+  color: var(--text2);
+  max-width: 540px;
+  line-height: 1.6;
+  margin-bottom: 56px;
+}
+
+/* ── FEATURES ── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.feature-card {
+  background: var(--surf);
+  padding: 32px 28px;
+  transition: .2s;
+}
+.feature-card:hover { background: var(--surf2); }
+
+.feature-icon {
+  font-size: 28px;
+  margin-bottom: 16px;
+  display: block;
+}
+.feature-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.feature-desc { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+/* ── HOW IT WORKS ── */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 56px; background: var(--border); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.step { background: var(--surf); padding: 32px 24px; position: relative; }
+.step-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--border);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+.step-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.step-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* ── TESTIMONIALS ── */
+.testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.testimonial {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  transition: .2s;
+}
+.testimonial:hover { border-color: var(--acc); transform: translateY(-2px); }
+.t-stars { font-size: 14px; margin-bottom: 14px; letter-spacing: 2px; }
+.t-text { font-size: 15px; line-height: 1.65; color: var(--text); margin-bottom: 20px; font-style: italic; }
+.t-author { display: flex; align-items: center; gap: 10px; }
+.t-av {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surf2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;
+  color: var(--acc); border: 1px solid var(--border);
+}
+.t-name { font-size: 13px; font-weight: 600; }
+.t-role { font-size: 12px; color: var(--text3); }
+
+/* ── PRICING ── */
+.pricing-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+.toggle-label { font-size: 14px; color: var(--text2); font-weight: 500; }
+.toggle-switch {
+  width: 52px; height: 28px;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  position: relative;
+  transition: .2s;
+}
+.toggle-switch.on { background: var(--acc); border-color: var(--acc); }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 22px; height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: .2s;
+}
+.toggle-switch.on::after { transform: translateX(24px); }
+.toggle-discount { background: rgba(34,197,94,.15); color: var(--green); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+
+.plans-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+.plan-card {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+  position: relative;
+  transition: .2s;
+}
+.plan-card:hover { border-color: var(--acc); transform: translateY(-3px); }
+.plan-card.featured {
+  border-color: var(--acc);
+  background: var(--surf2);
+}
+.plan-popular {
+  position: absolute;
+  top: -12px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--acc);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.plan-name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.plan-tagline { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+.plan-price { margin-bottom: 24px; }
+.plan-price .currency { font-size: 16px; font-weight: 600; color: var(--text2); vertical-align: top; margin-top: 6px; display: inline-block; }
+.plan-price .amount {
+  font-family: 'Syne', sans-serif;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+.plan-price .per { font-size: 13px; color: var(--text2); }
+.plan-annual-note { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.plan-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+.plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+.plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text2); line-height: 1.4; }
+.plan-features li::before { content: '✓'; color: var(--acc); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.plan-features li.off { opacity: .35; }
+.plan-features li.off::before { content: '—'; color: var(--text3); }
+.plan-btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: .2s;
+}
+.plan-btn.primary { background: var(--acc); color: #fff; }
+.plan-btn.primary:hover { background: #d46b08; }
+.plan-btn.outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.plan-btn.outline:hover { border-color: var(--acc); color: var(--acc); }
+
+/* ── CTA BAND ── */
+.cta-band {
+  margin: 0;
+  padding: 80px 24px;
+  text-align: center;
+  background: linear-gradient(180deg, transparent 0%, rgba(232,119,10,.06) 100%);
+  border-top: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.cta-band::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 500px; height: 300px;
+  background: radial-gradient(ellipse, rgba(232,119,10,.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cta-band h2 { margin-bottom: 12px; }
+.cta-band p { font-size: 18px; color: var(--text2); margin-bottom: 36px; max-width: 480px; margin-left: auto; margin-right: auto; }
+
+/* ── FAQ ── */
+.faq { display: flex; flex-direction: column; gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.faq-item { background: var(--surf); }
+.faq-q {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 24px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: .15s;
+}
+.faq-q:hover { color: var(--acc); }
+.faq-q .ic { font-size: 18px; color: var(--text3); transition: .2s; }
+.faq-item.open .faq-q .ic { transform: rotate(45deg); color: var(--acc); }
+.faq-a {
+  display: none;
+  padding: 0 24px 22px;
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.7;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.faq-item.open .faq-a { display: block; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--surf);
+  border-top: 1px solid var(--border);
+  padding: 48px 24px 32px;
+}
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 40px;
+}
+.footer-brand .brand { font-size: 20px; margin-bottom: 10px; display: block; }
+.footer-brand p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.footer-col h4 { font-size: 13px; font-weight: 700; margin-bottom: 14px; }
+.footer-col a { display: block; font-size: 13px; color: var(--text2); text-decoration: none; margin-bottom: 8px; transition: .15s; }
+.footer-col a:hover { color: var(--acc); }
+.footer-bottom {
+  max-width: 1100px;
+  margin: 40px auto 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text3);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .plans-grid { grid-template-columns: 1fr 1fr; }
+  .steps { grid-template-columns: 1fr 1fr; }
+  .testimonials { grid-template-columns: 1fr; }
+  .footer-inner { grid-template-columns: 1fr 1fr; }
+  .preview-body { grid-template-columns: 1fr; }
+  .preview-sidebar { display: none; }
+}
+@media (max-width: 600px) {
+  nav { padding: 12px 16px; }
+  .nav-links { display: none; }
+  .features-grid { grid-template-columns: 1fr; }
+  .plans-grid { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  .footer-inner { grid-template-columns: 1fr; }
+  .hero { padding: 100px 20px 60px; }
+  section { padding: 72px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-icon">🎨</div>
+    <div class="nav-logo-text">Mestre<span>Pro</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="#funcionalidades" class="nav-link">Funcionalidades</a>
+    <a href="#precos" class="nav-link">Preços</a>
+    <a href="#depoimentos" class="nav-link">Depoimentos</a>
+    <a href="/pintopro-login.html" class="nav-link">Entrar</a>
+    <a href="#precos" class="nav-cta">Começar grátis →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" style="max-width:none;padding-top:140px">
+  <div class="hero-badge">Novo: Geração de orçamentos com IA 🤖</div>
+
+  <h1>
+    Trabalhe como<br>
+    <span class="hl">profissional.</span><br>
+    Cobre como empresário.
+  </h1>
+
+  <p class="hero-sub">
+    Orçamentos em 2 minutos. Contratos profissionais. Assinatura digital.
+    Faça seu cliente dizer <em>sim</em> antes de sair da visita.
+  </p>
+
+  <div class="hero-actions">
+    <a href="/pintopro-login.html" class="btn-primary">
+      🚀 Criar conta grátis — sem cartão
+    </a>
+    <a href="#funcionalidades" class="btn-secondary">
+      Ver como funciona ↓
+    </a>
+  </div>
+
+  <div class="hero-social-proof">
+    <div class="sp-avatars">
+      <div class="sp-av">JP</div>
+      <div class="sp-av">MA</div>
+      <div class="sp-av">RS</div>
+      <div class="sp-av">LF</div>
+    </div>
+    <p class="sp-text"><strong>+200 profissionais</strong> usando hoje em todo o Brasil</p>
+    <p class="sp-text" style="color:var(--acc)">⭐⭐⭐⭐⭐ 4.9/5</p>
+  </div>
+</section>
+
+<!-- APP PREVIEW -->
+<div class="app-preview reveal">
+  <div class="preview-frame">
+    <div class="preview-topbar">
+      <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+      <div class="preview-url">mestrepro.com.br/app</div>
+    </div>
+    <div class="preview-body">
+      <div class="preview-sidebar">
+        <div class="p-logo">MestrePro</div>
+        <div class="p-nav-item active"><span class="ic">📊</span> Dashboard</div>
+        <div class="p-nav-item"><span class="ic">📋</span> Orçamentos</div>
+        <div class="p-nav-item"><span class="ic">📄</span> Contratos</div>
+        <div class="p-nav-item"><span class="ic">📅</span> Agenda</div>
+        <div class="p-nav-item"><span class="ic">📝</span> Laudos</div>
+        <div class="p-nav-item"><span class="ic">🧾</span> Recibos</div>
+        <div class="p-nav-item"><span class="ic">⚙️</span> Configurações</div>
+      </div>
+      <div class="preview-content">
+        <div class="p-stats">
+          <div class="p-stat">
+            <div class="lb">Este mês</div>
+            <div class="vl">R$4.800</div>
+            <div class="sub">↑ 23% vs mês ant.</div>
+          </div>
+          <div class="p-stat">
+            <div class="lb">Orçamentos</div>
+            <div class="vl">12</div>
+            <div class="sub">8 aprovados ✓</div>
+          </div>
+          <div class="p-stat">
+            <div class="lb">Clientes</div>
+            <div class="vl">47</div>
+            <div class="sub">+3 novos ✓</div>
+          </div>
+        </div>
+        <div class="p-card">
+          <div class="p-card-title">Últimos orçamentos</div>
+          <div class="p-orc-item">
+            <div>
+              <div class="p-orc-name">João Rezende</div>
+              <div style="font-size:10px;color:var(--text3)">Pintura sala + quartos</div>
+            </div>
+            <div style="text-align:right">
+              <div class="p-orc-val">R$2.400</div>
+              <span class="p-badge">Aprovado</span>
+            </div>
+          </div>
+          <div class="p-orc-item">
+            <div>
+              <div class="p-orc-name">Maria Santos</div>
+              <div style="font-size:10px;color:var(--text3)">Pintura fachada</div>
+            </div>
+            <div style="text-align:right">
+              <div class="p-orc-val">R$3.200</div>
+              <span class="p-badge y">Aguardando</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="funcionalidades" style="max-width:1100px;margin:0 auto">
+  <div class="reveal">
+    <span class="section-label">Funcionalidades</span>
+    <h2>Tudo que você precisa<br>em um só lugar</h2>
+    <p class="section-sub">Do orçamento ao recibo. Do cliente novo ao histórico completo. Sem planilha, sem papel, sem WhatsApp perdido.</p>
+  </div>
+
+  <div class="features-grid reveal">
+    <div class="feature-card">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-title">Orçamentos em 2 minutos</div>
+      <p class="feature-desc">Preencha os dados da obra e gere um orçamento profissional em PDF na hora. Com logo, validade e condições de pagamento.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">✍️</span>
+      <div class="feature-title">Assinatura digital</div>
+      <p class="feature-desc">Envie um link para o cliente assinar o contrato pelo celular. Sem impressora, sem deslocamento, sem burocracia.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📅</span>
+      <div class="feature-title">Agenda de visitas</div>
+      <p class="feature-desc">Organize visitas e obras no calendário. Receba lembretes e nunca perca um compromisso com cliente.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📊</span>
+      <div class="feature-title">Dashboard financeiro</div>
+      <p class="feature-desc">Veja quanto você faturou esse mês, quantos orçamentos foram aprovados e quais clientes estão abertos.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🧾</span>
+      <div class="feature-title">Recibos e contratos</div>
+      <p class="feature-desc">Gere recibos de pagamento e contratos de serviço com um clique. Tudo com sua identidade visual.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🤖</span>
+      <div class="feature-title">IA gera seu orçamento</div>
+      <p class="feature-desc">Descreve a obra em texto e a IA calcula os itens, metragem e valores. Orçamento pronto em segundos. (Plano Pro)</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section style="max-width:1100px;margin:0 auto">
+  <div class="reveal">
+    <span class="section-label">Como funciona</span>
+    <h2>Simples do início ao fim</h2>
+    <p class="section-sub">Você não precisa ser técnico. Se você sabe usar WhatsApp, você usa o MestrePro.</p>
+  </div>
+
+  <div class="steps reveal">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">Crie sua conta</div>
+      <p class="step-desc">Cadastro em 1 minuto. Coloque o nome da sua empresa, logo e dados. Grátis para começar.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">Faça o orçamento</div>
+      <p class="step-desc">Preencha os serviços, metragem e materiais. O sistema calcula e formata tudo automaticamente.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Envie pelo WhatsApp</div>
+      <p class="step-desc">Compartilhe o PDF ou o link de assinatura direto pelo WhatsApp. Em segundos o cliente já recebeu.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-title">Cliente assina e paga</div>
+      <p class="step-desc">O cliente assina online, você recebe o aviso. Gere o contrato e o recibo com 1 clique.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="depoimentos" style="max-width:1100px;margin:0 auto">
+  <div class="reveal">
+    <span class="section-label">Depoimentos</span>
+    <h2>Quem usa, não volta<br>ao caderno</h2>
+  </div>
+
+  <div class="testimonials reveal">
+    <div class="testimonial">
+      <div class="t-stars">⭐⭐⭐⭐⭐</div>
+      <p class="t-text">"Antes eu perdia cliente porque demorava pra mandar orçamento. Agora mando em 3 minutos da visita, pelo celular. Fechei 2 obras na mesma semana."</p>
+      <div class="t-author">
+        <div class="t-av">JP</div>
+        <div>
+          <div class="t-name">João Paulo M.</div>
+          <div class="t-role">Pintor autônomo — São Paulo</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial">
+      <div class="t-stars">⭐⭐⭐⭐⭐</div>
+      <p class="t-text">"Meu cliente viu o contrato profissional e perguntou se eu tinha uma empresa. Falei que sim. Cobrei 20% a mais e ele topou na hora."</p>
+      <div class="t-author">
+        <div class="t-av">MA</div>
+        <div>
+          <div class="t-name">Marcelo A.</div>
+          <div class="t-role">Gesseiro — Belo Horizonte</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial">
+      <div class="t-stars">⭐⭐⭐⭐⭐</div>
+      <p class="t-text">"O cliente assina o contrato pelo WhatsApp mesmo. Não preciso mais imprimir nada. Economizei tempo e o cliente ficou impressionado."</p>
+      <div class="t-author">
+        <div class="t-av">RS</div>
+        <div>
+          <div class="t-name">Roberto S.</div>
+          <div class="t-role">Pintor — Curitiba</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="precos" style="max-width:1100px;margin:0 auto">
+  <div class="reveal" style="text-align:center">
+    <span class="section-label">Preços</span>
+    <h2>Simples e transparente</h2>
+    <p class="section-sub" style="margin:0 auto 32px">Comece grátis. Faça upgrade quando quiser. Cancele quando quiser.</p>
+  </div>
+
+  <div class="pricing-toggle reveal">
+    <span class="toggle-label">Mensal</span>
+    <div class="toggle-switch" id="toggle" onclick="toggleAnual(this)"></div>
+    <span class="toggle-label">Anual</span>
+    <span class="toggle-discount">2 meses grátis</span>
+  </div>
+
+  <div class="plans-grid reveal">
+    <!-- BÁSICO -->
+    <div class="plan-card">
+      <div class="plan-name">Básico</div>
+      <div class="plan-tagline">Para quem está começando</div>
+      <div class="plan-price">
+        <span class="currency">R$</span>
+        <span class="amount" data-mensal="49" data-anual="41">49</span>
+        <span class="per">/mês</span>
+        <div class="plan-annual-note" id="note-basico" style="display:none">cobrado R$490/ano</div>
+      </div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Orçamentos ilimitados</li>
+        <li>10 laudos/mês</li>
+        <li>Contratos e recibos</li>
+        <li>Agenda de visitas</li>
+        <li>Assinatura digital</li>
+        <li class="off">IA para orçamentos</li>
+        <li class="off">WhatsApp automático</li>
+      </ul>
+      <a href="/pintopro-login.html?plano=basico" class="plan-btn outline">Começar agora</a>
+    </div>
+
+    <!-- PRO -->
+    <div class="plan-card featured">
+      <div class="plan-popular">Mais popular ⭐</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-tagline">Para quem quer crescer</div>
+      <div class="plan-price">
+        <span class="currency">R$</span>
+        <span class="amount" data-mensal="97" data-anual="81">97</span>
+        <span class="per">/mês</span>
+        <div class="plan-annual-note" id="note-pro" style="display:none">cobrado R$970/ano</div>
+      </div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Tudo do Básico</li>
+        <li>Laudos ilimitados</li>
+        <li>IA gera orçamento</li>
+        <li>PDF com sua marca</li>
+        <li>Dashboard financeiro</li>
+        <li>Histórico completo</li>
+        <li class="off">Multi-usuário</li>
+      </ul>
+      <a href="/pintopro-login.html?plano=pro" class="plan-btn primary">Começar 7 dias grátis</a>
+    </div>
+
+    <!-- EQUIPE -->
+    <div class="plan-card">
+      <div class="plan-name">Equipe</div>
+      <div class="plan-tagline">Para equipes de 2-5 pessoas</div>
+      <div class="plan-price">
+        <span class="currency">R$</span>
+        <span class="amount" data-mensal="197" data-anual="164">197</span>
+        <span class="per">/mês</span>
+        <div class="plan-annual-note" id="note-equipe" style="display:none">cobrado R$1.970/ano</div>
+      </div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Tudo do Pro</li>
+        <li>Até 5 usuários</li>
+        <li>Painéis separados</li>
+        <li>Relatórios por equipe</li>
+        <li>Suporte prioritário</li>
+        <li>Treinamento online</li>
+        <li class="off">IA conteúdo</li>
+      </ul>
+      <a href="/pintopro-login.html?plano=equipe" class="plan-btn outline">Começar agora</a>
+    </div>
+
+    <!-- IA PRO -->
+    <div class="plan-card">
+      <div class="plan-name">IA Pro</div>
+      <div class="plan-tagline">Para dominar o mercado</div>
+      <div class="plan-price">
+        <span class="currency">R$</span>
+        <span class="amount" data-mensal="297" data-anual="247">297</span>
+        <span class="per">/mês</span>
+        <div class="plan-annual-note" id="note-ia" style="display:none">cobrado R$2.970/ano</div>
+      </div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Tudo do Equipe</li>
+        <li>IA WhatsApp automático</li>
+        <li>Gerador de posts/reels</li>
+        <li>IA cria anúncios</li>
+        <li>Afiliados (30% comissão)</li>
+        <li>API para integrações</li>
+        <li>Gerente de conta dedicado</li>
+      </ul>
+      <a href="/pintopro-login.html?plano=ia-pro" class="plan-btn outline">Começar agora</a>
+    </div>
+  </div>
+
+  <div class="reveal" style="text-align:center;margin-top:32px;font-size:13px;color:var(--text3)">
+    ✓ Sem contrato · ✓ Cancele quando quiser · ✓ Pagamento via Pix, boleto ou cartão
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="max-width:700px;margin:0 auto">
+  <div class="reveal" style="text-align:center">
+    <span class="section-label">Dúvidas frequentes</span>
+    <h2>Perguntas e respostas</h2>
+  </div>
+
+  <div class="faq reveal">
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Preciso saber usar computador para usar o MestrePro?
+        <span class="ic">+</span>
+      </div>
+      <div class="faq-a">Não. O sistema foi feito para funcionar no celular. Se você usa WhatsApp, você usa o MestrePro. Nosso onboarding dura menos de 5 minutos.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Posso usar no celular?
+        <span class="ic">+</span>
+      </div>
+      <div class="faq-a">Sim! O sistema é 100% responsivo e funciona em qualquer celular, sem precisar instalar nada. Acesse pelo navegador e use como um app.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Como funciona o plano grátis?
+        <span class="ic">+</span>
+      </div>
+      <div class="faq-a">No plano grátis você pode criar até 5 orçamentos e 2 laudos. É para você testar e ver o valor antes de pagar. Sem cartão de crédito necessário.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Posso cancelar quando quiser?
+        <span class="ic">+</span>
+      </div>
+      <div class="faq-a">Sim. Sem fidelidade, sem multa. Se você cancelar, seus dados ficam salvos por 30 dias caso queira voltar.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Funciona para outros tipos de serviço além de pintura?
+        <span class="ic">+</span>
+      </div>
+      <div class="faq-a">Sim! Eletricistas, encanadores, gesseiros, pedreiros, ar condicionado — qualquer prestador de serviço residencial pode usar e personalizar os documentos para seu trabalho.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Meus dados ficam seguros?
+        <span class="ic">+</span>
+      </div>
+      <div class="faq-a">Sim. Usamos Supabase (infraestrutura enterprise) com criptografia e backups automáticos. Seus clientes e orçamentos estão seguros na nuvem.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<div class="cta-band">
+  <h2>Pronto para cobrar<br><span class="hl">como você merece?</span></h2>
+  <p>Crie sua conta grátis agora. Em 5 minutos você já está mandando orçamentos profissionais.</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a href="/pintopro-login.html" class="btn-primary" style="font-size:17px;padding:16px 32px">
+      🚀 Começar grátis agora
+    </a>
+    <a href="#precos" class="btn-secondary" style="font-size:17px;padding:16px 24px">
+      Ver planos →
+    </a>
+  </div>
+  <p style="font-size:13px;color:var(--text3);margin-top:20px;margin-bottom:0">Sem cartão de crédito. Sem compromisso.</p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="brand" style="color:var(--acc)">MestrePro</span>
+      <p>Plataforma de gestão e vendas para prestadores de serviço autônomos no Brasil.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Produto</h4>
+      <a href="#funcionalidades">Funcionalidades</a>
+      <a href="#precos">Planos e preços</a>
+      <a href="/pintopro-login.html">Entrar</a>
+      <a href="/pintopro-login.html">Criar conta</a>
+    </div>
+    <div class="footer-col">
+      <h4>Empresa</h4>
+      <a href="#">Sobre nós</a>
+      <a href="#">Blog</a>
+      <a href="#">Afiliados</a>
+      <a href="#">Contato</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="#">Termos de uso</a>
+      <a href="#">Privacidade</a>
+      <a href="#">Cookies</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 MestrePro. Todos os direitos reservados.</span>
+    <span>Feito com ❤️ no Brasil</span>
+  </div>
+</footer>
+
+<script>
+// ── Reveal on scroll
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── FAQ toggle
+function toggleFaq(el) {
+  const item = el.parentElement;
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!wasOpen) item.classList.add('open');
+}
+
+// ── Pricing toggle
+let anual = false;
+function toggleAnual(el) {
+  anual = !anual;
+  el.classList.toggle('on', anual);
+  document.querySelectorAll('.amount').forEach(span => {
+    span.textContent = anual ? span.dataset.anual : span.dataset.mensal;
+  });
+  ['basico','pro','equipe','ia'].forEach(id => {
+    const note = document.getElementById('note-' + id);
+    if (note) note.style.display = anual ? 'block' : 'none';
+  });
+}
+
+// ── Nav smooth highlight on scroll
+window.addEventListener('scroll', () => {
+  const nav = document.querySelector('nav');
+  nav.style.background = window.scrollY > 50 ? 'rgba(10,10,9,0.95)' : 'rgba(10,10,9,0.8)';
+});
+</script>
+</body>
+</html>

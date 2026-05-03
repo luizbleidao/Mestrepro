@@ -1,0 +1,2642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="theme-color" content="#0D2E6B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>LaudosPro — Diagnóstico de Patologias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="pp-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D2E6B;--blue:#1A56A0;--blue2:#2563EB;--sky:#EEF3FA;--sky2:#DDE8F7;
+  --green:#16A34A;--amber:#D97706;--red:#DC2626;--purple:#9333EA;
+  --txt:#1E2A3A;--sub:#5A6A7E;--border:#C8D8EE;--white:#fff;
+  --r:10px;--r2:6px;--sh:0 2px 12px rgba(13,46,107,.10);
+  --font:'DM Sans',sans-serif;--hfont:'Rajdhani',sans-serif;
+}
+html,body{height:100%;background:var(--sky);font-family:var(--font);color:var(--txt);font-size:14px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+#app{min-height:100vh;display:flex;flex-direction:column}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none}
+input,textarea,select{font-family:var(--font);outline:none}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;padding:13px 16px 11px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.hdr-row{display:flex;align-items:center;gap:10px}
+.hdr-logo{font-family:var(--hfont);font-size:20px;font-weight:700;letter-spacing:.5px;flex:1}
+.hdr-logo span{opacity:.7;font-size:13px;font-weight:500;display:block;letter-spacing:.3px}
+.hdr-btns{display:flex;gap:6px}
+.hdr-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:var(--r2);padding:6px 10px;font-size:12px;transition:.2s}
+.hdr-btn:hover{background:rgba(255,255,255,.25)}
+
+/* STEPS */
+.steps-bar{background:var(--navy);padding:0 16px 12px;display:flex;gap:4px}
+.step-dot{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.2);transition:.3s}
+.step-dot.done{background:rgba(255,255,255,.6)}
+.step-dot.active{background:#fff}
+
+/* CONTENT */
+.content{padding:16px;flex:1;max-width:640px;width:100%;margin:0 auto}
+
+/* CARD */
+.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:12px;box-shadow:var(--sh)}
+.card-title{font-family:var(--hfont);font-size:17px;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.card-title .ico{width:28px;height:28px;border-radius:var(--r2);background:var(--sky2);display:flex;align-items:center;justify-content:center;font-size:14px}
+
+/* FORM */
+.lbl{font-size:10px;font-weight:600;letter-spacing:.6px;color:var(--sub);text-transform:uppercase;margin-bottom:4px;display:block}
+.inp{width:100%;border:1.5px solid var(--border);border-radius:var(--r2);padding:9px 11px;font-size:14px;color:var(--txt);transition:.2s;background:#fff}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,160,.12)}
+textarea.inp{resize:vertical;min-height:80px;line-height:1.6}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.mt{margin-top:12px}
+.divider{border:none;border-top:1px solid var(--sky2);margin:14px 0}
+
+/* TOGGLES */
+.tog-group{display:flex;flex-wrap:wrap;gap:6px}
+.tog{border:1.5px solid var(--border);background:#fff;color:var(--sub);border-radius:20px;padding:6px 13px;font-size:12px;font-weight:500;transition:.2s}
+.tog.on{border-color:var(--blue);background:var(--sky2);color:var(--blue);font-weight:600}
+
+/* NBR */
+.nbr-grid{display:grid;grid-template-columns:1fr;gap:5px}
+.nbr-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--r2);cursor:pointer;transition:.2s;font-size:12px;color:var(--sub);background:#fff}
+.nbr-item.on{border-color:var(--blue);background:var(--sky2);color:var(--blue)}
+.nbr-check{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;transition:.2s}
+.nbr-item.on .nbr-check{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* SUBSTRATE CHECKLIST */
+.subst-check{background:#FEF9C3;border:1px solid #FDE68A;border-radius:var(--r2);padding:10px 12px;margin-bottom:12px}
+.subst-check-title{font-size:11px;font-weight:700;color:#92400E;letter-spacing:.4px;margin-bottom:7px;text-transform:uppercase}
+.subst-check-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#78350F;padding:3px 0;cursor:pointer}
+.subst-check-item input{margin-top:2px;accent-color:#D97706;flex-shrink:0}
+
+/* PATOLOGIA CARD */
+.pat-card{border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;transition:.2s;background:#fff}
+.pat-card.sel{border-color:var(--blue);background:#FAFCFF}
+.pat-header{padding:11px 13px;cursor:pointer;display:flex;align-items:center;gap:10px}
+.pat-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:.2s}
+.pat-card.sel .pat-check{background:var(--blue);border-color:var(--blue);color:#fff}
+.pat-info{flex:1}
+.pat-nome{font-weight:600;font-size:13.5px;color:var(--txt)}
+.pat-cat{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;letter-spacing:.3px}
+.pat-badges{display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap}
+.pat-body{padding:0 13px 13px;display:none}
+.pat-card.open .pat-body{display:block}
+.pat-own{background:#EEF4FB;border:1px solid #C3D9F0;border-radius:var(--r2);padding:9px 11px;margin-bottom:10px;font-size:12px;color:var(--blue);line-height:1.6}
+.pat-own strong{display:block;font-size:9px;font-weight:700;letter-spacing:.5px;color:#1A56A0;margin-bottom:3px;text-transform:uppercase}
+.grav-row{display:flex;gap:6px;margin-bottom:8px}
+.gbtn{flex:1;border:1.5px solid var(--border);background:#fff;border-radius:20px;padding:6px 0;font-size:12px;font-weight:500;color:var(--sub);transition:.2s}
+.gbtn.lv.on{border-color:var(--green);background:#DCFCE7;color:var(--green);font-weight:700}
+.gbtn.mo.on{border-color:var(--amber);background:#FEF3C7;color:var(--amber);font-weight:700}
+.gbtn.gr.on{border-color:var(--red);background:#FEE2E2;color:var(--red);font-weight:700}
+.nota-inp{width:100%;border:1.5px solid var(--border);border-radius:var(--r2);padding:8px 10px;font-size:12px;color:var(--txt);background:#fff;transition:.2s;margin-bottom:8px}
+.nota-inp:focus{border-color:var(--blue)}
+
+/* CUSTO ESTIMADO */
+.custo-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:var(--r2);padding:7px 10px}
+.custo-lbl{font-size:10px;font-weight:700;letter-spacing:.4px;color:var(--green);text-transform:uppercase;white-space:nowrap}
+.custo-inp{flex:1;border:none;background:transparent;font-size:13px;color:var(--txt);padding:2px 4px}
+.custo-hint{font-size:10px;color:var(--sub)}
+
+/* PHOTO IN CARD */
+.pat-photos{margin-bottom:8px}
+.pat-photos-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
+.pat-photo-add{width:72px;height:58px;border:1.5px dashed var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--sub);font-size:10px;gap:2px;transition:.2s;background:var(--sky);flex-shrink:0}
+.pat-photo-add:hover{border-color:var(--blue);background:var(--sky2);color:var(--blue)}
+.pat-photo-add .ico2{font-size:18px}
+.pat-photo-thumb{position:relative;flex-shrink:0}
+.pat-photo-thumb img{width:72px;height:58px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:block}
+.pat-photo-del{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid #fff}
+.pat-photo-leg{width:72px;font-size:9px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--sub);padding:2px 0;text-align:center;margin-top:2px}
+
+/* DETAIL BTN */
+.detail-btn{width:100%;border:1.5px solid var(--sky2);background:var(--sky);color:var(--blue);border-radius:var(--r2);padding:7px;font-size:12px;font-weight:600;transition:.2s;display:flex;align-items:center;justify-content:center;gap:5px}
+.detail-btn:hover{background:var(--sky2)}
+.detail-panel{display:none;margin-top:8px}
+.detail-panel.open{display:block}
+.passo-box{background:#F0F7FF;border:1px solid #BFDBFE;border-radius:var(--r2);padding:10px;margin-bottom:8px}
+.passo-tit{font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--blue);margin-bottom:8px;text-transform:uppercase}
+.passo-item{display:flex;gap:8px;margin-bottom:7px;align-items:flex-start}
+.passo-num{width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.passo-txt{font-size:12px;color:var(--txt);line-height:1.5}
+.prods-box{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:var(--r2);padding:10px}
+.prods-tit{font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--green);margin-bottom:8px;text-transform:uppercase}
+.prods-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prod-marca{font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--green);margin-bottom:5px;text-transform:uppercase}
+.prod-item{font-size:11px;color:var(--txt);padding:3px 0;border-bottom:1px solid #D1FAE5;line-height:1.4}
+.prod-item:last-child{border-bottom:none}
+
+/* NAV */
+.nav{display:flex;gap:10px;padding:14px 0 6px}
+.btn-primary{flex:1;background:linear-gradient(135deg,var(--blue),var(--navy));color:#fff;border-radius:var(--r2);padding:13px;font-size:14px;font-weight:600;font-family:var(--hfont);letter-spacing:.5px;transition:.2s}
+.btn-primary:hover{opacity:.9}
+.btn-sec{flex:1;background:#fff;color:var(--blue);border:1.5px solid var(--border);border-radius:var(--r2);padding:12px;font-size:14px;font-weight:600;font-family:var(--hfont);transition:.2s}
+.btn-sec:hover{background:var(--sky)}
+.btn-green{background:linear-gradient(135deg,#15803D,#16A34A);color:#fff;border-radius:var(--r2);padding:13px;font-size:14px;font-weight:600;font-family:var(--hfont);letter-spacing:.5px;transition:.2s;width:100%}
+.btn-danger{background:#FEE2E2;color:var(--red);border:1px solid #FECACA;border-radius:var(--r2);padding:8px 14px;font-size:12px;font-weight:600;transition:.2s}
+.btn-danger:hover{background:#FCA5A5;color:#fff}
+
+/* HOME */
+.home-banner{background:linear-gradient(135deg,var(--navy),var(--blue));border-radius:var(--r);padding:18px 16px;margin-bottom:14px;color:#fff}
+.home-banner h2{font-family:var(--hfont);font-size:22px;font-weight:700;margin-bottom:3px}
+.home-banner p{font-size:12px;opacity:.8}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.action-btn{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center;cursor:pointer;transition:.2s;box-shadow:var(--sh)}
+.action-btn:hover{border-color:var(--blue);background:var(--sky)}
+.action-btn .ico{font-size:22px;margin-bottom:6px}
+.action-btn .lbl2{font-size:13px;font-weight:600;color:var(--txt)}
+.action-btn .desc{font-size:11px;color:var(--sub);margin-top:2px}
+.laudo-item{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:8px;cursor:pointer;transition:.2s;box-shadow:var(--sh);display:flex;align-items:center;gap:12px}
+.laudo-item:hover{border-color:var(--blue);transform:translateY(-1px)}
+.laudo-icon{width:40px;height:40px;border-radius:var(--r2);background:var(--sky2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.laudo-info{flex:1}
+.laudo-num{font-family:var(--hfont);font-size:15px;font-weight:700;color:var(--navy)}
+.laudo-cli{font-size:12px;color:var(--sub);margin-top:1px}
+.laudo-meta{display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap}
+.badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.3px}
+.badge-green{background:#DCFCE7;color:var(--green)}
+.badge-amber{background:#FEF3C7;color:var(--amber)}
+.badge-blue{background:var(--sky2);color:var(--blue)}
+.laudo-wa{background:none;border:none;color:#25D366;font-size:15px;cursor:pointer;padding:4px 2px;flex-shrink:0}
+.laudo-del{color:#CBD5E1;font-size:16px;padding:4px 8px;background:none;transition:.2s}
+.laudo-del:hover{color:var(--red)}
+.empty-state{text-align:center;padding:32px 16px;color:var(--sub)}
+.empty-state .ico{font-size:40px;margin-bottom:10px}
+
+/* ACOMPANHAMENTO */
+.followup-item{background:var(--sky);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;margin-bottom:7px}
+.followup-date{font-size:11px;font-weight:700;color:var(--navy)}
+.followup-obs{font-size:12px;color:var(--txt);margin-top:3px;line-height:1.5}
+.followup-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.followup-photo{width:60px;height:48px;object-fit:cover;border-radius:4px;border:1px solid var(--border)}
+
+/* PIN */
+.pin-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,var(--navy) 0%,var(--blue) 100%)}
+.pin-logo{font-family:var(--hfont);font-size:28px;font-weight:700;color:#fff;text-align:center;margin-bottom:4px}
+.pin-sub{font-size:13px;color:rgba(255,255,255,.7);text-align:center;margin-bottom:32px}
+.pin-card{background:#fff;border-radius:14px;padding:24px 22px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin:16px 0 20px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:.2s}
+.pin-dot.filled{background:var(--blue);border-color:var(--blue)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pin-key{background:var(--sky);border:1px solid var(--border);border-radius:var(--r);padding:14px 0;font-size:18px;font-weight:600;font-family:var(--hfont);color:var(--navy);transition:.2s;text-align:center}
+.pin-key:hover{background:var(--sky2)}
+.pin-key.del{color:var(--red);font-size:14px}
+.pin-err{color:var(--red);font-size:12px;text-align:center;margin-top:8px;height:16px}
+.pin-hint{font-size:11px;color:var(--sub);text-align:center;margin-top:14px}
+
+/* ARQUIVO */
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:.2s;color:var(--sub)}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--blue);background:var(--sky)}
+.arq-list{margin-top:10px;display:flex;flex-direction:column;gap:7px}
+.arq-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:var(--r2);padding:9px 11px}
+.arq-thumb{width:38px;height:38px;border-radius:5px;object-fit:cover;flex-shrink:0}
+.arq-ico{width:38px;height:38px;border-radius:5px;background:var(--sky2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.arq-info{flex:1;min-width:0}
+.arq-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arq-leg{font-size:11px;border:none;border-bottom:1px solid var(--border);background:transparent;width:100%;color:var(--sub);padding:2px 0;margin-top:2px}
+.arq-del{color:#CBD5E1;background:none;font-size:14px;flex-shrink:0;padding:3px 6px;transition:.2s}
+.ai-analisar-btn{width:100%;padding:8px;border:1px dashed #7C3AED;border-radius:8px;background:#FAF5FF;color:#6D28D9;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;transition:.2s}
+.ai-analisar-btn:hover{background:#EDE9FE}
+.ai-analisar-btn:disabled{opacity:.5;cursor:not-allowed}
+.ai-result-box{background:#F5F3FF;border:1px solid #DDD6FE;border-radius:8px;padding:10px 12px;margin-top:6px;font-size:12px;color:#3730A3;line-height:1.6}
+.ai-result-box .ai-titulo{font-size:11px;font-weight:700;color:#6D28D9;letter-spacing:.5px;margin-bottom:6px}
+.arq-del:hover{color:var(--red)}
+
+/* TÉCNICO */
+.tec-field{margin-bottom:14px}
+.tec-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.tec-lbl{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--sub);text-transform:uppercase}
+.btn-gerar{background:var(--sky2);color:var(--blue);border:1px solid var(--border);border-radius:20px;padding:4px 11px;font-size:10px;font-weight:700;letter-spacing:.3px;transition:.2s}
+.btn-gerar:hover{background:var(--blue);color:#fff}
+
+/* PREVIEW */
+.preview-sec{margin-bottom:14px}
+.preview-sec-head{background:var(--navy);color:#fff;padding:7px 12px;border-radius:var(--r2) var(--r2) 0 0;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.preview-sec-body{border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r2) var(--r2);padding:11px 12px;font-size:12px;line-height:1.8;color:var(--txt);white-space:pre-line;background:#fff}
+.crit-badge{display:inline-block;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;letter-spacing:.5px}
+.crit-CRITICO{background:#FEE2E2;color:var(--red)}
+.crit-RELEVANTE{background:#FEF3C7;color:var(--amber)}
+.crit-MODERADO{background:#DCFCE7;color:var(--green)}
+
+/* ASSINATURA */
+.sig-wrap{border:1.5px solid var(--border);border-radius:var(--r2);background:#fff;overflow:hidden;margin-bottom:8px;position:relative}
+#sig-canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
+.sig-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--sub);pointer-events:none}
+.sig-actions{display:flex;gap:8px}
+.sig-clear{background:var(--sky);border:1px solid var(--border);color:var(--sub);border-radius:var(--r2);padding:7px 14px;font-size:12px;font-weight:600}
+
+/* FINALIZAÇÃO */
+.fin-overlay{position:fixed;inset:0;background:#0D2E6B;z-index:999;display:none;flex-direction:column;overflow-y:auto}
+.fin-overlay.open{display:flex}
+.fin-hdr{background:linear-gradient(135deg,var(--navy),var(--blue));padding:20px 20px 16px;color:#fff;text-align:center}
+.fin-hdr h2{font-family:var(--hfont);font-size:24px;font-weight:700;margin-bottom:3px}
+.fin-saved{background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;font-size:13px;font-weight:600}
+.fin-saved .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.6);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+.fin-body{flex:1;padding:16px;max-width:600px;width:100%;margin:0 auto}
+.fin-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);padding:16px;margin-bottom:12px;color:#fff}
+.fin-card h3{font-family:var(--hfont);font-size:20px;font-weight:700;margin-bottom:8px}
+.fin-stat-row{display:flex;gap:8px;margin-bottom:14px}
+.fin-stat{flex:1;border-radius:var(--r2);padding:10px;text-align:center;background:rgba(255,255,255,.1)}
+.fin-stat .num{font-family:var(--hfont);font-size:20px;font-weight:700;color:#fff}
+.fin-stat .lbl3{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.fin-btns{display:flex;flex-direction:column;gap:8px;padding:0 16px 20px;max-width:600px;width:100%;margin:0 auto}
+.fin-btn1{background:#fff;color:var(--blue);border-radius:var(--r2);padding:14px;font-size:15px;font-weight:700;font-family:var(--hfont);letter-spacing:.5px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.fin-btn2{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:var(--r2);padding:12px;font-size:14px;font-weight:600;font-family:var(--hfont);width:100%;display:flex;align-items:center;justify-content:center;gap:6px}
+.fin-btn-wa{background:#25D366;color:#fff;border-radius:10px;padding:13px;font-size:14px;font-weight:700;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer}
+.fin-btn3{background:transparent;color:rgba(255,255,255,.6);font-size:12px;padding:8px;width:100%;display:flex;align-items:center;justify-content:center;gap:5px}
+
+/* CONSULTA */
+.cq-search{position:relative;margin-bottom:12px}
+.cq-search input{width:100%;border:1.5px solid var(--border);border-radius:24px;padding:11px 16px 11px 40px;font-size:14px;background:#fff;transition:.2s}
+.cq-search input:focus{border-color:var(--blue)}
+.cq-search .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--sub)}
+.cq-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;box-shadow:var(--sh);cursor:pointer;transition:.2s}
+.cq-card:hover{border-color:var(--blue)}
+.cq-head{display:flex;align-items:center;gap:10px;padding:11px 13px}
+.cq-body{display:none;padding:0 13px 13px;border-top:1px solid var(--sky2)}
+.cq-body.open{display:block}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:14px 14px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--hfont);font-size:18px;font-weight:700;color:var(--navy);margin-bottom:14px}
+.modal-actions{display:flex;gap:8px;margin-top:14px}
+
+/* INFO/WARN */
+.info-box{background:var(--sky2);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;font-size:12px;color:var(--blue);line-height:1.5;margin-bottom:12px}
+.warn-box{background:#FEF3C7;border:1px solid #FDE68A;border-radius:var(--r2);padding:10px 12px;font-size:12px;color:#92400E;line-height:1.5;margin-bottom:12px}
+
+/* TOAST */
+#toast-box{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.toast{background:var(--navy);color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.25);animation:toastIn .25s ease;pointer-events:none}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media print{.hdr,.steps-bar,.nav,.hdr-btns,#toast-box,.btn-gerar{display:none!important}}
+
+/* SIG LINK */
+.laudo-sig-link{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:12px;margin-top:8px;font-size:12px;}
+.laudo-sig-url{font-family:monospace;font-size:11px;color:#a09890;word-break:break-all;margin:6px 0;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast-box"></div>
+<div id="fin-overlay" class="fin-overlay"></div>
+<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+ <div class="modal-box" id="modal-box"></div>
+</div>
+<script>
+'use strict';
+const PATS = [
+{id:1,nome:"Bolhas / Empolamento",cat:"umidade",
+ tec:"Formação de bolhas na película por pressão de vapor d'água ou gás retido entre o substrato úmido e o revestimento impermeável. Mecanismo: substrato úmido aquece (sol) → vapor pressiona o filme → bolha. Indica falha grave de preparo ou umidade ativa.",
+ own:"A tinta inchou e formou bolhas — como se houvesse ar ou água presa embaixo. É sinal claro de umidade ou preparo inadequado. Enquanto a causa não for eliminada, voltará sempre.",
+ causa:"Aplicação sobre substrato úmido ou sem cura mínima (28 dias);ausência de fundo preparador;umidade ascendente capilar ou infiltrante ativa;sais solúveis no substrato;pintura sob sol intenso com parede aquecida",
+ rec:"Identificar e eliminar a fonte de umidade (obrigatório);remover toda tinta solta até substrato firme;aguardar secagem completa (mín. 72h);teste de absorção com gota d'água;aplicar fundo preparador;repintar",
+ passos:[
+  "Proteger piso e móveis com lona plástica",
+  "Raspar toda a área com bolhas usando espátula — não deixar bordas soltas",
+  "⚠️ OBRIGATÓRIO: identificar e eliminar a fonte de umidade (vazamento, infiltração, umidade capilar do solo)",
+  "Teste de absorção: jogar gota d'água na parede — se absorver rápido, substrato está poroso; se empaçar, ainda úmido",
+  "Aguardar secagem completa — mínimo 72 horas; em casos de umidade ascendente, pode levar dias ou semanas",
+  "Lixar a superfície até uniformizar (lixa P80 → P120); remover pó com pano seco",
+  "Aplicar 1 demão de Fundo Preparador Eucatex ou Eco Fundo Preparador SW — aguardar 2–4h",
+  "Aplicar 2 demãos de tinta acabamento com intervalo de 4–6h entre elas; NÃO pintar sob sol intenso"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex","Selador Acrílico Eucatex","SuperPren Paredes Eucatex (externo) ou Tinta Acrílica (interno)"],
+  sw:["Eco Fundo Preparador de Paredes SW","Selador Acrílico SW","Metalatex Elastic Fosco SW (se fissuras associadas)"]
+ }
+},
+{id:2,nome:"Calcinação / Pulverulência",cat:"intemperie",
+ tec:"Desagregação superficial por degradação do ligante via intemperismo UV e chuva. Processo cumulativo: radiação solar quebra as cadeias poliméricas da resina → pigmento solto → pó ao toque. Indica fim de vida útil da tinta ou uso de produto inadequado para externo.",
+ own:"Passa a mão na parede e sai pó branco ou colorido — a tinta ou o reboco envelheceram e perderam resistência. Tinta nova aplicada diretamente vai descascar em pouco tempo.",
+ causa:"Envelhecimento natural por intemperismo UV prolongado;tinta de baixa qualidade ou diluída em excesso;reboco com traço fraco ou elevado teor de cal;falta de manutenção preventiva;ausência de selador consolidante no sistema original",
+ rec:"Escovar toda a área para remover partes soltas;teste de absorção;aplicar selador penetrante consolidante;aguardar cura;repintar com tinta de alto desempenho UV",
+ passos:[
+  "Escovar com escova de cerdas duras ou lixar toda a superfície (lixa P80) para remover pó e partes soltas",
+  "Lavagem sob pressão moderada para expor o substrato real — aguardar secagem completa",
+  "Teste de absorção com gota d'água: superfície deve absorver uniformemente antes de receber o fundo",
+  "Aplicar 1 demão de Fundo Preparador de Paredes Eucatex ou Eco Fundo Preparador SW — consolidante específico para substrato calcinado/arenoso",
+  "Aguardar cura completa conforme embalagem (2–4h); verificar se pó voltou — se sim, aplicar 2ª demão do fundo",
+  "Aplicar 2 demãos de tinta acrílica de alta durabilidade para externo com intervalo de 4–6h"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex (penetrante, consolidante)","Selador Acrílico Eucatex","SuperPren Paredes Eucatex ou Máxima Proteção Eucatex"],
+  sw:["Eco Fundo Preparador de Paredes SW (aglutina partículas soltas)","Metalatex Litoral SW (alta resistência UV) ou Metalatex Elastic Fosco SW"]
+ }
+},
+{id:3,nome:"Craquelamento / Gretamento",cat:"execucao",
+ tec:"Fendilhação em mapa (padrão xadrez ou irregular) na película de tinta ou argamassa por retração diferencial, envelhecimento ou incompatibilidade entre camadas. Mecanismo: retração volumétrica da camada mais externa > resistência à tração → abertura superficial em rede.",
+ own:"A tinta trincou em vários sentidos, parecendo um mapa ou couro seco. O material envelheceu, foi aplicado espesso demais, ou foi aplicado sobre uma camada incompatível.",
+ causa:"Retração da argamassa por traço inadequado ou cura rápida (retração hidráulica);tinta aplicada em camada muito espessa ou sem intervalo;camadas incompatíveis (esmalte sobre acrílico fresco);variação térmica acentuada sem juntas de dilatação;reboco com excesso de cal",
+ rec:"Remover todo revestimento comprometido;verificar se há problema estrutural subjacente;regularizar substrato;fundo preparador;tinta elástica para prevenir recorrência",
+ passos:[
+  "Raspar toda a tinta craquelada com espátula — nenhuma área solta pode permanecer",
+  "Lixar a superfície (lixa P80 → P120) até uniformizar; remover pó com pano seco",
+  "Verificar se o craquelamento atinge a argamassa — se sim, verificar fissuras estruturais antes de prosseguir",
+  "Se necessário, aplicar Massa Acrílica em camadas finas (máx. 1mm por demão) — aguardar 4h entre demãos; lixar com P150",
+  "Aplicar 1 demão de Fundo Preparador Eucatex ou Eco Fundo Preparador SW — aguardar 2h",
+  "Aplicar 3 demãos de tinta elástica com intervalo de 4–6h para garantir espessura protetora contra retração futura"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex","Massa Acrílica Eucatex (externo)","SuperPren Paredes Eucatex (elástico, previne até 0,3mm NBR 11702)"],
+  sw:["Eco Fundo Preparador SW","Massa Acrílica SW","Metalatex Elastic Fosco SW (elástico, acompanha até 0,3mm, NBR 11702-4.5.16)"]
+ }
+},
+{id:4,nome:"Descascamento",cat:"execucao",
+ tec:"Perda total de aderência da película ao substrato, com desprendimento em placas ou folhas. Falha na interface tinta/substrato por contaminação, ausência de fundo aderente ou aplicação em condições inadequadas. Pode estar associado a empolamento prévio.",
+ own:"A tinta está se soltando em pedaços. Não aderiu corretamente ao reboco ou à tinta anterior — geralmente por falta do fundo preparador, superfície suja ou úmida na hora de pintar.",
+ causa:"Superfície suja, gordurosa ou úmida na aplicação;ausência de fundo aderente;incompatibilidade entre sistemas de tinta;eflorescência ou umidade subjacente ativa;argamassa sem cura mínima de 28 dias;contaminação por desmoldante (em concreto)",
+ rec:"Remover TODA tinta solta;limpar e desengordurar;identificar e corrigir causa raiz;fundo preparador adequado ao substrato;repintar com produto compatível",
+ passos:[
+  "Remover toda a tinta solta com espátula — incluindo bordas e áreas adjacentes ao redor da falha",
+  "Lixar toda a área (lixa P60 → P120) até expor substrato firme; remover pó",
+  "Se houver gordura ou desmoldante (em concreto): lavar com água + detergente neutro; secar completamente",
+  "Verificar pH da superfície com fita indicadora — deve estar entre 7 e 9 antes de aplicar qualquer produto",
+  "Teste de absorção com gota d'água para verificar porosidade e definir o tipo de fundo correto",
+  "Aplicar 1 demão de Fundo Preparador Eucatex ou Eco Fundo Preparador SW — aguardar 2–4h",
+  "Aplicar 2 demãos de tinta com intervalo de 4h; respeitar tempo de repintura da embalagem"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex (penetrante)","Selador Acrílico Eucatex"],
+  sw:["Eco Fundo Preparador de Paredes SW","Selador Acrílico SW"]
+ }
+},
+{id:5,nome:"Eflorescência",cat:"umidade",
+ tec:"Depósito cristalino de sais solúveis (sulfatos e carbonatos de cálcio, sódio ou magnésio) na superfície por migração através da umidade. Mecanismo: sais dissolvidos na água interna → migram por capilaridade → evaporação na superfície → cristalização. Indica umidade ativa no substrato.",
+ own:"Manchas brancas como crosta ou salitre na parede — são sais que a umidade empurra de dentro para fora. Não é fungo. Se a causa de umidade não for resolvida, sempre volta.",
+ causa:"Umidade ascendente capilar transportando sais solúveis;materiais com alto teor de sais (CP I/CP II);fissuras facilitando entrada de água;falta de impermeabilização de baldrame;chuva sobre superfície porosa não protegida",
+ rec:"⚠️ NUNCA molhar eflorescência ativa;escovar a seco;identificar e eliminar a fonte de umidade;aguardar secagem;fundo preparador;tinta respirável (NÃO impermeável sobre sais)",
+ passos:[
+  "⚠️ NUNCA molhar ou lavar eflorescência ativa — a água reativa os sais e aprofunda o problema",
+  "Escovar a seco com escova de cerdas duras ou lixa P60 até remover todos os cristais visíveis",
+  "Remover pó com pano seco ou aspirador — NÃO usar pano úmido nesta etapa",
+  "⚠️ Identificar e corrigir obrigatoriamente a fonte de umidade (capilar, infiltração, condensação)",
+  "Aguardar parede completamente seca — mínimo 72h; em umidade capilar pode exigir tratamento estrutural",
+  "Aplicar 1 demão de Fundo Preparador Eucatex ou Eco Fundo Preparador SW — aguardar cura completa",
+  "Aplicar 2 demãos de tinta RESPIRÁVEL (não impermeável) para permitir a evaporação de vapor residual"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex","Selador Acrílico Eucatex","⚠️ NÃO aplicar impermeável sem tratar a causa"],
+  sw:["Eco Fundo Preparador de Paredes SW","Metalatex Elastic Fosco SW (se fissuras associadas)","⚠️ Tinta respirável — não impermeável sobre área com sais ativos"]
+ }
+},
+{id:6,nome:"Fungo / Mofo",cat:"umidade",
+ tec:"Crescimento de micro-organismos (fungos, bactérias, algas) formando manchas escuras ou esverdeadas. Proliferam em: umidade relativa acima de 70%, baixa ventilação e ausência de biocidas. Esporos podem causar problemas respiratórios sérios.",
+ own:"Manchas pretas, cinzas ou esverdeadas nas paredes — especialmente em banheiros, cozinhas e áreas sombreadas. Além de feias, os esporos causam problemas respiratórios. Sem controle ambiental, sempre retorna.",
+ causa:"Umidade relativa do ar elevada (>70%) + baixa ventilação;infiltrações ou condensação em superfícies frias;tinta sem fungicida/biocida incorporado;área sem insolação direta",
+ rec:"Resolver o problema de umidade e ventilação (obrigatório);tratamento biocida antes de qualquer pintura;aguardar secagem completa;selador;acabamento com tinta antifúngica",
+ passos:[
+  "⚠️ Usar EPI obrigatório: luvas de borracha, máscara PFF2 (proteção contra esporos) e óculos",
+  "Preparar solução fungicida: 1 parte de água sanitária (hipoclorito 2,5%) para 3 partes de água",
+  "Aplicar a solução sobre toda a área afetada com pincel, escova ou rolo; aguardar 15 minutos — NÃO enxaguar imediatamente",
+  "Esfregar com escova de cerdas duras para romper a membrana celular dos fungos",
+  "Enxaguar com água limpa e aguardar secagem completa (24–48h); melhorar ventilação do ambiente",
+  "Aplicar Zero Mofo Eucatex (biocida concentrado) ou Metalatex Bioprotect SW antes do selador",
+  "Aplicar 1 demão de Selador Acrílico — aguardar 4h",
+  "Aplicar 2 demãos de tinta com biocida incorporado; garantir ventilação permanente no ambiente"
+ ],
+ prods:{
+  eucatex:["Zero Mofo Eucatex (biocida — aplicar antes do fundo, diluir conforme embalagem)","Selador Acrílico Eucatex","SuperPren Paredes Eucatex (aditivado com biocida, externo)"],
+  sw:["Metalatex Bioprotect SW — elimina 99% micro-organismos, protege 2 anos (JIS Z2801). Diluição: 20–30% água","Eco Fundo Preparador SW","Metalatex Bioprotect SW como acabamento"]
+ }
+},
+{id:7,nome:"Manchas de Umidade",cat:"umidade",
+ tec:"Manchas amareladas, acinzentadas ou escuras por presença de umidade no substrato. Diagnóstico diferencial: mancha na base até 1m → umidade ascendente capilar; pontos isolados em fachada → infiltração localizada; manchas em cantos de teto → condensação.",
+ own:"Manchas que aparecem na parede por água infiltrando ou subindo pelo chão. A umidade mancha a tinta e o reboco — se não resolver a causa, voltará sempre após pintar.",
+ causa:"Umidade ascendente capilar (base até 1m);infiltração por fachada ou cobertura;condensação em superfícies frias;falha em instalações hidráulicas;ausência de impermeabilização de baldrame",
+ rec:"Diagnosticar o tipo de umidade (ascendente, infiltrante ou condensação) antes de qualquer intervenção;eliminar a fonte;secar completamente;impermeabilizar conforme o mecanismo;repintar",
+ passos:[
+  "⚠️ JAMAIS pintar sobre área com umidade ativa — aguardar completa secagem",
+  "Diagnóstico: mancha na base (até 1m) = capilar; mancha em pontos isolados = infiltração; mancha em cantos de teto = condensação",
+  "Identificar e eliminar a fonte de umidade (vazamento hidráulico, infiltração pluvial, umidade do solo)",
+  "Remover revestimento afetado + margem de 50% além da mancha visível",
+  "Aguardar secagem completa — pode exigir dias ou semanas; usar termômetro de umidade se disponível",
+  "Aplicar impermeabilizante adequado ao tipo: capilar → barreira química; infiltração → Acqua Resist ou Manta Líquida",
+  "Aplicar 1 demão de Fundo Preparador SW ou Eucatex — aguardar cura",
+  "Aplicar 2 demãos de acabamento adequado ao ambiente com intervalo de 4–6h"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex","Acqua Resist Eucatex (paredes ext. com umidade moderada)","Máxima Proteção Eucatex (emborrachado, resistência sol/chuva)"],
+  sw:["Eco Fundo Preparador SW","Manta Líquida SW (coberturas, corrige microfissuras até 0,2mm)","Complemento Acrílico Flexível SW (lajes e trincas)","Metalatex Elastic Fosco SW"]
+ }
+},
+{id:8,nome:"Saponificação",cat:"produto",
+ tec:"Reação química entre álcalis do cimento (hidróxido de cálcio, pH 11–13) e ácidos graxos de tinta alquídica/esmalte sintético, formando sabão e destruindo a película. Resinas acrílicas sofrem degradação em pH altamente alcalino. Frequente em reboco novo sem cura.",
+ own:"Tinta amolecida, oleosa ou com manchas amareladas. Acontece quando se usa esmalte ou tinta à base de óleo sobre reboco novo — o cimento alcalino reage quimicamente com a tinta e destrói o filme.",
+ causa:"Esmalte sintético ou tinta alquídica aplicada sobre reboco alcalino não curado;pH da superfície acima de 9,0 sem proteção alcalino-resistente;ausência de selador bloqueador de alcalinidade;reboco com menos de 28 dias de cura",
+ rec:"Remover completamente a tinta saponificada;aguardar cura mínima (28 dias);verificar pH (deve estar entre 7 e 9);fundo resistente à alcalinidade;usar SOMENTE tinta acrílica",
+ passos:[
+  "Remover completamente a tinta saponificada com espátula; lixar a superfície (lixa P80) para remover resíduos",
+  "⚠️ Medir pH com fita indicadora — deve estar entre 7 e 9; pH acima de 9 = cimento ainda alcalino",
+  "Se pH acima de 9: aguardar cura mínima de 28 dias; ventilação e baixa umidade aceleram a cura",
+  "Neutralizar com solução de água e vinagre (pH 4) se necessário para acelerar ajuste; aguardar secagem",
+  "Aplicar 1 demão de Selador Acrílico ou Fundo Preparador resistente a álcali",
+  "Aguardar cura e aplicar 2 demãos de tinta ACRÍLICA (NUNCA esmalte ou tinta alquídica sobre reboco)"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex (resistente a álcali)","Selador Acrílico Eucatex","⚠️ NUNCA usar esmalte sintético sobre reboco novo"],
+  sw:["Eco Fundo Preparador de Paredes SW (resistente a álcali)","Metalatex linha acrílica SW","⚠️ Esmaltes e alquídicos SOMENTE após pH 7–9 e com selador bloqueador de álcali"]
+ }
+},
+{id:9,nome:"Escorrimento / Sagging",cat:"execucao",
+ tec:"Formação de ranhuras verticais ('lágrimas' ou cortinas) na película por escoamento antes da gelificação. Indica tinta fora da viscosidade correta (excessiva diluição), demão muito espessa, ou condições que retardam a secagem (temperatura <10°C ou UR >85%).",
+ own:"A tinta escorreu pela parede formando listras ou gotinhas secas. Geralmente é por colocar água demais, aplicar muita tinta de uma vez, ou pintar em dia muito frio/úmido.",
+ causa:"Tinta excessivamente diluída (acima de 15%);demão muito espessa aplicada de uma vez;temperatura baixa (<10°C) ou umidade alta (>85%) retardando secagem;pressão incorreta em pistola airless;rolo com pelo longo demais",
+ rec:"Aguardar secagem completa;lixar os escorrimentos até nivelar;massa acrílica se necessário;reaplicar com diluição e espessura corretas; respeitar condições climáticas",
+ passos:[
+  "Aguardar secagem completa dos escorrimentos — mínimo 24h antes de qualquer intervenção",
+  "Lixar os escorrimentos com lixa P80 até nivelar completamente com a superfície ao redor",
+  "Se as irregularidades forem profundas: aplicar Massa Acrílica para nivelar; lixar com P150 após secagem",
+  "Remover pó com pano seco; verificar temperatura (>10°C) e umidade relativa (<85%) antes de reaplicar",
+  "Reaplicar a tinta com diluição correta (máx. 10–15%) e rolo de pelo curto (5–8mm) para paredes lisas",
+  "Aplicar demãos finas cruzadas (vertical + horizontal) para distribuição uniforme sem acúmulo"
+ ],
+ prods:{
+  eucatex:["Massa Acrílica Eucatex (nivelamento)","Fundo Preparador Eucatex","Tinta acrílica linha adequada ao ambiente"],
+  sw:["Massa Acrílica SW","Eco Fundo Preparador SW","Metalatex linha adequada ao ambiente"]
+ }
+},
+{id:10,nome:"Pulverulência",cat:"produto",
+ tec:"Superfície áspera com pigmento solto ao toque — película de tinta não se formou completamente (coalescência incompleta). Distinto da calcinação por ser falha de aplicação e não de envelhecimento. Indica substrato excessivamente absorvente ou tinta inadequada.",
+ own:"Superfície áspera com pó solto ao toque. A tinta não formou película resistente — pode ser tinta de baixa qualidade, muito diluída, ou substrato poroso absorvendo a resina antes de ela formar filme.",
+ causa:"Excesso de diluição na aplicação;tinta de qualidade inferior com baixo teor de resina;substrato muito poroso sem selador prévio — absorve resina antes do filme se formar;condições climáticas adversas (vento forte seca antes de coalescência)",
+ rec:"Escovar toda a área;selador consolidante penetrante;aguardar cura completa;repintar com produto de qualidade e diluição adequados — máx. 10% de água",
+ passos:[
+  "Escovar com escova de cerdas duras para remover todo o pó solto",
+  "Lixar levemente com lixa P120 e remover resíduos com pano seco ou aspirador",
+  "Teste de absorção com gota d'água: se absorver em menos de 30s, substrato é muito poroso e precisa de selador reforçado",
+  "Aplicar 1 demão de Selador Acrílico Eucatex ou Eco Fundo Preparador SW (penetra nos poros e sela)",
+  "Aguardar cura completa (4h); se pó retornar após lixar levemente, aplicar 2ª demão do selador",
+  "Aplicar 2 demãos de tinta de qualidade superior com diluição máxima de 10%; usar rolo de pelo curto (5–8mm)"
+ ],
+ prods:{
+  eucatex:["Selador Acrílico Eucatex (consolida substrato poroso, penetra poros)","Fundo Preparador de Paredes Premium Eucatex"],
+  sw:["Eco Fundo Preparador de Paredes SW (penetrante, sela porosidade excessiva)","Metalatex Acrílico Fosco SW ou linha adequada ao ambiente"]
+ }
+},
+{id:11,nome:"Micro-trincas",cat:"execucao",
+ tec:"Aberturas muito finas (<0,2mm) na película ou no substrato por movimentação térmica diária (dilatação e retração). Classificação: microfissura <0,1mm; fissura fina 0,1–0,5mm. Podem ser precursoras de fissuras maiores se não tratadas com tinta elástica.",
+ own:"Trincas tão finas que parecem apenas riscos na tinta — quase invisíveis. Geralmente não são perigosas, mas sem tratamento podem crescer com o ciclo diário de calor e frio e deixar água entrar.",
+ causa:"Variação térmica diária (dilatação/retração do substrato);retração da tinta por secagem muito rápida (vento, sol);substrato com movimentação diferencial;tinta rígida (sem elasticidade) sobre substrato com baixa ancoragem",
+ rec:"Lixar levemente para abrir as trincas;fundo preparador;tinta elástica que acompanha micro-movimentações de até 0,3mm — não usar tinta rígida",
+ passos:[
+  "Lixar levemente a superfície com lixa P150 para abrir as trincas e permitir penetração do fundo",
+  "Limpar com pano seco para remover pó; verificar se há micro-trincas também na argamassa",
+  "Aplicar 1 demão de Fundo Preparador Eucatex ou Eco Fundo Preparador SW — aguardar 2–4h",
+  "Verificar se as trincas são ativas (continuam crescendo) ou passivas — se ativas, ver Fissuras na Alvenaria",
+  "Aplicar 3 demãos de tinta elástica com intervalo de 4–6h para garantir espessura que acompanha a movimentação até 0,3mm"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex","SuperPren Paredes Eucatex (elástico, previne até 0,3mm, externo)"],
+  sw:["Eco Fundo Preparador SW","Metalatex Elastic Fosco SW (NBR 11702-4.5.16, acompanha até 0,3mm)","Manta Líquida SW (coberturas: corrige microfissuras até 0,2mm)"]
+ }
+},
+{id:12,nome:"Manchas de Ferrugem",cat:"umidade",
+ tec:"Manchas avermelhadas/alaranjadas por corrosão de armaduras ou elementos metálicos. Mecanismo: carbonatação do concreto reduz pH → ativa corrosão → produto da oxidação (óxido de ferro) expande até 6x o volume original → pressão interna → fissuração e manchamento superficial.",
+ own:"Manchas vermelhas ou laranjas que surgem de dentro da parede ou laje — é o ferro da estrutura enferrujando. O ferro oxidado incha, pode rachar o concreto e comprometer a segurança estrutural.",
+ causa:"Cobrimento insuficiente de armaduras (abaixo NBR 6118);carbonatação do concreto reduzindo pH <9 e ativando corrosão;umidade e cloretos penetrando pelo concreto;fissuras expondo armadura diretamente à umidade",
+ rec:"⚠️ Casos avançados exigem laudo estrutural (CREA/CAU) obrigatório;expor completamente a armadura;remover ferrugem;primer anticorrosivo;reconstituir cobrimento;impermeabilizar",
+ passos:[
+  "⚠️ ATENÇÃO: casos com fissuração extensa, corrosão avançada ou risco estrutural exigem laudo de engenheiro (CREA/CAU)",
+  "Quebrar o reboco ao redor da mancha até expor completamente o elemento metálico corroído",
+  "Remover toda a ferrugem com escova de aço ou lixa P40 para metal até atingir metal brilhante (grau SA2 a SA3)",
+  "Verificar se a armadura perdeu seção transversal significativa — se sim, consultar engenheiro estrutural",
+  "Aplicar primer anticorrosivo sobre a armadura exposta — aguardar cura completa (24h) antes de cobrir",
+  "Reconstituir o cobrimento com argamassa de reparo estrutural compatível com o concreto — aguardar 28 dias de cura",
+  "Aplicar Selador Acrílico + impermeabilizante na área reparada; acabamento com 2 demãos de tinta elástica"
+ ],
+ prods:{
+  eucatex:["Selador Acrílico Eucatex (sobre argamassa curada)","Acqua Resist Eucatex ou Linha de acabamento externo Eucatex"],
+  sw:["Primer anticorrosivo linha industrial SW (consultar revendedor)","Eco Fundo Preparador SW","Metalatex Elastic Fosco SW como acabamento final"]
+ }
+},
+{id:13,nome:"Crateras / Pinholes",cat:"execucao",
+ tec:"Pequenos furos ou crateras na película por contaminação superficial com óleo/gordura/silicone (causa o fenômeno de 'fisheye' — repulsão da tinta) ou por bolhas de ar aprisionadas que estouram antes da gelificação da película.",
+ own:"A tinta ficou cheia de furinhos minúsculos, como uma casca de laranja ruim. Geralmente acontece quando há óleo, graxa ou silicone na superfície, ou quando a pistola estava mal regulada.",
+ causa:"Contaminação por óleo, gordura, silicone ou cera (mais comum em garagens, cozinhas, marcenarias);tinta muito diluída sobre substrato poroso;ar comprimido contaminado com óleo (aplicação a pistola);substrato excessivamente poroso sem selador",
+ rec:"Lixar completamente;limpar com solvente específico para remover contaminação;selar porosidade;repintar com diluição correta e rolo adequado",
+ passos:[
+  "Lixar toda a área com lixa P150 para nivelar as crateras e expor a contaminação",
+  "Limpar com solvente: aguarrás para óleo/graxa, álcool isopropílico para silicone — usar pano limpo e secar completamente",
+  "Aguardar secagem total do solvente (mín. 30 min); verificar se a contaminação foi eliminada passando pano branco",
+  "Se as crateras forem profundas: aplicar Massa Corrida ou Massa Acrílica antes do selador para nivelar",
+  "Aplicar 1 demão de Selador Acrílico Eucatex ou Eco Fundo SW para selar a porosidade e criar ancoragem",
+  "Aplicar 2 demãos de acabamento com rolo de pelo curto (5–8mm) para evitar incorporação de ar"
+ ],
+ prods:{
+  eucatex:["Selador Acrílico Eucatex","Massa Acrílica Eucatex (se necessário para nivelar)","Fundo Preparador de Paredes Premium Eucatex"],
+  sw:["Selador Acrílico SW","Massa Acrílica SW","Eco Fundo Preparador SW"]
+ }
+},
+{id:14,nome:"Fissuras na Alvenaria",cat:"estrutura",
+ tec:"Aberturas lineares no revestimento ou estrutura por tensões superiores à resistência. Classificação técnica: microfissura <0,1mm; fissura fina 0,1–0,5mm; fissura média 0,5–1mm; trinca >1mm; rachadura >5mm. Diagnóstico: monitorar 30 dias com gessinho para distinguir ativa (em movimentação) de passiva (estabilizada).",
+ own:"Rachaduras que vão além da tinta e atingem a parede. As pequenas geralmente são da argamassa. As maiores precisam de atenção — podem indicar que a fundação ou estrutura estão se movendo.",
+ causa:"Retração hidráulica da argamassa;movimentação térmica sem juntas de dilatação (NBR 6118 / NBR 7200);recalque diferencial de fundação;sobrecargas estruturais;reboco com traço inadequado",
+ rec:"Monitorar 30 dias com gessinho para ativa/passiva;fissuras passivas: abrir em V + selante + tela;trincas ativas ou >5mm: laudo estrutural obrigatório",
+ passos:[
+  "Monitorar por 30 dias com gessinho colado na fissura para verificar: ATIVA (gessinho racha) = em movimentação; PASSIVA (gessinho intacto) = estabilizada",
+  "⚠️ Fissuras ativas ou >5mm: intervenção de engenheiro estrutural (CREA/CAU) é OBRIGATÓRIA antes de qualquer pintura",
+  "Fissuras passivas superficiais: abrir em 'V' com esmerilhadeira ou formão, remover pó, aplicar selante acrílico elástico",
+  "Para trincas até 10mm: abrir em 'V' (10mm larg. × 10mm prof.), limpar, aplicar Restauração Selatrinca SW (2 demãos, espátula). Secagem: toque 4h / entre demãos 12h / final 48h",
+  "Cobrir a área com tela de nylon ou poliéster (min. 10cm cada lado) fixada com massa acrílica — aguardar 4h",
+  "Aplicar Complemento Acrílico Flexível SW ou SuperPren Eucatex sobre a tela como reforço",
+  "Acabamento com 2–3 demãos de Metalatex Elastic Fosco SW ou SuperPren Paredes Eucatex"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex","SuperPren Paredes Eucatex (elástico + tela de poliéster para trincas)","Massa Acrílica Eucatex (fixação da tela)"],
+  sw:["Restauração Selatrinca SW — veda trincas até 10mm × 10mm, alto enchimento","Complemento Acrílico Flexível SW — acompanha dilatação/retração estrutural","Metalatex Elastic Fosco SW — acabamento elástico final (NBR 11702)"]
+ }
+},
+{id:15,nome:"Infiltração Pluvial",cat:"umidade",
+ tec:"Penetração de água da chuva pelo envelope da edificação (fachada, cobertura, janelas, juntas) causando danos ao interior. Frequentemente associada a falha ou ausência de impermeabilização (NBR 9575). Diagnóstico: identificar todos os pontos de entrada antes de qualquer reparo.",
+ own:"A água da chuva está entrando pelo teto, fachada ou janelas. Esse tipo de infiltração precisa ser resolvida na causa — só pintar por cima não resolve e pode piorar, aprisionando umidade.",
+ causa:"Ausência ou falha de impermeabilização (NBR 9575);fissuras em fachada ou cobertura;juntas de movimentação deterioradas;rufos, calhas ou telhas danificados;caixilharia sem vedação adequada;platibandas sem pingadeiras",
+ rec:"Identificar TODOS os pontos de entrada antes de qualquer intervenção;corrigir causas estruturais;impermeabilizar conforme NBR 9575;tratar fissuras;repintar com sistema elástico",
+ passos:[
+  "Inspecionar e limpar calhas, rufos, pingadeiras e juntas de dilatação — reparar tudo antes de pintar",
+  "Identificar e tratar todas as fissuras na fachada (ver Fissuras na Alvenaria)",
+  "Remover toda tinta deteriorada da área afetada; aguardar secagem mínima de 72h sem chuva",
+  "Para coberturas/lajes: aplicar Manta Líquida SW (1ª demão: diluir 30% água; demais demãos: sem diluição) ou Acqua Resist Eucatex",
+  "Para fachadas: aplicar Metalatex Elastic Fosco SW ou SuperPren Paredes Eucatex como impermeabilizante elástico",
+  "Aplicar Eco Fundo Preparador SW ou Fundo Eucatex na fachada antes do acabamento",
+  "Acabamento: 3 demãos de tinta elástica com intervalo de 4–6h para garantir espessura mínima de proteção"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex","Acqua Resist Eucatex ou Máxima Proteção Eucatex (fachadas)","SuperPren Paredes Eucatex (elástico, externo)"],
+  sw:["Manta Líquida SW — impermeabilização elastomérica para lajes e coberturas horizontais","Eco Fundo Preparador SW","Metalatex Elastic Fosco SW (fachadas)","Complemento Acrílico Flexível SW (trincas + lajes)"]
+ }
+},
+{id:16,nome:"Enrugamento",cat:"produto",
+ tec:"Formação de rugas ou ondulações na película por incompatibilidade química entre sistemas. Mecanismo: solvente da tinta nova 'ataca' e dissolve parcialmente a camada anterior incompatível, que se contrai antes de secar — formando rugas. Também ocorre por demão excessivamente espessa sem secagem.",
+ own:"A tinta ficou enrugada, como plástico amassado ou casca de laranja grossa. Ocorre ao aplicar tinta à base de solvente (esmalte) sobre tinta acrílica fresca, ou demão grossa sobre outra não seca.",
+ causa:"Incompatibilidade de sistemas: alquídico/esmalte sobre acrílico fresco (solvente dissolve base acrílica);segunda demão aplicada antes da secagem completa da primeira;demão excessivamente espessa;temperatura inadequada (>35°C ou <10°C)",
+ rec:"Remover toda a tinta enrugada;verificar compatibilidade entre sistemas (alquídico e acrílico NÃO são compatíveis frescos);respeitar intervalos de secagem;aplicar camadas finas",
+ passos:[
+  "Aguardar secagem completa da área enrugada (24h antes de qualquer intervenção)",
+  "Raspar toda a tinta enrugada com espátula até substrato firme — área enrugada não pode ser recuperada, somente removida",
+  "Lixar a superfície (lixa P80 → P120) até uniformizar; remover pó com pano seco",
+  "⚠️ Verificar compatibilidade: nunca aplicar esmalte/alquídico sobre acrílico fresco; aguardar cura total (7 dias) ou usar selador de isolamento",
+  "Aplicar 1 demão de Fundo Preparador — aguardar secagem de 2–4h",
+  "Reaplicar a tinta em demãos FINAS respeitando o tempo de repintura da embalagem; temperatura entre 10°C e 35°C e UR <85%"
+ ],
+ prods:{
+  eucatex:["Fundo Preparador de Paredes Premium Eucatex","Selador Acrílico Eucatex (isolamento entre sistemas)","Tinta acrílica linha adequada ao ambiente"],
+  sw:["Eco Fundo Preparador SW","Selador Acrílico SW (isolamento entre sistemas incompatíveis)","Metalatex linha acrílica SW — respeitar sistema completo da mesma linha"]
+ }
+},
+];
+
+const NBRS = [
+ "NBR 6118:2014 — Projeto de estruturas de concreto",
+ "NBR 7200:1998 — Execução de revestimento de paredes e tetos",
+ "NBR 9575:2010 — Impermeabilização: seleção e projeto",
+ "NBR 13749:2013 — Revestimento de paredes e tetos de argamassas",
+ "NBR 13755:2017 — Revestimentos cerâmicos de fachadas",
+ "NBR 15575:2013 — Edificações habitacionais: Desempenho",
+ "NBR 15079:2012 — Tintas para construção civil",
+ "NBR 6492:2021 — Documentação técnica para projetos",
+];
+
+const CATS = {
+ umidade:   {lb:"Umidade",    c:"#0EA5E9", bg:"#E0F2FE"},
+ execucao:  {lb:"Execução",   c:"#EA580C", bg:"#FFF0E6"},
+ produto:   {lb:"Produto",    c:"#9333EA", bg:"#F3E8FF"},
+ intemperie:{lb:"Intemperismo",c:"#16A34A", bg:"#DCFCE7"},
+ estrutura: {lb:"Estrutura",  c:"#DC2626", bg:"#FEE2E2"},
+};
+const GC = {Leve:"#16A34A", Moderada:"#D97706", Grave:"#DC2626"};
+const GB = {Leve:"#DCFCE7", Moderada:"#FEF3C7", Grave:"#FEE2E2"};
+const CLIMAS = ["Ensolarado","Nublado","Parcialmente Nublado","Chuvoso"];
+const ACESSOS = ["Total","Parcial","Restrito"];
+const AMBS = ["Interno","Externo","Semi-externo"];
+
+const SUBST_CHECK = {
+  reboco: ["Aguardar cura mínima de 28 dias","Verificar pH (deve estar entre 7–9)","Lixar e remover poeira","Eliminar eflorescências antes de pintar"],
+  concreto: ["Aguardar cura mínima de 28 dias","Verificar pH","Lixar e remover nata de cimento","Verificar cobrimento das armaduras"],
+  gesso: ["Verificar se está completamente seco","Não usar tinta impermeável diretamente","Aplicar selador acrílico compatível","Verificar umidade relativa do ambiente"],
+  fibrocimento: ["Lixar levemente com lixa P120","Remover o pó antes de pintar","Aplicar selador específico para fibrocimento","Verificar fixação das placas"],
+  madeira: ["Lixar no sentido da fibra (P80 → P120)","Aplicar seladora para madeira","Verificar presença de nós e resinas","Proteger contra umidade ascendente"],
+  ceramica: ["Lixar para criar aderência","Limpar com solução desengraxante","Usar primer epóxi para cerâmica","Verificar trincas no rejunte"],
+  alvenaria: ["Verificar presença de eflorescências","Aguardar cura mínima de 28 dias","Aplicar fundo preparador","Verificar pH (7–9)"],
+};
+
+const QR_WA_URL = 'https://wa.me/55'+(getConsultor().tel||'').replace(/\D/g,'');
+let _qrDataURL = '';
+
+function buildQR(){
+ return new Promise(resolve=>{
+  if(_qrDataURL){resolve(_qrDataURL);return;}
+  try{
+   const wrap=document.createElement('div');
+   wrap.style.cssText='position:fixed;left:-9999px;top:-9999px;visibility:hidden';
+   document.body.appendChild(wrap);
+   new QRCode(wrap,{text:QR_WA_URL,width:200,height:200,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+   setTimeout(()=>{
+    const canvas=wrap.querySelector('canvas');
+    if(canvas){_qrDataURL=canvas.toDataURL('image/png');}
+    else{const img=wrap.querySelector('img');if(img)_qrDataURL=img.src;}
+    document.body.removeChild(wrap);
+    resolve(_qrDataURL);
+   },400);
+  }catch(e){resolve('');console.warn('QR error:',e);}
+ });
+}
+
+// ═══════════════ STATE ═══════════════
+let SCR   = 'pin';
+let STEP  = 0;
+let D     = {};
+let SEL   = {}; // {id: {grav, nota, fotos:[{b64,leg}], custo}}
+let ARQS  = []; // supplementary docs
+let LAUDOS= [];
+let SIG_DATA = ''; // assinatura cliente base64
+let SIG_TEC  = ''; // assinatura técnico base64
+const SIG_TEC_KEY = 'st_sig_tec_v1';
+
+const PIN_KEY    = 'st_pin_v2';
+const LAUDOS_KEY = 'st_laudos_v3';
+const STEP_NAMES = ['Identificação','Patologias','Técnico','Laudo'];
+
+const CONSULTOR_KEY = 'lp_consultor_v1';
+function getConsultor(){
+  try{ return JSON.parse(localStorage.getItem(CONSULTOR_KEY)||'{}'); }catch{ return {}; }
+}
+function saveConsultor(obj){ localStorage.setItem(CONSULTOR_KEY, JSON.stringify(obj)); }
+const CONSULTOR = new Proxy({}, {
+  get(_,k){ return getConsultor()[k]||''; }
+});
+
+// ═══════════════ SUPABASE SYNC ═══════════════
+const _lpSb=supabase.createClient(window.PP.supabaseUrl,window.PP.supabaseKey);
+
+function _lpGetUserId(){ return sessionStorage.getItem('pp_user_id')||null; }
+
+// Chaves isoladas por usuário — evita compartilhamento entre contas
+function _laudosKey(){ return LAUDOS_KEY + '_' + (_lpGetUserId()||'anon'); }
+function _pinKey(){    return PIN_KEY    + '_' + (_lpGetUserId()||'anon'); }
+
+// Notifica app.html pai para recarregar dashboard
+function _lpNotifyParent(){ try{ window.parent.postMessage({type:'pp_ldo_updated'},'*'); }catch(e){} }
+
+async function _syncLaudoSupabase(snap){
+  const userId=_lpGetUserId(); if(!userId)return;
+  try{
+    await _lpSb.from('laudos').upsert({
+      id:String(snap.id),
+      user_id:userId,
+      numero:snap.numero||'',
+      cliente:snap.cliente||'',
+      obra:snap.obra||'',
+      cidade:snap.cidade||'',
+      data:snap.data||null,
+      criticidade:snap.criticidade||'MODERADO',
+      status:snap.status||'rascunho',
+      pat_count:snap.sel?Object.keys(snap.sel).length:0,
+      updated_at:new Date().toISOString()
+    },{onConflict:'id'});
+  }catch(e){console.warn('Sync laudo Supabase falhou (não crítico):',e.message);}
+}
+
+// ═══════════════ UTILS ═══════════════
+function h(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function fmtDate(d){ if(!d)return new Date().toLocaleDateString('pt-BR'); const p=d.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; }
+function todayISO(){ return new Date().toISOString().split('T')[0]; }
+function todayHour(){ return new Date().toTimeString().slice(0,5); }
+function toast(msg,dur=2500){
+ const b=document.getElementById('toast-box');
+ const t=document.createElement('div');t.className='toast';t.textContent=msg;b.appendChild(t);
+ setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},dur);
+}
+function newLaudoNum(){
+ const yr=new Date().getFullYear();
+ const nums=LAUDOS.map(l=>parseInt((l.numero||'000/0000').split('/')[0])||0);
+ const next=(Math.max(0,...nums)+1).toString().padStart(3,'0');
+ return `${next}/${yr}`;
+}
+function getGravChip(g){
+ const bg={Leve:'#DCFCE7',Moderada:'#FEF3C7',Grave:'#FEE2E2'};
+ const c={Leve:'#16A34A',Moderada:'#D97706',Grave:'#DC2626'};
+ return `<span class="badge" style="background:${bg[g]||'#F1F5F9'};color:${c[g]||'#5A6A7E'}">${g||'—'}</span>`;
+}
+function calcCriticidade(){
+ const psel=PATS.filter(p=>SEL[p.id]);
+ const graves=psel.filter(p=>SEL[p.id]?.grav==='Grave');
+ const mod=psel.filter(p=>SEL[p.id]?.grav==='Moderada');
+ if(graves.length>0)return 'CRÍTICO';
+ if(mod.length>2)return 'RELEVANTE';
+ return 'MODERADO';
+}
+function getSubstCheck(s){
+ if(!s)return [];
+ const sl=s.toLowerCase();
+ for(const k of Object.keys(SUBST_CHECK)){
+  if(sl.includes(k))return SUBST_CHECK[k];
+ }
+ return [];
+}
+
+// ═══════════════ STORAGE ═══════════════
+function loadLaudos(){ try{LAUDOS=JSON.parse(localStorage.getItem(_laudosKey())||'[]');}catch{LAUDOS=[];} }
+function saveLaudos(){ localStorage.setItem(_laudosKey(),JSON.stringify(LAUDOS)); }
+function saveCurrent(){
+ if(!D.id)return;
+ const idx=LAUDOS.findIndex(l=>l.id===D.id);
+ const snap={...D,sel:JSON.parse(JSON.stringify(SEL)),arqs:[...ARQS],sig:SIG_DATA};
+ if(idx>=0)LAUDOS[idx]=snap; else LAUDOS.unshift(snap);
+ try{saveLaudos();}
+ catch(e){
+  // quota exceeded — save without inline photos
+  const sel2={};
+  for(const [k,v] of Object.entries(SEL)){sel2[k]={...v,fotos:[]};}
+  const snap2={...D,sel:sel2,arqs:[],sig:''};
+  if(idx>=0)LAUDOS[idx]=snap2; else LAUDOS.unshift(snap2);
+  saveLaudos();
+  toast('⚠️ Fotos não salvas (armazenamento cheio) — exporte o PDF antes de fechar.');
+ }
+ // Sincronizar metadados com Supabase (não bloqueia)
+ _syncLaudoSupabase(snap);
+ // Notificar app pai para atualizar dashboard
+ _lpNotifyParent();
+}
+function newLaudo(){
+ D={
+  id:Date.now().toString(),numero:newLaudoNum(),status:'rascunho',
+  data:todayISO(),horarioInicio:todayHour(),horarioFim:'',
+  cliente:'',contato:'',obra:'',cidade:'',estado:'SP',
+  clima:CLIMAS[0],acesso:ACESSOS[0],substrato:'',
+  responsavel:CONSULTOR.nome,funcao:CONSULTOR.funcao,ambiente:AMBS[1],
+  nbrs:[],objeto:'',descricao:'',diagnostico:'',causas:'',consequencias:'',
+  recomendacoes:'',produtos:'',conclusao:'',followups:[],
+ };
+ SEL={};ARQS=[];SIG_DATA='';STEP=0;
+}
+function openLaudo(id){
+ const l=LAUDOS.find(x=>x.id===id);if(!l)return;
+ D={...l};SEL=l.sel?JSON.parse(JSON.stringify(l.sel)):{};
+ ARQS=l.arqs?[...l.arqs]:[];SIG_DATA=l.sig||'';
+ STEP=0;SCR='form';render();
+}
+function deleteLaudo(id){
+ if(!confirm('Excluir este laudo?'))return;
+ LAUDOS=LAUDOS.filter(l=>l.id!==id);saveLaudos();render();
+}
+function checkPin(){ const s=localStorage.getItem(_pinKey()); SCR=s?'home':'pin-setup'; }
+function verifyPin(p){ return localStorage.getItem(_pinKey())===p; }
+function setPin(p){ localStorage.setItem(_pinKey(),p); }
+function clearAll(){
+ if(!confirm('Redefinir PIN e apagar TODOS os laudos?'))return;
+ localStorage.removeItem(_pinKey());localStorage.removeItem(_laudosKey());
+ LAUDOS=[];D={};SEL={};ARQS=[];SCR='pin-setup';render();
+}
+
+// ═══════════════ RENDER ═══════════════
+let _pinBuf='';let _pinStep1='';let _pinMode='';
+let _cqFilter='';
+
+function render(){
+ const app=document.getElementById('app');
+ if(SCR==='pin'||SCR==='pin-setup'){renderPin(app);return;}
+ if(SCR==='home'){renderHome(app);return;}
+ if(SCR==='form'){renderForm(app);return;}
+ if(SCR==='consulta'){renderConsulta(app);return;}
+}
+
+// ─── PIN ─────────────────────────────
+function renderPin(app){
+ const isSetup=(SCR==='pin-setup'||!localStorage.getItem(_pinKey()));
+ _pinBuf='';_pinMode=isSetup?'setup':'verify';
+ app.innerHTML=`
+ <div class="pin-screen">
+  <div class="pin-logo">🎨 LaudosPro</div>
+  <div class="pin-sub">Diagnóstico de Patologias de Superfície</div>
+  <div class="pin-card">
+   <div style="font-size:13px;font-weight:600;color:var(--navy);text-align:center;margin-bottom:4px">${isSetup?'Criar PIN de acesso':'Acesso restrito'}</div>
+   <div style="font-size:11px;color:var(--sub);text-align:center">${isSetup?'Defina um PIN de 4 dígitos':'Digite seu PIN de 4 dígitos'}</div>
+   <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot"></div><div class="pin-dot"></div>
+    <div class="pin-dot"></div><div class="pin-dot"></div>
+   </div>
+   <div class="pin-pad">
+    ${[1,2,3,4,5,6,7,8,9,'','0','⌫'].map(k=>`<button class="pin-key" onclick="pinKey('${k}')">${k}</button>`).join('')}
+   </div>
+   <div class="pin-err" id="pin-err"></div>
+   ${isSetup?'':'<div class="pin-hint">Esqueceu o PIN? <button onclick="clearAll()" style="background:none;color:var(--red);font-size:11px;text-decoration:underline;border:none;cursor:pointer">Redefinir tudo</button></div>'}
+  </div>
+ </div>`;
+}
+function pinKey(k){
+ if(k==='')return;
+ if(k==='⌫'){_pinBuf=_pinBuf.slice(0,-1);updatePinDots();return;}
+ if(_pinBuf.length>=4)return;
+ _pinBuf+=k;updatePinDots();
+ if(_pinBuf.length===4)setTimeout(pinSubmit,150);
+}
+function updatePinDots(){ document.querySelectorAll('.pin-dot').forEach((d,i)=>d.classList.toggle('filled',i<_pinBuf.length)); }
+function pinSubmit(){
+ const err=document.getElementById('pin-err');
+ if(_pinMode==='setup'){
+  if(!_pinStep1){_pinStep1=_pinBuf;_pinBuf='';updatePinDots();document.querySelector('.pin-card div').textContent='Confirme o PIN';if(err)err.textContent='';return;}
+  if(_pinStep1===_pinBuf){setPin(_pinBuf);_pinStep1='';LAUDOS=[];SCR='home';render();}
+  else{_pinStep1='';_pinBuf='';updatePinDots();if(err)err.textContent='PINs diferentes.';}
+ } else {
+  if(verifyPin(_pinBuf)){SCR='home';render();}
+  else{_pinBuf='';updatePinDots();if(err)err.textContent='PIN incorreto.';}
+ }
+}
+
+// ─── HOME ────────────────────────────
+let _homeSearch='';
+function renderHome(app){
+ loadLaudos();
+ const fin=LAUDOS.filter(l=>l.status==='finalizado').length;
+ const draft=LAUDOS.length-fin;
+ const crit_count={CRÍTICO:0,RELEVANTE:0,MODERADO:0};
+ const pat_count={};
+ const now=Date.now(); const d30=30*24*3600*1000;
+ const recentes=LAUDOS.filter(l=>now-(l.id||0)<d30).length;
+ const semRetorno=LAUDOS.filter(l=>l.status==='finalizado'&&!(l.followups?.length)).length;
+ const diasSemRetorno=LAUDOS.filter(l=>l.status==='finalizado'&&!(l.followups?.length)&&(now-(l.id||0))>30*24*3600*1000);
+ LAUDOS.forEach(l=>{
+  const c=l.criticidade||'MODERADO'; crit_count[c]=(crit_count[c]||0)+1;
+  if(l.sel) Object.keys(l.sel).forEach(id=>{
+   const p=PATS.find(x=>x.id==id); if(p) pat_count[p.nome]=(pat_count[p.nome]||0)+1;
+  });
+ });
+ const topPat=Object.entries(pat_count).sort((a,b)=>b[1]-a[1])[0];
+ const q=_homeSearch.toLowerCase();
+ const isSemRetorno=_homeSearch==='sem-retorno';
+ const filtered=LAUDOS.filter(l=>{
+  if(isSemRetorno) return l.status==='finalizado'&&!(l.followups?.length);
+  return !q||(
+  (l.cliente||'').toLowerCase().includes(q)||
+  (l.numero||'').toLowerCase().includes(q)||
+  (l.obra||'').toLowerCase().includes(q)||
+  (l.cidade||'').toLowerCase().includes(q));
+ });
+ app.innerHTML=`
+ <div class="hdr">
+  <div class="hdr-row">
+   <div class="hdr-logo">🎨 LaudosPro<span>Diagnóstico de Patologias</span></div>
+   <div class="hdr-btns">
+    <button class="hdr-btn" onclick="SCR='consulta';render()">🔍</button>
+    <button class="hdr-btn" title="Configurações" onclick="openSettings()">⚙️</button>
+    <button class="hdr-btn" onclick="lockApp()">🔒</button>
+   </div>
+  </div>
+ </div>
+ <div class="content">
+
+  <!-- Dashboard -->
+  <div style="background:var(--navy);border-radius:12px;padding:14px 16px;margin-bottom:14px;color:#fff">
+   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-family:var(--hfont);font-size:18px;font-weight:700">Laudos Técnicos</div>
+    <button class="btn-primary" style="font-size:12px;padding:6px 14px;max-width:none" onclick="startNewLaudo()">+ Novo Laudo</button>
+   </div>
+   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:8px;text-align:center">
+     <div style="font-size:22px;font-weight:700">${LAUDOS.length}</div>
+     <div style="font-size:10px;opacity:.75">Total</div>
+    </div>
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:8px;text-align:center">
+     <div style="font-size:22px;font-weight:700;color:#86EFAC">${fin}</div>
+     <div style="font-size:10px;opacity:.75">Finalizados</div>
+    </div>
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:8px;text-align:center">
+     <div style="font-size:22px;font-weight:700;color:#FCD34D">${draft}</div>
+     <div style="font-size:10px;opacity:.75">Rascunhos</div>
+    </div>
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:8px;text-align:center">
+     <div style="font-size:22px;font-weight:700;color:#93C5FD">${recentes}</div>
+     <div style="font-size:10px;opacity:.75">Últimos 30d</div>
+    </div>
+   </div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap">
+    ${crit_count['CRÍTICO']?`<span style="background:#FEE2E2;color:#DC2626;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px">${crit_count['CRÍTICO']} CRÍTICO</span>`:''}
+    ${crit_count['RELEVANTE']?`<span style="background:#FEF3C7;color:#D97706;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px">${crit_count['RELEVANTE']} RELEVANTE</span>`:''}
+    ${crit_count['MODERADO']?`<span style="background:#DCFCE7;color:#16A34A;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px">${crit_count['MODERADO']} MODERADO</span>`:''}
+    ${topPat?`<span style="background:rgba(255,255,255,.15);color:#fff;font-size:10px;padding:2px 8px;border-radius:8px">📊 + Freq.: ${topPat[0]} (${topPat[1]}x)</span>`:''}
+  </div>
+  ${semRetorno>0?`<div style="background:#FEF3C7;border:1px solid #FCD34D;border-left:3px solid #F59E0B;border-radius:6px;padding:8px 12px;margin-top:10px;display:flex;align-items:center;justify-content:space-between">
+   <div>
+    <div style="font-size:11px;font-weight:700;color:#92400E">⚠️ ${semRetorno} laudo${semRetorno>1?'s':''} sem visita de retorno</div>
+    <div style="font-size:10px;color:#B45309;margin-top:2px">${diasSemRetorno.length>0?diasSemRetorno.length+' deles há mais de 30 dias':'Acompanhe a evolução dos serviços prestados'}</div>
+   </div>
+   <button onclick="_homeSearch='sem-retorno';renderHome(document.getElementById('app'))" style="background:#F59E0B;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Ver laudos</button>
+  </div>`:''}
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+   </div>
+  </div>
+
+  <!-- Ações rápidas -->
+  <div class="home-actions" style="margin-bottom:14px">
+   <div class="action-btn" onclick="startNewLaudo()"><div class="ico">📋</div><div class="lbl2">Novo Laudo</div><div class="desc">Iniciar vistoria</div></div>
+   <div class="action-btn" onclick="SCR='consulta';render()"><div class="ico">🔍</div><div class="lbl2">Consulta Rápida</div><div class="desc">Patologias e produtos</div></div>
+  </div>
+
+  <!-- Busca no histórico -->
+  <div style="position:relative;margin-bottom:10px">
+   <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px">🔍</span>
+   <input style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;box-sizing:border-box"
+    placeholder="Buscar por cliente, nº do laudo, endereço..."
+    value="${h(_homeSearch)}"
+    oninput="_homeSearch=this.value;renderHome(document.getElementById('app'))">
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+   <div style="font-family:var(--hfont);font-size:16px;font-weight:700;color:var(--navy)">
+    Histórico ${_homeSearch==='sem-retorno'?'— Sem Retorno':_homeSearch?'<span style=\"font-size:12px;color:var(--sub);font-weight:400\">('+filtered.length+' encontrado'+(filtered.length!==1?'s':'')+')</span>':''}
+   </div>
+   <div style="display:flex;gap:6px">
+    <button onclick="_homeSearch='sem-retorno';renderHome(document.getElementById('app'))"
+     style="font-size:10px;padding:4px 8px;border-radius:6px;border:1px solid ${_homeSearch==='sem-retorno'?'#F59E0B':'#ddd'};background:${_homeSearch==='sem-retorno'?'#FEF3C7':'#fff'};color:${_homeSearch==='sem-retorno'?'#92400E':'#666'};cursor:pointer">
+     ⚠️ Sem retorno
+    </button>
+    <button onclick="_homeSearch='';renderHome(document.getElementById('app'))"
+     style="font-size:10px;padding:4px 8px;border-radius:6px;border:1px solid ${!_homeSearch?'#1A56A0':'#ddd'};background:${!_homeSearch?'#EEF3FA':'#fff'};color:${!_homeSearch?'#1A56A0':'#666'};cursor:pointer">
+     Todos
+    </button>
+   </div>
+  </div>
+  <div style="display:none">'<span style="font-size:12px;color:var(--sub);font-weight:400">('+filtered.length+' encontrado'+( filtered.length!==1?'s':'')+')</span>':''}
+  </div>
+  ${filtered.length===0&&LAUDOS.length===0?
+   '<div class="empty-state"><div class="ico">📂</div><p>Nenhum laudo ainda.<br>Clique em "+ Novo Laudo" para começar.</p></div>':
+   filtered.length===0?
+   '<div class="empty-state"><div class="ico">🔍</div><p>Nenhum laudo encontrado para<br><strong>'+h(_homeSearch)+'</strong></p></div>':
+   filtered.map(renderLaudoItem).join('')}
+  <div style="margin-top:16px;text-align:center"><button onclick="clearAll()" class="btn-danger">🗑 Redefinir acesso e dados</button></div>
+ </div>`;
+}
+function renderLaudoItem(l){
+ const psel=l.sel?Object.keys(l.sel).length:0;
+ const crit=l.criticidade||'MODERADO';
+ const critBg={CRÍTICO:'#FEE2E2',RELEVANTE:'#FEF3C7',MODERADO:'#DCFCE7'};
+ const critC={CRÍTICO:'#DC2626',RELEVANTE:'#D97706',MODERADO:'#16A34A'};
+ const fups=(l.followups||[]).length;
+ return `<div class="laudo-item" onclick="openLaudo('${l.id}')">
+  <div class="laudo-icon">${l.status==='finalizado'?'✅':'📝'}</div>
+  <div class="laudo-info">
+   <div class="laudo-num">${h(l.numero||'—')}</div>
+   <div class="laudo-cli">${h(l.cliente||'Cliente não informado')}</div>
+   <div style="font-size:10px;color:var(--sub);margin-bottom:3px">${fmtDate(l.data)||'—'}${l.cidade?' · '+h(l.cidade):''}</div>
+   <div class="laudo-meta">
+    <span class="badge ${l.status==='finalizado'?'badge-green':'badge-amber'}">${l.status==='finalizado'?'Finalizado':'Rascunho'}</span>
+    ${psel?`<span class="badge badge-blue">${psel} pat.</span>`:''}
+    <span class="badge" style="background:${critBg[crit]};color:${critC[crit]}">${crit}</span>
+    ${fups?`<span class="badge" style="background:#F3E8FF;color:#9333EA">↩ ${fups} retorno${fups>1?'s':''}</span>`:''}
+   </div>
+  </div>
+  <button class="laudo-del" onclick="event.stopPropagation();deleteLaudo('${l.id}')">🗑</button>
+ </div>`;
+}
+
+
+
+// ── Carregar assinatura do profissional das Configurações ──
+(function(){
+  const unified = localStorage.getItem('pp_sig_profissional');
+  if(unified){
+    SIG_TEC = unified;
+    localStorage.setItem(SIG_TEC_KEY, unified);
+  } else {
+    const existing = localStorage.getItem(SIG_TEC_KEY);
+    if(existing) SIG_TEC = existing;
+  }
+})();
+
+// ── Gerar link de assinatura para laudo ──
+async function gerarLinkAssinaturaLaudo(laudoId){
+  const uid = sessionStorage.getItem('pp_user_id');
+  if(!uid){ toast('⚠️ Faça login para gerar links de assinatura'); return; }
+
+  const laudo = LAUDOS.find(l => l.id === laudoId);
+  if(!laudo){ toast('Laudo não encontrado'); return; }
+
+  // Check if already has token
+  let token = laudo.sigToken;
+  if(!token){
+    token = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+    laudo.sigToken = token;
+    // Save to local
+    localStorage.setItem(LAUDOS_KEY, JSON.stringify(LAUDOS));
+    // Persist token to Supabase
+    try{
+      await _lpSb.from('laudos').update({sig_token: token}).eq('id', laudoId).eq('user_id', uid);
+    }catch(e){ console.warn('Falha ao salvar sig_token no laudo:', e); }
+  }
+
+  const url = `${window.PP.appUrl}${window.PP.assinarPath}?token=${token}`;
+  const wppMsg = encodeURIComponent(`Olá! Segue o link para assinar o Laudo Técnico #${laudo.numero||laudoId.slice(-6)} digitalmente:\n${url}`);
+
+  const html = `<div class="laudo-sig-link">
+    <div style="font-size:12px;font-weight:700;color:#22c55e;margin-bottom:6px">🔗 Link de assinatura gerado</div>
+    <div class="laudo-sig-url">${url}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button onclick="navigator.clipboard.writeText('${url}').then(()=>toast('Link copiado!'))" style="padding:5px 12px;border-radius:6px;border:1px solid #2e2e2e;background:transparent;color:#a09890;font-size:11px;cursor:pointer">📋 Copiar</button>
+      <a href="https://wa.me/?text=${wppMsg}" target="_blank" style="padding:5px 12px;border-radius:6px;border:1px solid #2e2e2e;background:transparent;color:#a09890;font-size:11px;text-decoration:none">📲 WhatsApp</a>
+    </div>
+  </div>`;
+
+  toast('🔗 Link criado!');
+  return { url, html, token };
+}
+
+
+// Merge sig fields from Supabase into local laudos
+async function _syncSigTokens(){
+  const uid=sessionStorage.getItem('pp_user_id');
+  if(!uid)return;
+  try{
+    const{data}=await _lpSb.from('laudos')
+      .select('id,sig_token,sig_cliente,sig_cliente_at,sig_cliente_nome')
+      .eq('user_id',uid).not('sig_token','is',null);
+    if(data&&data.length){
+      let changed=false;
+      data.forEach(row=>{
+        const l=LAUDOS.find(lc=>lc.id===row.id);
+        if(l){
+          if(row.sig_token&&!l.sigToken){l.sigToken=row.sig_token;changed=true;}
+          if(row.sig_cliente&&!l.sigCliente){
+            l.sigCliente=row.sig_cliente;
+            l.sigClienteAt=row.sig_cliente_at;
+            l.sigClienteNome=row.sig_cliente_nome;
+            changed=true;
+          }
+        }
+      });
+      if(changed)localStorage.setItem(LAUDOS_KEY,JSON.stringify(LAUDOS));
+    }
+  }catch(e){}
+}
+
+function startNewLaudo(){ newLaudo();SCR='form';render(); }
+
+// ─── CONFIGURAÇÕES / ASSINATURA DO TÉCNICO ───────────────────
+let settingsSigPad = null;
+
+function openSettings(){
+ const existing = document.getElementById('settings-modal');
+ if(existing) existing.remove();
+ const cons = getConsultor();
+ const modal = document.createElement('div');
+ modal.id = 'settings-modal';
+ modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+ modal.innerHTML = `
+  <div style="background:#fff;border-radius:12px;padding:20px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto">
+   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div style="font-size:15px;font-weight:700;color:#0D2E6B">⚙️ Meu Perfil Técnico</div>
+    <button onclick="document.getElementById('settings-modal').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#666">✕</button>
+   </div>
+   <div style="font-size:11px;color:#777;margin-bottom:12px">Essas informações aparecem nos seus laudos. Personalize como quiser.</div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <div><div style="font-size:10px;font-weight:700;color:#5A6A7E;margin-bottom:4px">NOME</div>
+     <input id="cfg-nome" value="${cons.nome||''}" placeholder="Seu nome completo" style="width:100%;border:1px solid #C8D8EE;border-radius:6px;padding:8px;font-size:12px;outline:none;font-family:inherit"></div>
+    <div><div style="font-size:10px;font-weight:700;color:#5A6A7E;margin-bottom:4px">FUNÇÃO</div>
+     <input id="cfg-funcao" value="${cons.funcao||''}" placeholder="Ex: Pintor..." style="width:100%;border:1px solid #C8D8EE;border-radius:6px;padding:8px;font-size:12px;outline:none;font-family:inherit"></div>
+   </div>
+   <div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:#5A6A7E;margin-bottom:4px">EMPRESA (opcional)</div>
+    <input id="cfg-empresa" value="${cons.empresa||''}" placeholder="Deixe vazio para não aparecer" style="width:100%;border:1px solid #C8D8EE;border-radius:6px;padding:8px;font-size:12px;outline:none;font-family:inherit"></div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <div><div style="font-size:10px;font-weight:700;color:#5A6A7E;margin-bottom:4px">WHATSAPP</div>
+     <input id="cfg-tel" value="${cons.tel||''}" placeholder="(xx) xxxxx-xxxx" style="width:100%;border:1px solid #C8D8EE;border-radius:6px;padding:8px;font-size:12px;outline:none;font-family:inherit"></div>
+    <div><div style="font-size:10px;font-weight:700;color:#5A6A7E;margin-bottom:4px">SITE (opcional)</div>
+     <input id="cfg-site" value="${cons.site||''}" placeholder="www.seusite.com.br" style="width:100%;border:1px solid #C8D8EE;border-radius:6px;padding:8px;font-size:12px;outline:none;font-family:inherit"></div>
+   </div>
+   <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#5A6A7E;margin-bottom:4px">ENDEREÇO (opcional)</div>
+    <input id="cfg-end" value="${cons.end||''}" placeholder="Rua, número, cidade/UF" style="width:100%;border:1px solid #C8D8EE;border-radius:6px;padding:8px;font-size:12px;outline:none;font-family:inherit"></div>
+   <button onclick="salvarPerfil()" style="width:100%;padding:10px;border:none;border-radius:6px;background:#0D2E6B;color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px">💾 Salvar perfil</button>
+   <div style="border-top:1px solid #eee;padding-top:12px">
+   <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:8px">✍️ ASSINATURA DO RESPONSÁVEL</div>
+   <div style="font-size:11px;color:#777;margin-bottom:10px">Assine abaixo. Será salva e aparecerá nos laudos.</div>
+   <canvas id="sig-tec-canvas" width="360" height="120"
+    style="border:1px solid #C3D9F0;border-radius:6px;background:#fff;width:100%;touch-action:none;cursor:crosshair"></canvas>
+   <div style="display:flex;gap:8px;margin-top:12px">
+    <button onclick="clearSigTec()" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;font-size:12px;cursor:pointer">🗑 Limpar</button>
+    <button onclick="saveSigTec()" style="flex:2;padding:8px;border:none;border-radius:6px;background:#0D2E6B;color:#fff;font-size:12px;font-weight:700;cursor:pointer">💾 Salvar Assinatura</button>
+   </div>
+   ${SIG_TEC ? '<div style="margin-top:12px;font-size:11px;color:#16A34A;text-align:center">✓ Assinatura já cadastrada</div>' : '<div style="margin-top:12px;font-size:11px;color:#D97706;text-align:center">⚠️ Nenhuma assinatura cadastrada</div>'}
+   </div>
+   <div style="margin-top:18px;border-top:1px solid #eee;padding-top:14px">
+    <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:8px">📊 RELATÓRIO E BACKUP</div>
+    <button onclick="document.getElementById('settings-modal').remove();gerarRelatorioMensal()"
+     style="width:100%;padding:9px;border:1px solid #1A56A0;border-radius:6px;background:#EEF3FA;color:#0D2E6B;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
+     📊 Relatório do Mês (PDF)
+    </button>
+    <div style="display:flex;gap:6px">
+     <button onclick="exportarLaudosJSON()"
+      style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;font-size:11px;cursor:pointer">
+      💾 Exportar Backup
+     </button>
+     <label style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;font-size:11px;cursor:pointer;text-align:center">
+      📂 Importar Backup
+      <input type="file" accept=".json" style="display:none" onchange="importarLaudosJSON(this)">
+     </label>
+    </div>
+   </div>
+  </div>`;
+ document.body.appendChild(modal);
+ initSigTecPad();
+}
+
+function initSigTecPad(){
+ const c = document.getElementById('sig-tec-canvas');
+ if(!c) return;
+ const ctx = c.getContext('2d');
+ ctx.strokeStyle = '#0D2E6B';
+ ctx.lineWidth = 2;
+ ctx.lineCap = 'round';
+ ctx.lineJoin = 'round';
+ let drawing = false, lx=0, ly=0;
+
+ function pos(e){
+  const r=c.getBoundingClientRect();
+  const src=e.touches?e.touches[0]:e;
+  return {x:(src.clientX-r.left)*(c.width/r.width), y:(src.clientY-r.top)*(c.height/r.height)};
+ }
+ function start(e){e.preventDefault();drawing=true;const p=pos(e);lx=p.x;ly=p.y;}
+ function move(e){
+  e.preventDefault();
+  if(!drawing)return;
+  const p=pos(e);
+  ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.stroke();
+  lx=p.x;ly=p.y;
+ }
+ function end(){drawing=false;}
+ c.addEventListener('mousedown',start);
+ c.addEventListener('mousemove',move);
+ c.addEventListener('mouseup',end);
+ c.addEventListener('touchstart',start,{passive:false});
+ c.addEventListener('touchmove',move,{passive:false});
+ c.addEventListener('touchend',end);
+}
+
+function clearSigTec(){
+ const c=document.getElementById('sig-tec-canvas');
+ if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+
+function saveSigTec(){
+ const c=document.getElementById('sig-tec-canvas');
+ if(!c){toast('Canvas não encontrado');return;}
+ const data=c.toDataURL('image/png');
+ const blank=document.createElement('canvas');
+ blank.width=c.width;blank.height=c.height;
+ if(data===blank.toDataURL('image/png')){toast('⚠️ Canvas vazio — assine antes de salvar');return;}
+ SIG_TEC=data;
+ localStorage.setItem(SIG_TEC_KEY,data);
+ toast('✓ Assinatura salva!');
+}
+
+function salvarPerfil(){
+ const obj={
+  nome:    document.getElementById('cfg-nome')?.value?.trim()||'',
+  funcao:  document.getElementById('cfg-funcao')?.value?.trim()||'',
+  empresa: document.getElementById('cfg-empresa')?.value?.trim()||'',
+  tel:     document.getElementById('cfg-tel')?.value?.trim()||'',
+  site:    document.getElementById('cfg-site')?.value?.trim()||'',
+  end:     document.getElementById('cfg-end')?.value?.trim()||'',
+ };
+ saveConsultor(obj);
+ toast('✓ Perfil salvo!');
+}
+
+
+// ── IA: Análise local de patologia por foto ──────────────────
+
+async function analisarFotoIA(patId){
+ const sel=SEL[patId];
+ const fotos=sel?.fotos||[];
+ if(!fotos.length){toast('📷 Adicione ao menos uma foto para analisar!');return;}
+ const btn=document.getElementById('ai-btn-'+patId);
+ const box=document.getElementById('ai-result-'+patId);
+ if(!btn||!box)return;
+ btn.disabled=true;btn.textContent='🔬 Analisando...';
+ box.style.display='block';
+ box.innerHTML='<div class="ai-titulo">🔬 ANALISANDO IMAGEM...</div><div style="color:#7C3AED;font-size:11px">Processando características visuais + contexto técnico...</div>';
+ const foto=fotos[0];
+ const px=await analisarPixels(foto.b64);
+ const pat=PATS.find(p=>p.id===patId);
+ const subst=D.substrato||'não informado';
+ const amb=D.ambiente||'não informado';
+ const grav=sel?.grav||'Moderada';
+ await new Promise(r=>setTimeout(r,900));
+ box.innerHTML=diagnosticarLocalmente(px,pat,subst,amb,grav,patId);
+ btn.textContent='🔬 Reanalisar';
+ btn.disabled=false;
+}
+
+async function analisarPixels(b64){
+ return new Promise(resolve=>{
+  const img=new Image();
+  img.onload=()=>{
+   const c=document.createElement('canvas');
+   c.width=80;c.height=80;
+   const ctx=c.getContext('2d');
+   ctx.drawImage(img,0,0,80,80);
+   const d=ctx.getImageData(0,0,80,80).data;
+   let r=0,g=0,b=0,escuro=0,claro=0,sat=0;
+   const n=d.length/4;
+   for(let i=0;i<d.length;i+=4){
+    r+=d[i];g+=d[i+1];b+=d[i+2];
+    const bri=(d[i]+d[i+1]+d[i+2])/3;
+    const s=Math.max(d[i],d[i+1],d[i+2])-Math.min(d[i],d[i+1],d[i+2]);
+    if(bri<80)escuro++;
+    if(bri>185)claro++;
+    if(s>55)sat++;
+   }
+   resolve({r:r/n,g:g/n,b:b/n,bri:(r+g+b)/(3*n),escuro:escuro/n,claro:claro/n,sat:sat/n});
+  };
+  img.src=b64;
+ });
+}
+
+function diagnosticarLocalmente(px,pat,subst,amb,grav,patId){
+ // ── Inferência visual ──
+ const temUmidade=px.escuro>0.25&&px.g>px.r;
+ const temEflorescencia=px.claro>0.35&&px.bri>160;
+ const temEnferrujamento=px.r>140&&px.r>px.b+20;
+ const altaVariacao=px.sat>0.3;
+ const superficieClara=px.bri>170;
+
+ // ── Correlação com catálogo ──
+ const pNome=pat?pat.nome:'Não definida';
+ const pCat=pat?CATS[pat.cat]:{lb:'—',bg:'#eee',c:'#333'};
+ const pCausa=pat?pat.causa.split(';')[0].trim():'Verificar condições locais';
+ const pRec=pat?pat.rec.split(';')[0].trim():'Preparar superfície e reaplicar';
+ const pTec=pat?pat.tec:'Inspecionar e documentar';
+ const prodSW=pat?pat.prods.sw[0]||'—':'—';
+
+ // ── Gravidade calculada ──
+ let gravScore=0;
+ if(grav==='Grave')gravScore=3;
+ else if(grav==='Moderada')gravScore=2;
+ else gravScore=1;
+ if(temUmidade)gravScore=Math.max(gravScore,2);
+ if(temEnferrujamento)gravScore=3;
+ const gravFinal=gravScore>=3?'GRAVE':gravScore===2?'MODERADA':'LEVE';
+ const gravBg={GRAVE:'#FEE2E2',MODERADA:'#FEF3C7',LEVE:'#DCFCE7'};
+ const gravC={GRAVE:'#DC2626',MODERADA:'#D97706',LEVE:'#16A34A'};
+
+ // ── Observações visuais ──
+ const obs=[];
+ if(temUmidade)obs.push('Tonalidade escura — indício de umidade ativa ou acúmulo');
+ if(temEflorescencia)obs.push('Superfície clara/esbranquiçada — possível eflorescência ou salinização');
+ if(temEnferrujamento)obs.push('Pigmentação avermelhada — provável oxidação ou ferrugem');
+ if(altaVariacao)obs.push('Alta variação cromática — irregularidade de superfície ou destacamento parcial');
+ if(superficieClara&&!temEflorescencia)obs.push('Superfície de cor clara uniforme — aspecto inicial preservado');
+ if(!obs.length)obs.push('Imagem com características visuais neutras — avaliação presencial recomendada');
+
+ // ── Substrato / Ambiente ──
+ const subObs=subst!=='não informado'?'Substrato declarado: '+subst+'. ':'';
+ const ambObs=amb!=='não informado'?'Ambiente: '+amb+'.':'';
+
+ return '<div class="ai-titulo">🔬 ANÁLISE — Patologias de Superfície</div>'
+  +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+  +'<span style="font-size:11px;font-weight:700;color:#1A56A0">'+pNome+'</span>'
+  +'<span style="background:'+pCat.bg+';color:'+pCat.c+';font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px">'+pCat.lb+'</span>'
+  +'<span style="background:'+gravBg[gravFinal]+';color:'+gravC[gravFinal]+';font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px">'+gravFinal+'</span>'
+  +'</div>'
+  +'<div style="background:#EEF3FA;border-radius:6px;padding:7px 9px;margin-bottom:7px">'
+  +'<div style="font-size:9px;font-weight:700;color:#0D2E6B;margin-bottom:4px">📷 OBSERVAÇÕES VISUAIS</div>'
+  +obs.map(o=>'<div style="font-size:10.5px;color:#1A56A0;margin-bottom:2px">• '+o+'</div>').join('')
+  +'</div>'
+  +'<div style="font-size:10.5px;color:#222;margin-bottom:5px;line-height:1.6">'
+  +'<strong>Diagnóstico:</strong> '+pTec+'</div>'
+  +'<div style="font-size:10.5px;color:#555;margin-bottom:5px;line-height:1.5">'
+  +'<strong>Causa provável:</strong> '+pCausa+'</div>'
+  +'<div style="font-size:10.5px;color:#555;margin-bottom:5px;line-height:1.5">'
+  +'<strong>Ação recomendada:</strong> '+pRec+'</div>'
+  +(subObs||ambObs?'<div style="font-size:9.5px;color:#888;margin-bottom:6px;font-style:italic">'+subObs+ambObs+'</div>':'')
+  +'<div style="border-top:1px solid #DDD6FE;margin-top:6px;padding-top:6px;display:flex;align-items:center;justify-content:space-between">'
+  +'<span style="font-size:9px;font-weight:700;color:#16A34A">🛒 Produto SW: '+prodSW+'</span>'
+  +'<span style="font-size:9px;color:#7C3AED;opacity:.7">Análise local · LaudosPro</span>'
+  +'</div>';
+}
+
+
+// ── Hash de verificação do laudo ─────────────────────────────
+function laudoHash(d){
+ const str=(d.numero||'')+(d.cliente||'')+(d.data||'')+(d.obra||'')+(Object.keys(d.sel||{}).join(''));
+ let h=5381;
+ for(let i=0;i<str.length;i++) h=((h<<5)+h)+str.charCodeAt(i);
+ const abs=Math.abs(h);
+ return 'ST-'+(abs%10000).toString().padStart(4,'0')+'-'+(str.length%100).toString().padStart(2,'0');
+}
+
+
+// ── Relatório Mensal ─────────────────────────────────────────
+function gerarRelatorioMensal(){
+ loadLaudos();
+ const agora=new Date();
+ const mes=agora.getMonth(); const ano=agora.getFullYear();
+ const nomeMes=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mes];
+ const deste=LAUDOS.filter(l=>{
+  const d=new Date(l.data||0);
+  return d.getMonth()===mes&&d.getFullYear()===ano;
+ });
+ if(!deste.length){toast('Nenhum laudo em '+nomeMes+'/'+ano);return;}
+ const fin=deste.filter(l=>l.status==='finalizado').length;
+ const crit={CRÍTICO:0,RELEVANTE:0,MODERADO:0};
+ const patCount={};
+ deste.forEach(l=>{
+  const c=l.criticidade||'MODERADO'; crit[c]=(crit[c]||0)+1;
+  if(l.sel) Object.keys(l.sel).forEach(id=>{
+   const p=PATS.find(x=>x.id==id); if(p) patCount[p.nome]=(patCount[p.nome]||0)+1;
+  });
+ });
+ const topPats=Object.entries(patCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+ const semRet=deste.filter(l=>l.status==='finalizado'&&!(l.followups?.length)).length;
+ const laudosH=deste.map((l,i)=>{
+  const psel=l.sel?Object.keys(l.sel).length:0;
+  const cBg={CRÍTICO:'#FEE2E2',RELEVANTE:'#FEF3C7',MODERADO:'#DCFCE7'};
+  const cC={CRÍTICO:'#DC2626',RELEVANTE:'#D97706',MODERADO:'#16A34A'};
+  const c=l.criticidade||'MODERADO';
+  return '<tr style="background:'+(i%2===0?'#F9FAFB':'#fff')+';border-bottom:1px solid #E5E7EB">'
+   +'<td style="padding:5px 8px;font-size:10px;font-weight:700;color:#0D2E6B">'+h(l.numero||'—')+'</td>'
+   +'<td style="padding:5px 8px;font-size:10px">'+h(l.cliente||'—')+'</td>'
+   +'<td style="padding:5px 8px;font-size:10px">'+h(l.cidade||'—')+'</td>'
+   +'<td style="padding:5px 8px;text-align:center"><span style="background:'+cBg[c]+';color:'+cC[c]+';font-size:8px;font-weight:700;padding:1px 6px;border-radius:8px">'+c+'</span></td>'
+   +'<td style="padding:5px 8px;font-size:10px;text-align:center">'+psel+'</td>'
+   +'<td style="padding:5px 8px;font-size:10px;text-align:center">'+(l.status==='finalizado'?'✅':'📝')+'</td>'
+   +'<td style="padding:5px 8px;font-size:10px;text-align:center;color:'+(l.followups?.length?'#16A34A':'#EF4444')+'">'+(l.followups?.length||0)+'</td>'
+   +'</tr>';
+ }).join('');
+ const topPatsH=topPats.map((p,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #E5E7EB">'
+  +'<div style="font-size:11px;font-weight:700;color:#0D2E6B;min-width:18px">'+(i+1)+'</div>'
+  +'<div style="flex:1;font-size:10px">'+p[0]+'</div>'
+  +'<div style="font-size:10px;font-weight:700;color:#1A56A0">'+p[1]+'x</div>'
+  +'<div style="height:8px;background:#1A56A0;border-radius:4px;width:'+(p[1]/topPats[0][1]*80)+'px"></div>'
+  +'</div>').join('');
+ const html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">'
+  +'<title>Relatório '+nomeMes+'/'+ano+'</title>'
+  +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Segoe UI",Arial,sans-serif;background:#F4F3EF}'
+  +'@page{size:A4;margin:15mm 12mm}'
+  +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'
+  +'
+/* SIG LINK */
+.laudo-sig-link{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:12px;margin-top:8px;font-size:12px;}
+.laudo-sig-url{font-family:monospace;font-size:11px;color:#a09890;word-break:break-all;margin:6px 0;}
+</style></head><body>'
+  +'<div style="background:#0D2E6B;color:#fff;padding:16px 20px;margin-bottom:16px;border-radius:6px">'
+  +'<div style="font-size:9px;opacity:.7;margin-bottom:4px">SETE TINTAS — REVENDA MASTER SHERWIN-WILLIAMS</div>'
+  +'<div style="font-size:20px;font-weight:700">Relatório de Performance</div>'
+  +'<div style="font-size:13px;opacity:.85">'+nomeMes+' / '+ano+' &nbsp;|&nbsp; '+CONSULTOR.nome+'</div>'
+  +'</div>'
+  +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">'
+  +[['Total','#1A56A0',deste.length],['Finalizados','#16A34A',fin],['CRÍTICO','#DC2626',crit['CRÍTICO']],['Sem Retorno','#D97706',semRet]]
+   .map(([lb,c,v])=>'<div style="background:#fff;border:1px solid #E5E7EB;border-top:3px solid '+c+';border-radius:6px;padding:10px;text-align:center">'
+    +'<div style="font-size:26px;font-weight:700;color:'+c+'">'+v+'</div>'
+    +'<div style="font-size:9px;color:#666;margin-top:2px">'+lb+'</div></div>').join('')
+  +'</div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
+  +'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:6px;padding:12px">'
+  +'<div style="font-size:10px;font-weight:700;color:#0D2E6B;margin-bottom:8px">CRITICIDADE</div>'
+  +Object.entries(crit).map(([k,v])=>{const bg={CRÍTICO:'#FEE2E2',RELEVANTE:'#FEF3C7',MODERADO:'#DCFCE7'}; const c2={CRÍTICO:'#DC2626',RELEVANTE:'#D97706',MODERADO:'#16A34A'};
+   return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+    +'<span style="background:'+bg[k]+';color:'+c2[k]+';font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;min-width:80px;text-align:center">'+k+'</span>'
+    +'<div style="flex:1;height:10px;background:#F3F4F6;border-radius:5px"><div style="height:10px;background:'+c2[k]+';border-radius:5px;width:'+( deste.length?v/deste.length*100:0)+'%"></div></div>'
+    +'<span style="font-size:10px;font-weight:700;color:#222;min-width:20px">'+v+'</span></div>';
+  }).join('')+'</div>'
+  +'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:6px;padding:12px">'
+  +'<div style="font-size:10px;font-weight:700;color:#0D2E6B;margin-bottom:8px">TOP PATOLOGIAS</div>'
+  +(topPatsH||'<div style="font-size:10px;color:#999">Nenhuma registrada</div>')
+  +'</div></div>'
+  +'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:6px;margin-bottom:16px">'
+  +'<div style="background:#0D2E6B;color:#fff;padding:6px 12px;font-size:10px;font-weight:700;border-radius:6px 6px 0 0">LAUDOS DO MÊS</div>'
+  +'<table style="width:100%;border-collapse:collapse">'
+  +'<thead><tr style="background:#EEF3FA"><th style="padding:5px 8px;font-size:9px;text-align:left;color:#444">Nº</th>'
+  +'<th style="padding:5px 8px;font-size:9px;text-align:left">Cliente</th>'
+  +'<th style="padding:5px 8px;font-size:9px;text-align:left">Cidade</th>'
+  +'<th style="padding:5px 8px;font-size:9px;text-align:center">Criticidade</th>'
+  +'<th style="padding:5px 8px;font-size:9px;text-align:center">Pat.</th>'
+  +'<th style="padding:5px 8px;font-size:9px;text-align:center">Status</th>'
+  +'<th style="padding:5px 8px;font-size:9px;text-align:center">Retornos</th>'
+  +'</tr></thead><tbody>'+laudosH+'</tbody></table></div>'
+  +'<div style="text-align:center;font-size:9px;color:#999">'+CONSULTOR.empresa+' | '+CONSULTOR.tel+' | '+CONSULTOR.site+'</div>'
+  +'<script>window.onload=function(){window.print();}<\/script>'
+  +'</body></html>';
+ const w=window.open('','_blank');
+ if(w){w.document.write(html);w.document.close();}
+ else toast('Permita popups para gerar o relatório');
+}
+
+
+// ── Export / Import JSON ──────────────────────────────────────
+function exportarLaudosJSON(){
+ loadLaudos();
+ const data=JSON.stringify({laudos:LAUDOS,exportado:new Date().toISOString(),versao:'v4'},null,2);
+ const blob=new Blob([data],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url; a.download='laudospro-laudos-'+new Date().toISOString().slice(0,10)+'.json';
+ a.click(); URL.revokeObjectURL(url);
+ toast('✓ Backup exportado com '+LAUDOS.length+' laudos');
+}
+function importarLaudosJSON(input){
+ const file=input.files[0]; if(!file)return;
+ const r=new FileReader();
+ r.onload=e=>{
+  try{
+   const parsed=JSON.parse(e.target.result);
+   const novos=parsed.laudos||parsed;
+   if(!Array.isArray(novos))throw new Error('Formato inválido');
+   const existentes=LAUDOS.map(l=>l.id);
+   const importados=novos.filter(l=>!existentes.includes(l.id));
+   LAUDOS=[...LAUDOS,...importados];
+   saveLaudos();
+   toast('✓ '+importados.length+' laudos importados ('+( novos.length-importados.length)+' já existiam)');
+   renderHome(document.getElementById('app'));
+  }catch(err){toast('⚠️ Arquivo inválido: '+err.message);}
+ };
+ r.readAsText(file); input.value='';
+}
+
+
+// ── WhatsApp ─────────────────────────────────────────────────
+function enviarWhatsApp(laudoId){
+ loadLaudos();
+ const l=LAUDOS.find(x=>x.id==laudoId)||D;
+ if(!l)return;
+ const psel=l.sel?Object.keys(l.sel):[];
+ const nomes=psel.map(id=>{const p=PATS.find(x=>x.id==id);return p?p.nome:null;}).filter(Boolean);
+ const crit=l.criticidade||'MODERADO';
+ const emoji={CRÍTICO:'🔴',RELEVANTE:'🟡',MODERADO:'🟢'}[crit]||'⚪';
+ const msg=
+  '*Laudo Técnico de Patologias — LaudosPro*\n\n'
+  +'📋 *Laudo nº:* '+h(l.numero||'—')+'\n'
+  +'👤 *Cliente:* '+h(l.cliente||'—')+'\n'
+  +'📍 *Endereço:* '+h(l.obra||'—')+(l.cidade?', '+l.cidade:'')+'\n'
+  +'📅 *Data:* '+fmtDate(l.data)+'\n'
+  +emoji+' *Criticidade:* '+crit+'\n'
+  +(nomes.length?'\n🔍 *Patologias identificadas:*\n'+nomes.map(n=>'• '+n).join('\n')+'\n':'')
+  +'\n✅ O laudo técnico completo com diagnóstico, fotos e recomendações está sendo preparado.\n'
+  +'\nDúvidas? Entre em contato:\n'
+  +'📞 '+CONSULTOR.tel+'\n'
+  +'🌐 '+CONSULTOR.site;
+ const url='https://wa.me/?text='+encodeURIComponent(msg);
+ window.open(url,'_blank');
+}
+
+function lockApp(){ SCR='pin';render(); }
+
+// ─── FORM WRAPPER ────────────────────
+function renderForm(app){
+ app.innerHTML=`
+ <div class="hdr">
+  <div class="hdr-row">
+   <div class="hdr-logo" style="font-size:16px">${STEP_NAMES[STEP]}<span>Laudo nº ${h(D.numero||'—')}</span></div>
+   <div class="hdr-btns">
+    <button class="hdr-btn" onclick="saveCurrent();SCR='home';render()">← Laudos</button>
+    <button class="hdr-btn" onclick="lockApp()">🔒</button>
+   </div>
+  </div>
+  <div class="steps-bar">${STEP_NAMES.map((_,i)=>`<div class="step-dot ${i<STEP?'done':i===STEP?'active':''}"></div>`).join('')}</div>
+ </div>
+ <div class="content" id="form-content"></div>`;
+ renderStepContent();
+}
+function renderStepContent(){
+ const c=document.getElementById('form-content');if(!c)return;
+ if(STEP===0)c.innerHTML=renderStep0();
+ else if(STEP===1)c.innerHTML=renderStep1();
+ else if(STEP===2)c.innerHTML=renderStep2();
+ else if(STEP===3)c.innerHTML=renderStep3();
+ bindStep();
+}
+function goStep(n){ stepSave();STEP=n;renderStepContent();window.scrollTo(0,0); }
+function stepSave(){
+ if(STEP===0)step0save();
+ else if(STEP===1)step1save();
+ else if(STEP===2)step2save();
+}
+function bindStep(){
+ const fi=document.getElementById('file-input');
+ if(fi)fi.addEventListener('change',onFileChange);
+ if(STEP===3)initSig();
+}
+
+// ─── STEP 0: IDENTIFICAÇÃO ───────────
+function renderStep0(){
+ const checks=getSubstCheck(D.substrato);
+ const checkHTML=checks.length?`
+  <div class="subst-check">
+   <div class="subst-check-title">⚠️ Checklist de preparo — ${h(D.substrato)}</div>
+   ${checks.map((c,i)=>`<label class="subst-check-item"><input type="checkbox" id="sc${i}"> ${h(c)}</label>`).join('')}
+  </div>`:'';
+ const nbrH=NBRS.map((n,i)=>`
+  <div class="nbr-item${D.nbrs?.includes(n)?' on':''}" onclick="tgNbr(${i})">
+   <div class="nbr-check">${D.nbrs?.includes(n)?'✓':''}</div>
+   <span>${h(n)}</span>
+  </div>`).join('');
+ return `
+ <div class="card">
+  <div class="card-title"><div class="ico">📋</div>Dados da Vistoria</div>
+  <div class="g2">
+   <div><label class="lbl">Nº do Laudo</label><input class="inp" id="f-num" value="${h(D.numero)}" readonly style="background:var(--sky);color:var(--sub)"></div>
+   <div><label class="lbl">Data</label><input class="inp" type="date" id="f-data" value="${h(D.data)}"></div>
+  </div>
+  <div class="g2 mt">
+   <div><label class="lbl">Horário Início</label><input class="inp" type="time" id="f-ini" value="${h(D.horarioInicio)}"></div>
+   <div><label class="lbl">Horário Fim</label><input class="inp" type="time" id="f-fim" value="${h(D.horarioFim)}"></div>
+  </div>
+  <div class="mt"><label class="lbl">Condição Climática</label><div class="tog-group">${CLIMAS.map(c=>`<button class="tog${D.clima===c?' on':''}" onclick="D.clima='${c}';redrawS0()">${c}</button>`).join('')}</div></div>
+  <div class="mt"><label class="lbl">Acesso</label><div class="tog-group">${ACESSOS.map(a=>`<button class="tog${D.acesso===a?' on':''}" onclick="D.acesso='${a}';redrawS0()">${a}</button>`).join('')}</div></div>
+ </div>
+ <div class="card">
+  <div class="card-title"><div class="ico">👤</div>Dados do Cliente</div>
+  <div><label class="lbl">Cliente</label><input class="inp" id="f-cli" value="${h(D.cliente)}" placeholder="Nome do cliente ou empresa"></div>
+  <div class="mt"><label class="lbl">Contato</label><input class="inp" id="f-cont" value="${h(D.contato)}" placeholder="Telefone ou e-mail"></div>
+  <div class="mt"><label class="lbl">Endereço da Obra</label><input class="inp" id="f-obra" value="${h(D.obra)}" placeholder="Rua, número, bairro"></div>
+  <div class="g2 mt">
+   <div><label class="lbl">Cidade</label><input class="inp" id="f-cid" value="${h(D.cidade)}"></div>
+   <div><label class="lbl">Estado</label><input class="inp" id="f-est" value="${h(D.estado||'SP')}"></div>
+  </div>
+ </div>
+ <div class="card">
+  <div class="card-title"><div class="ico">🏗</div>Dados Técnicos</div>
+  <div><label class="lbl">Substrato</label><input class="inp" id="f-sub" value="${h(D.substrato)}" placeholder="Alvenaria, Concreto, Reboco, Gesso..." oninput="step0saveSubst(this.value)"></div>
+  ${checkHTML}
+  <div class="g2 mt">
+   <div><label class="lbl">Responsável Técnico</label><input class="inp" id="f-resp" value="${h(D.responsavel)}"></div>
+   <div><label class="lbl">Função</label><input class="inp" id="f-fn" value="${h(D.funcao)}"></div>
+  </div>
+  <div class="mt"><label class="lbl">Tipo de Ambiente</label><div class="tog-group">${AMBS.map(a=>`<button class="tog${D.ambiente===a?' on':''}" onclick="D.ambiente='${a}';redrawS0()">${a}</button>`).join('')}</div></div>
+ </div>
+ <div class="card">
+  <div class="card-title"><div class="ico">📐</div>Normas Técnicas Aplicáveis</div>
+  <div class="nbr-grid">${nbrH}</div>
+ </div>
+ <div class="nav"><button class="btn-primary" onclick="goStep(1)">Próximo: Patologias →</button></div>`;
+}
+function redrawS0(){ step0save();renderStepContent(); }
+function step0saveSubst(v){ D.substrato=v;step0save();renderStepContent(); }
+function step0save(){
+ D.data        =document.getElementById('f-data')?.value||D.data;
+ D.horarioInicio=document.getElementById('f-ini')?.value||'';
+ D.horarioFim  =document.getElementById('f-fim')?.value||'';
+ D.cliente     =document.getElementById('f-cli')?.value||'';
+ D.contato     =document.getElementById('f-cont')?.value||'';
+ D.obra        =document.getElementById('f-obra')?.value||'';
+ D.cidade      =document.getElementById('f-cid')?.value||'';
+ D.estado      =document.getElementById('f-est')?.value||'SP';
+ D.substrato   =document.getElementById('f-sub')?.value||D.substrato||'';
+ D.responsavel =document.getElementById('f-resp')?.value||CONSULTOR.nome;
+ D.funcao      =document.getElementById('f-fn')?.value||CONSULTOR.funcao;
+ saveCurrent();
+}
+function tgNbr(i){
+ if(!D.nbrs)D.nbrs=[];
+ const n=NBRS[i];
+ if(D.nbrs.includes(n))D.nbrs=D.nbrs.filter(x=>x!==n);
+ else D.nbrs.push(n);
+ const el=document.querySelectorAll('.nbr-item')[i];
+ if(el){el.classList.toggle('on',D.nbrs.includes(n));const chk=el.querySelector('.nbr-check');if(chk)chk.textContent=D.nbrs.includes(n)?'✓':'';}
+}
+
+// ─── STEP 1: PATOLOGIAS ──────────────
+function renderStep1(){
+ const selCount=Object.keys(SEL).length;
+ return `
+ <div class="info-box">📌 Selecione as patologias, defina gravidade, registre observações e fotografe direto no card.</div>
+ ${selCount?`<div class="info-box" style="background:#DCFCE7;border-color:#BBF7D0;color:#15803D">✅ ${selCount} patologia${selCount!==1?'s':''} selecionada${selCount!==1?'s':''}</div>`:''}
+ ${PATS.map(p=>renderPatCard(p)).join('')}
+ <div class="nav">
+  <button class="btn-sec" onclick="goStep(0)">← Voltar</button>
+  <button class="btn-primary" onclick="${selCount?'goStep(2)':"toast('Selecione ao menos uma patologia!')"}" ${!selCount?'style="opacity:.6"':''}>Próximo: Técnico →</button>
+ </div>`;
+}
+
+function renderPatCard(p){
+ const isSel=!!SEL[p.id];
+ const cat=CATS[p.cat];
+ const grav=SEL[p.id]?.grav||'Moderada';
+ const nota=SEL[p.id]?.nota||'';
+ const custo=SEL[p.id]?.custo||'';
+ const fotos=SEL[p.id]?.fotos||[];
+ const passosH=p.passos.map((s,i)=>`<div class="passo-item"><div class="passo-num">${i+1}</div><div class="passo-txt">${h(s)}</div></div>`).join('');
+ const prodEH=p.prods.eucatex.map(pr=>`<div class="prod-item">${h(pr)}</div>`).join('');
+ const prodSH=p.prods.sw.map(pr=>`<div class="prod-item">${h(pr)}</div>`).join('');
+ const fotosHTML=`
+  <div class="pat-photos">
+   <label class="lbl" style="margin-bottom:5px">FOTOS DA PATOLOGIA</label>
+   <div class="pat-photos-row" id="fprow${p.id}">
+    ${fotos.map((f,fi)=>`
+     <div class="pat-photo-thumb">
+      <img src="${f.b64}" alt="">
+      <div class="pat-photo-del" onclick="delPatFoto(${p.id},${fi})">✕</div>
+      <input class="pat-photo-leg" placeholder="Legenda" value="${h(f.leg||'')}" onchange="setPatFotoLeg(${p.id},${fi},this.value)">
+     </div>`).join('')}
+    <div class="pat-photo-add" onclick="triggerPatFoto(${p.id})">
+     <div class="ico2">📷</div>
+     <div>Foto</div>
+    </div>
+   </div>
+   <input type="file" id="pfin${p.id}" accept="image/*" capture="environment" style="display:none" onchange="onPatFoto(${p.id},this)">
+  </div>`;
+ return `
+ <div class="pat-card${isSel?' sel open':''}" id="pc${p.id}">
+  <div class="pat-header" onclick="tgPat(${p.id})">
+   <div class="pat-check">${isSel?'✓':''}</div>
+   <div class="pat-info">
+    <div class="pat-nome">${h(p.nome)}</div>
+    <div class="pat-badges">
+     <span class="pat-cat" style="background:${cat.bg};color:${cat.c}">${cat.lb}</span>
+     ${isSel?getGravChip(grav):''}
+    </div>
+   </div>
+  </div>
+  ${isSel?`
+  <div class="pat-body">
+   <div class="pat-own"><strong>Linguagem Simplificada</strong>${h(p.own)}</div>
+   <label class="lbl" style="margin-bottom:4px">GRAVIDADE</label>
+   <div class="grav-row">
+    ${['Leve','Moderada','Grave'].map(g=>`<button class="gbtn ${g==='Leve'?'lv':g==='Moderada'?'mo':'gr'}${grav===g?' on':''}" onclick="setGrav(${p.id},'${g}')">${g}</button>`).join('')}
+   </div>
+   <label class="lbl" style="margin-bottom:4px">OBSERVAÇÃO TÉCNICA <span style="font-weight:400;text-transform:none">(aparecerá no diagnóstico)</span></label>
+   <textarea class="nota-inp" rows="2" placeholder="Descreva o que encontrou: localização, extensão, condições..." onchange="setNota(${p.id},this.value)">${h(nota)}</textarea>
+   <div class="custo-row">
+    <span class="custo-lbl">💰 Estimativa (interno)</span>
+    <input class="custo-inp" placeholder="ex: R$ 200–400/m²" value="${h(custo)}" onchange="setCusto(${p.id},this.value)">
+    <span class="custo-hint">não aparece no PDF</span>
+   </div>
+   <div class="custo-row" style="margin-top:5px">
+    <span class="custo-lbl">📐 Área afetada</span>
+    <input class="custo-inp" type="number" min="0" step="0.5" placeholder="m²" value="${SEL[p.id]?.area||''}" onchange="setArea(${p.id},this.value)" style="width:80px">
+    <span id="custo-total-${p.id}" class="custo-hint" style="color:${SEL[p.id]?.area&&custo?'var(--green)':'var(--sub)'}">
+     ${SEL[p.id]?.area&&custo?calcCustoTotal(custo,SEL[p.id].area):'informe área'}
+    </span>
+   </div>
+   ${fotosHTML}
+   <button class="ai-analisar-btn" onclick="analisarFotoIA(${p.id})" id="ai-btn-${p.id}">
+    🤖 Analisar foto com IA
+   </button>
+   <div id="ai-result-${p.id}" class="ai-result-box" style="display:none"></div>
+   <button class="detail-btn" id="dbtn${p.id}" onclick="tgDetail(${p.id})">▼ Ver procedimento e produtos</button>
+   <div class="detail-panel" id="det${p.id}">
+    <div class="passo-box"><div class="passo-tit">🔧 PASSO A PASSO DE CORREÇÃO</div>${passosH}</div>
+    <div class="prods-box"><div class="prods-tit">🍃 PRODUTOS RECOMENDADOS</div><div class="prods-cols"><div><div class="prod-marca">Eucatex</div>${prodEH}</div><div><div class="prod-marca">Sherwin-Williams</div>${prodSH}</div></div></div>
+   </div>
+  </div>`:''}
+ </div>`;
+}
+
+
+// Estimativas de custo por m² — preços mercado nacional 2025
+// Material (SW/Eucatex) + mão de obra SP/Interior (R$15–35/m²)
+const CUSTO_DEFAULT = {
+  1:  {est:'R$ 30–60/m²',  nota:'Fundo R$0,90/m² + tinta R$8–15 + MO'},
+  2:  {est:'R$ 20–45/m²',  nota:'Fundo consolidante + tinta ext. + MO'},
+  3:  {est:'R$ 40–75/m²',  nota:'Elastic R$9,25/m² (3 dem.) + fundo + MO'},
+  4:  {est:'R$ 30–60/m²',  nota:'Preparo + fundo R$0,90/m² + tinta + MO'},
+  5:  {est:'R$ 35–70/m²',  nota:'Escovação seca + fundo + tinta respirável + MO'},
+  6:  {est:'R$ 35–65/m²',  nota:'Zero Mofo R$6,40/m² + Bioprotect R$3,64/m² + MO'},
+  7:  {est:'R$ 45–90/m²',  nota:'Acqua Resist R$7,67/m² + imper. + MO'},
+  8:  {est:'R$ 30–55/m²',  nota:'Remoção + pH + fundo álcali-resistente + MO'},
+  9:  {est:'R$ 20–45/m²',  nota:'Lixamento + massa + repintura + MO'},
+  10: {est:'R$ 20–40/m²',  nota:'Selador R$0,90/m² + tinta qualidade + MO'},
+  11: {est:'R$ 35–65/m²',  nota:'Elastic R$9,25/m² + fundo + MO'},
+  12: {est:'R$ 50–100/m²', nota:'Primer anticorr. + argamassa reparo + MO esp.'},
+  13: {est:'R$ 25–50/m²',  nota:'Selador + massa acrílica + tinta + MO'},
+  14: {est:'R$ 85–190/m²', nota:'Selatrinca R$113/m² + tela + Elastic + MO'},
+  15: {est:'R$ 65–135/m²', nota:'Manta Líquida R$52,50/m² (12kg/8m²) + MO'},
+  16: {est:'R$ 25–50/m²',  nota:'Remoção total + fundo + tinta acrílica + MO'},
+};
+function tgPat(id){
+ if(SEL[id]){delete SEL[id];}
+ else{const def=CUSTO_DEFAULT[id];SEL[id]={grav:'Moderada',nota:'',fotos:[],custo:def?def.est:''};}
+ step1save();renderStepContent();
+}
+function setGrav(id,g){
+ if(!SEL[id])return;SEL[id].grav=g;
+ const card=document.getElementById('pc'+id);
+ if(!card)return;
+ card.querySelectorAll('.gbtn').forEach(b=>b.classList.toggle('on',b.textContent.trim()===g));
+ const badges=card.querySelector('.pat-badges');
+ if(badges){const old=badges.querySelector('.badge');if(old)old.remove();badges.insertAdjacentHTML('beforeend',getGravChip(g));}
+}
+function setNota(id,v){ if(SEL[id])SEL[id].nota=v; }
+function setArea(id,v){
+ if(!SEL[id])return;
+ SEL[id].area=parseFloat(v)||0;
+ const custo=SEL[id].custo||'';
+ const el=document.getElementById('custo-total-'+id);
+ if(el){
+  if(SEL[id].area&&custo){el.textContent=calcCustoTotal(custo,SEL[id].area);el.style.color='var(--green)';}
+  else{el.textContent='informe área';el.style.color='var(--sub)';}
+ }
+}
+function calcCustoTotal(faixa,area){
+ if(!faixa||!area)return '';
+ // Parse "R$ 30–60/m²" or "R$ 30-60/m²"
+ const m=faixa.replace(/\s/g,'').match(/(\d+)[–\-](\d+)/);
+ if(!m)return '';
+ const a=parseFloat(area)||0;
+ const mn=parseInt(m[1])*a, mx=parseInt(m[2])*a;
+ const fmt=v=>v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v.toFixed(0);
+ return '≈ '+fmt(mn)+' – '+fmt(mx)+' ('+a+'m²)';
+}
+function setCusto(id,v){ if(SEL[id])SEL[id].custo=v; }
+function tgDetail(id){
+ const det=document.getElementById('det'+id);const btn=document.getElementById('dbtn'+id);if(!det)return;
+ const open=!det.classList.contains('open');det.classList.toggle('open',open);
+ if(btn)btn.innerHTML=open?'▲ Ocultar procedimento':'▼ Ver procedimento e produtos';
+}
+
+// Foto inline na patologia
+function triggerPatFoto(id){ document.getElementById('pfin'+id)?.click(); }
+function onPatFoto(id,input){
+ const files=[...input.files];
+ const promises=files.map(f=>new Promise(resolve=>{
+  const r=new FileReader();
+  r.onload=async ev=>{
+   let b64=ev.target.result;
+   b64=await resizeImgAsync(b64,1200,.80);
+   resolve({b64,leg:''});
+  };r.readAsDataURL(f);
+ }));
+ Promise.all(promises).then(items=>{
+  if(!SEL[id])SEL[id]={grav:'Moderada',nota:'',fotos:[],custo:''};
+  if(!SEL[id].fotos)SEL[id].fotos=[];
+  SEL[id].fotos.push(...items);
+  // update thumbs without full re-render
+  const row=document.getElementById('fprow'+id);
+  if(row){
+   const add=row.querySelector('.pat-photo-add');
+   items.forEach((f,fi)=>{
+    const idx=SEL[id].fotos.length-items.length+fi;
+    const div=document.createElement('div');div.className='pat-photo-thumb';
+    div.innerHTML=`<img src="${f.b64}" alt=""><div class="pat-photo-del" onclick="delPatFoto(${id},${idx})">✕</div><input class="pat-photo-leg" placeholder="Legenda" onchange="setPatFotoLeg(${id},${idx},this.value)">`;
+    row.insertBefore(div,add);
+   });
+  }
+ });
+ input.value='';
+}
+function delPatFoto(id,fi){
+ if(!SEL[id]?.fotos)return;
+ SEL[id].fotos.splice(fi,1);
+ renderStepContent();
+}
+function setPatFotoLeg(id,fi,v){ if(SEL[id]?.fotos?.[fi])SEL[id].fotos[fi].leg=v; }
+
+function step1save(){ saveCurrent(); }
+
+// ─── STEP 2: TÉCNICO ─────────────────
+const TFIELDS=[
+ {id:'objeto',      lb:'1. Objeto do Laudo'},
+ {id:'descricao',   lb:'2. Descrição das Patologias'},
+ {id:'diagnostico', lb:'3. Diagnóstico Técnico'},
+ {id:'causas',      lb:'4. Causas'},
+ {id:'consequencias',lb:'5. Consequências'},
+ {id:'recomendacoes',lb:'6. Recomendações'},
+ {id:'produtos',    lb:'7. Produtos Indicados'},
+ {id:'conclusao',   lb:'8. Conclusão'},
+];
+
+function renderStep2(){
+ return `
+ <div class="info-box">✍️ As observações de campo já foram incluídas no Diagnóstico. Complete ou edite os campos.</div>
+ <div class="card" style="padding-bottom:8px">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+   <button class="btn-primary" style="max-width:200px;font-size:13px" onclick="gerarTudo()">⚡ Gerar Sugestão Técnica</button>
+  </div>
+  ${TFIELDS.map(f=>`
+   <div class="tec-field">
+    <div class="tec-label">
+     <span class="tec-lbl">${f.lb}</span>
+     <button class="btn-gerar" onclick="gerarCampo('${f.id}')">Sugestão</button>
+    </div>
+    <textarea class="inp" rows="${['causas','recomendacoes','produtos','diagnostico'].includes(f.id)?6:4}" id="tf-${f.id}" onchange="D.${f.id}=this.value">${h(D[f.id]||'')}</textarea>
+   </div>`).join('')}
+  <div style="margin-top:10px;border-top:1px solid var(--sky2);padding-top:12px">
+   <label class="lbl" style="margin-bottom:4px">DOCUMENTOS COMPLEMENTARES (opcional)</label>
+   <div class="drop-zone" onclick="document.getElementById('file-input').click()">
+    <div style="font-size:22px">📎</div>
+    <p style="font-size:12px">Adicionar PDF, plantas ou outros documentos</p>
+   </div>
+   <input type="file" id="file-input" multiple accept=".pdf,video/*" style="display:none">
+   ${ARQS.length?`<div class="arq-list">${ARQS.map((a,i)=>`
+    <div class="arq-item">
+     <div class="arq-ico">${a.type?.includes('pdf')?'📄':'🎥'}</div>
+     <div class="arq-info"><div class="arq-name">${h(a.name)}</div></div>
+     <button class="arq-del" onclick="ARQS.splice(${i},1);renderStepContent()">✕</button>
+    </div>`).join('')}</div>`:''}
+  </div>
+ </div>
+ <div class="nav">
+  <button class="btn-sec" onclick="goStep(1)">← Patologias</button>
+  <button class="btn-primary" onclick="goStep(3)">Próximo: Laudo →</button>
+ </div>`;
+}
+
+function step2save(){
+ TFIELDS.forEach(f=>{const el=document.getElementById('tf-'+f.id);if(el)D[f.id]=el.value;});
+ saveCurrent();
+}
+
+function onFileChange(e){
+ [...e.target.files].forEach(f=>{
+  const r=new FileReader();
+  r.onload=ev=>{ARQS.push({name:f.name,type:f.type,b64:ev.target.result,leg:''});renderStepContent();};
+  r.readAsDataURL(f);
+ });e.target.value='';
+}
+
+function gerarTudo(){
+ step1save();
+ const psel=PATS.filter(p=>SEL[p.id]);
+ if(!psel.length){toast('Selecione ao menos uma patologia!');return;}
+ const imgCount=psel.reduce((acc,p)=>(SEL[p.id]?.fotos?.length||0)+acc,0);
+ const loc=D.obra?'no imóvel localizado em '+D.obra:'no imóvel vistoriado';
+ const cli=D.cliente?' do cliente '+D.cliente:'';
+ const nomes=psel.map((p,i)=>`${i+1}. ${p.nome} (${SEL[p.id].grav})`).join(';\n');
+ const graves=psel.filter(p=>SEL[p.id]?.grav==='Grave');
+ const mod=psel.filter(p=>SEL[p.id]?.grav==='Moderada');
+ const imgObs=imgCount?` Foram registrados ${imgCount} arquivo(s) fotográfico(s).`:'';
+ const crit=calcCriticidade(); D.criticidade=crit;
+
+ D.objeto=`O presente laudo técnico tem por objetivo registrar e diagnosticar as manifestações patológicas identificadas ${loc}${cli}, durante vistoria técnica realizada em ${fmtDate(D.data)}, com foco no sistema de pintura e revestimento das superfícies inspecionadas.${imgObs}`;
+
+ D.descricao=`Durante a vistoria foram identificadas ${psel.length} manifestação${psel.length>1?'s':''} patológica${psel.length>1?'s':''}:\n\n${nomes}${graves.length?'\n\nPatologias GRAVE (intervenção imediata): '+graves.map(p=>p.nome).join(', ')+'.':''}`;
+
+ // Diagnóstico com observações de campo integradas
+ const cats=[...new Set(psel.map(p=>p.cat))];
+ D.diagnostico=`As manifestações identificadas possuem origem em fatores de ${cats.map(c=>CATS[c]?CATS[c].lb:c).join(', ')}.\n\n${psel.map(p=>{
+  const nota=SEL[p.id]?.nota;
+  const g=SEL[p.id]?.grav;
+  let linha=`■ ${p.nome} [${g}]: ${p.tec}`;
+  if(nota)linha+=`\n  → Observação de campo: ${nota}`;
+  return linha;
+ }).join('\n\n')}`;
+
+ D.causas=psel.map(p=>{
+  const cs=p.causa.split(';').map(c=>c.trim()).filter(Boolean);
+  return `${p.nome}:\n${cs.map(c=>`  • ${c}`).join(';\n')}.`;
+ }).join('\n\n');
+
+ D.consequencias=psel.map(p=>{
+  const g=SEL[p.id]?.grav;const nota=SEL[p.id]?.nota;
+  let base=`A não correção de ${p.nome} poderá resultar em agravamento progressivo, aumento dos custos de manutenção e redução da vida útil do sistema de pintura.`;
+  if(g==='Grave')base+=' ⚠️ Gravidade GRAVE — requer intervenção imediata.';
+  if(nota)base+=` Obs.: ${nota}.`;
+  return `${p.nome}:\n  ${base}`;
+ }).join('\n\n');
+
+ D.recomendacoes=psel.map((p,i)=>{
+  const rs=p.rec.split(';').map(r=>r.trim()).filter(Boolean);
+  return `${i+1}. ${p.nome}:\n${rs.map((r,j)=>`   ${j+1}. ${r}`).join(';\n')}.`;
+ }).join('\n\n')+'\n\nTodos os procedimentos devem ser executados por profissional qualificado, respeitando as normas técnicas e recomendações dos fabricantes.';
+
+ D.produtos=psel.map((p,i)=>`${i+1}. ${p.nome}:\n   Eucatex: ${p.prods.eucatex.join(', ')};\n   Sherwin-Williams: ${p.prods.sw.join(', ')}.`).join('\n\n')+
+  `\n\nProdutos disponíveis na ${CONSULTOR.empresa}.\n${CONSULTOR.end} | ${CONSULTOR.tel} | ${CONSULTOR.site}`;
+
+ D.conclusao=`Com base na vistoria técnica realizada${D.cidade?' em '+D.cidade:''}, conclui-se que o estado de conservação do sistema de pintura e revestimento é ${crit}.\n\nForam identificadas ${psel.length} manifestação${psel.length>1?'s':''} patológica${psel.length>1?'s':''}, sendo ${graves.length} Grave${graves.length!==1?'s':''}, ${mod.length} Moderada${mod.length!==1?'s':''} e ${psel.length-graves.length-mod.length} Leve${(psel.length-graves.length-mod.length)!==1?'s':''}.${imgObs}\n\nAs intervenções recomendadas, executadas corretamente, deverão restabelecer as condições adequadas de proteção e estética das superfícies.`;
+
+ renderStepContent();toast('Sugestão técnica gerada! ✓');
+}
+function gerarCampo(id){ gerarTudo();setTimeout(()=>{const el=document.getElementById('tf-'+id);if(el){el.focus();el.scrollIntoView({behavior:'smooth',block:'center'});}},100); }
+
+// ─── STEP 3: LAUDO + ASSINATURA ──────
+function renderStep3(){
+ step2save();
+ const psel=PATS.filter(p=>SEL[p.id]);
+ const fotos_all=psel.flatMap(p=>(SEL[p.id]?.fotos||[]).map(f=>({...f,patNome:p.nome})));
+ const crit=calcCriticidade(); D.criticidade=crit;
+ const critClass={'CRÍTICO':'crit-CRITICO','RELEVANTE':'crit-RELEVANTE','MODERADO':'crit-MODERADO'};
+ const secH=(n,t,c)=>`<div class="preview-sec"><div class="preview-sec-head">${n}. ${t.toUpperCase()}</div><div class="preview-sec-body">${h(c||'—')}</div></div>`;
+
+ const patResumoH=psel.map(p=>{
+  const pf=SEL[p.id]?.fotos||[];
+  const fotosH=pf.length?`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:7px;padding-top:7px;border-top:1px solid var(--sky2)">
+   ${pf.map(f=>`<div style="text-align:center"><img src="${f.b64}" style="width:80px;height:62px;object-fit:cover;border-radius:5px;border:1px solid var(--border)">
+    ${f.leg?`<div style="font-size:9px;color:var(--sub);margin-top:1px;max-width:80px">${h(f.leg)}</div>`:''}</div>`).join('')}
+  </div>`:'';
+  return `<div style="padding:8px 0;border-bottom:1px solid var(--sky2)">
+   <div style="display:flex;align-items:center;gap:8px">
+    <div style="flex:1;font-size:13px;font-weight:500">${h(p.nome)}</div>
+    ${getGravChip(SEL[p.id]?.grav||'Moderada')}
+    <span class="pat-cat" style="background:${CATS[p.cat].bg};color:${CATS[p.cat].c};font-size:10px;padding:2px 7px;border-radius:10px">${CATS[p.cat].lb}</span>
+   </div>
+   ${SEL[p.id]?.nota?`<div style="font-size:11px;color:var(--sub);margin-top:3px;font-style:italic">📝 ${h(SEL[p.id].nota)}</div>`:''}
+   ${fotosH}
+  </div>`;
+ }).join('');
+
+ // followups
+ const fups=D.followups||[];
+ const fupsH=fups.length?fups.map((f,i)=>`
+  <div class="followup-item">
+   <div style="display:flex;justify-content:space-between;align-items:center">
+    <div class="followup-date">📅 Retorno ${i+1} — ${fmtDate(f.data)}</div>
+    <button onclick="deleteFollowup(${i})" style="background:none;color:#CBD5E1;font-size:12px;border:none;cursor:pointer">🗑</button>
+   </div>
+   <div class="followup-obs">${h(f.obs||'—')}</div>
+   ${f.fotos?.length?`<div class="followup-photos">${f.fotos.map(ff=>`<img class="followup-photo" src="${ff.b64}">`).join('')}</div>`:''}
+  </div>`).join(''):'';
+
+ return `
+ <div class="card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+   <div>
+    <div style="font-family:var(--hfont);font-size:20px;font-weight:700;color:var(--navy)">Laudo nº ${h(D.numero)}</div>
+    <div style="font-size:12px;color:var(--sub)">${h(D.cliente||'—')} • ${fmtDate(D.data)}</div>
+   </div>
+   <span class="crit-badge ${critClass[crit]||''}">${crit}</span>
+  </div>
+  ${psel.length?`<div>${patResumoH}</div>`:'<div class="warn-box">⚠️ Nenhuma patologia selecionada</div>'}
+ </div>
+
+ ${TFIELDS.map((f,i)=>secH(i+1,f.lb.replace(/^\d+\. /,''),D[f.id])).join('')}
+
+ <div class="card">
+  <div class="card-title"><div class="ico">✍️</div>Assinatura do Cliente</div>
+  <div style="font-size:12px;color:var(--sub);margin-bottom:8px">O cliente assina confirmando que recebeu e está de acordo com o laudo.</div>
+  <div class="sig-wrap"><canvas id="sig-canvas" height="140"></canvas><div class="sig-placeholder" id="sig-ph">${SIG_DATA?'':'Assine aqui com o dedo'}</div></div>
+  <div class="sig-actions">
+   <button class="sig-clear" onclick="clearSig()">🗑 Limpar assinatura</button>
+   ${SIG_DATA?'<span style="font-size:12px;color:var(--green);align-self:center">✓ Assinatura registrada</span>':''}
+  </div>
+ </div>
+
+ ${D.status==='finalizado'?`
+ <div class="card">
+  <div class="card-title"><div class="ico">↩</div>Acompanhamento</div>
+  ${fupsH}
+  <button class="btn-sec" style="width:100%;margin-top:${fups.length?'8':'0'}px" onclick="openFollowupModal()">+ Registrar visita de retorno</button>
+ </div>`:
+ `<div class="card" style="background:var(--sky)">
+  <div style="font-size:11px;color:var(--sub);line-height:1.6">
+   <strong style="color:var(--navy)">${CONSULTOR.nome}</strong> — ${CONSULTOR.funcao}<br>
+   ${CONSULTOR.empresa}<br>${CONSULTOR.end}<br>${CONSULTOR.tel} | ${CONSULTOR.site}
+  </div>
+ </div>`}
+
+ <div class="nav"><button class="btn-sec" onclick="goStep(2)">← Técnico</button></div>
+ <div style="padding:0 0 16px">
+  <button class="btn-green" onclick="finalizarLaudo()">✓ Finalizar e Exportar Laudo</button>
+ </div>`;
+}
+
+// SIGNATURE
+let _sigCtx=null;let _sigDrawing=false;let _sigHasData=false;
+function initSig(){
+ const canvas=document.getElementById('sig-canvas');if(!canvas)return;
+ canvas.width=canvas.offsetWidth||320;
+ _sigCtx=canvas.getContext('2d');
+ _sigCtx.lineWidth=2;_sigCtx.lineCap='round';_sigCtx.strokeStyle='#1E2A3A';
+ if(SIG_DATA){const img=new Image();img.onload=()=>_sigCtx.drawImage(img,0,0,canvas.width,canvas.height);img.src=SIG_DATA;_sigHasData=true;document.getElementById('sig-ph').style.display='none';}
+ const pos=e=>{ const r=canvas.getBoundingClientRect(); return e.touches?{x:(e.touches[0].clientX-r.left)*(canvas.width/r.width),y:(e.touches[0].clientY-r.top)*(canvas.height/r.height)}:{x:(e.clientX-r.left)*(canvas.width/r.width),y:(e.clientY-r.top)*(canvas.height/r.height)}; };
+ canvas.addEventListener('mousedown',e=>{_sigDrawing=true;const p=pos(e);_sigCtx.beginPath();_sigCtx.moveTo(p.x,p.y);document.getElementById('sig-ph').style.display='none';});
+ canvas.addEventListener('mousemove',e=>{if(!_sigDrawing)return;const p=pos(e);_sigCtx.lineTo(p.x,p.y);_sigCtx.stroke();_sigHasData=true;});
+ canvas.addEventListener('mouseup',()=>{_sigDrawing=false;saveSig();});
+ canvas.addEventListener('touchstart',e=>{e.preventDefault();_sigDrawing=true;const p=pos(e);_sigCtx.beginPath();_sigCtx.moveTo(p.x,p.y);document.getElementById('sig-ph').style.display='none';},{passive:false});
+ canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!_sigDrawing)return;const p=pos(e);_sigCtx.lineTo(p.x,p.y);_sigCtx.stroke();_sigHasData=true;},{passive:false});
+ canvas.addEventListener('touchend',()=>{_sigDrawing=false;saveSig();});
+}
+function saveSig(){ const c=document.getElementById('sig-canvas');if(c&&_sigHasData){SIG_DATA=c.toDataURL('image/png');} }
+function clearSig(){ _sigCtx?.clearRect(0,0,document.getElementById('sig-canvas')?.width||400,140);SIG_DATA='';_sigHasData=false;document.getElementById('sig-ph').style.display='flex';renderStepContent(); }
+
+// ─── FOLLOWUP MODAL ──────────────────
+function openFollowupModal(){
+ const box=document.getElementById('modal-box');
+ box.innerHTML=`
+  <div class="modal-title">↩ Registrar Visita de Retorno</div>
+  <div><label class="lbl">Data da visita</label><input class="inp" type="date" id="fu-data" value="${todayISO()}"></div>
+  <div class="mt"><label class="lbl">Observações</label><textarea class="inp" id="fu-obs" rows="4" placeholder="Descreva as condições atuais, evolução das patologias, ações realizadas..."></textarea></div>
+  <div class="mt">
+   <label class="lbl">Fotos (opcional)</label>
+   <div id="fu-photos-row" style="display:flex;gap:7px;flex-wrap:wrap;margin-top:6px">
+    <div class="pat-photo-add" onclick="document.getElementById('fu-file').click()"><div class="ico2">📷</div><div>Foto</div></div>
+    <input type="file" id="fu-file" accept="image/*" multiple style="display:none" onchange="onFuPhoto(this)">
+   </div>
+  </div>
+  <div class="modal-actions">
+   <button class="btn-sec" style="flex:1" onclick="closeModal()">Cancelar</button>
+   <button class="btn-primary" style="flex:1" onclick="saveFollowup()">Salvar</button>
+  </div>`;
+ document.getElementById('modal-overlay').classList.add('open');
+}
+
+let _fuPhotos=[];
+function onFuPhoto(input){
+ [...input.files].forEach(f=>{
+  const r=new FileReader();
+  r.onload=async ev=>{
+   const b64=await resizeImgAsync(ev.target.result,800,.75);
+   _fuPhotos.push({b64});
+   const row=document.getElementById('fu-photos-row');
+   if(row){const add=row.querySelector('.pat-photo-add');const div=document.createElement('div');div.className='pat-photo-thumb';div.innerHTML=`<img src="${b64}" alt="" style="width:72px;height:58px;object-fit:cover;border-radius:6px">`;row.insertBefore(div,add);}
+  };r.readAsDataURL(f);
+ });input.value='';
+}
+
+function saveFollowup(){
+ const data=document.getElementById('fu-data')?.value||todayISO();
+ const obs=document.getElementById('fu-obs')?.value||'';
+ if(!D.followups)D.followups=[];
+ D.followups.push({data,obs,fotos:[..._fuPhotos]});
+ _fuPhotos=[];saveCurrent();closeModal();
+ STEP=3;renderStepContent();
+ toast('Visita de retorno registrada ✓');
+}
+
+function deleteFollowup(i){
+ if(!confirm('Excluir este registro de retorno?'))return;
+ D.followups.splice(i,1);saveCurrent();renderStepContent();
+}
+
+function closeModal(){
+ document.getElementById('modal-overlay').classList.remove('open');
+ _fuPhotos=[];
+}
+
+// ─── FINALIZAR ───────────────────────
+function finalizarLaudo(){
+ step2save();
+ D.status='finalizado';D.criticidade=calcCriticidade();saveCurrent();
+ const psel=PATS.filter(p=>SEL[p.id]);
+ const graves=psel.filter(p=>SEL[p.id]?.grav==='Grave').length;
+ const fotos=psel.reduce((acc,p)=>(SEL[p.id]?.fotos?.length||0)+acc,0);
+ const nbrs=D.nbrs?.length||0;
+ const crit=D.criticidade;
+ const critBg={CRÍTICO:'#FEE2E2',RELEVANTE:'#FEF3C7',MODERADO:'#DCFCE7'};
+ const critC={CRÍTICO:'#DC2626',RELEVANTE:'#D97706',MODERADO:'#16A34A'};
+ const el=document.getElementById('fin-overlay');
+ el.innerHTML=`
+ <div class="fin-hdr"><div style="font-size:28px;margin-bottom:6px">🎉</div><h2>Laudo Finalizado</h2><p>${CONSULTOR.empresa}</p></div>
+ <div class="fin-saved"><div class="dot"></div>DOCUMENTO SALVO E PRONTO PARA EMISSÃO</div>
+ <div class="fin-body">
+  <div class="fin-card">
+   <h3>${h(D.numero)}</h3>
+   <span class="crit-badge" style="background:${critBg[crit]};color:${critC[crit]};font-size:12px;padding:5px 14px;border-radius:20px;font-weight:700">${crit}</span>
+   <div style="margin-top:10px;font-size:13px;opacity:.85">${h(D.cliente||'—')}</div>
+   <div style="font-size:11px;opacity:.6;margin-top:2px">${fmtDate(D.data)} • ${h(D.cidade||'')} ${h(D.estado||'')}</div>
+  </div>
+  <div class="fin-stat-row">
+   <div class="fin-stat"><div class="num">${psel.length}</div><div class="lbl3">Patologias</div></div>
+   <div class="fin-stat"><div class="num">${fotos}</div><div class="lbl3">Fotos</div></div>
+   <div class="fin-stat"><div class="num">${nbrs}</div><div class="lbl3">Normas</div></div>
+   <div class="fin-stat"><div class="num" style="color:${graves?'#DC2626':'#fff'}">${graves}</div><div class="lbl3">Graves</div></div>
+  </div>
+ </div>
+ <div class="fin-btns">
+  <button class="fin-btn1" onclick="closeFin(true)">📄 Exportar PDF</button>
+  <button class="fin-btn-wa" onclick="closeFin(false);enviarWhatsApp(D.id)">📲 Enviar Resumo por WhatsApp</button>
+  <button class="fin-btn2" onclick="closeFin(false)">✏️ Voltar ao Laudo</button>
+  <button class="fin-btn3" onclick="closeFin(false);saveCurrent();SCR='home';render()">🏠 Ir para Início dos Laudos</button>
+ </div>`;
+ el.classList.add('open');
+}
+function closeFin(doExport){ document.getElementById('fin-overlay').classList.remove('open');if(doExport){saveSig();doPDF();} }
+
+// ─── PDF ─────────────────────────────
+
+// ── Manual Técnico Personalizado ─────────────────────────────
+function gerarManualHTML(psel){
+ if(!psel||!psel.length) return '';
+
+ // Mapeamento patologia → etapas necessárias
+ const ETAPA_MAP={
+  limpeza:   {cor:'#E8532A',num:'1',titulo:'Limpeza e Remoção',
+   desc:'Remoção de tinta solta, fungos, mofo, sujeira e resíduos que comprometem a aderência.',
+   passos:['Proteger piso, móveis e esquadrias com lona plástica',
+           'Raspar e remover toda a tinta solta, descascada ou com bolhas com espátula',
+           'Escová-la superfície com escova de aço ou lixa grossa (P60–P80)',
+           'Eliminar fungos e mofo com solução antifúngica — aguardar 15 min e enxaguar',
+           'Limpar toda a extensão da área com pano úmido e aguardar secar']},
+  reparos:   {cor:'#D97706',num:'2',titulo:'Reparos Estruturais',
+   desc:'Correção de buracos, fissuras e áreas deterioradas com argamassa de alta resistência.',
+   passos:['Preencher buracos e fissuras com argamassa de reparo ou selador de trincas',
+           'Corrigir desníveis e imperfeições da alvenaria com massa de reparo',
+           'Reconstituir áreas danificadas por umidade ou tempo',
+           'Aguardar cura completa: 24 a 48 horas (conforme espessura do reparo)']},
+  antifungico:{cor:'#7C3AED',num:'★',titulo:'Tratamento Antifúngico',
+   desc:'Eliminação de mofo e bolor antes da pintura — etapa obrigatória para áreas com manchas escuras.',
+   passos:['Aplicar solução de hipoclorito (1 parte cloro : 3 partes água) com escova',
+           'Aguardar 20 minutos e enxaguar abundantemente',
+           'Aplicar produto específico Zero Mofo Eucatex ou Bioprotect SW em toda a área',
+           'Aguardar secagem completa antes do fundo — mínimo 4 horas']},
+  sais:      {cor:'#0891B2',num:'★',titulo:'Neutralização de Sais / Eflorescência',
+   desc:'Remoção de depósitos salinos e neutralização do pH antes da pintura.',
+   passos:['Escovar os depósitos brancos a seco com escova de cerdas rígidas',
+           'Aplicar solução de ácido muriático diluído (1:10) e aguardar 5 min',
+           'Enxaguar abundantemente e verificar pH (meta: neutro entre 7 e 8)',
+           'Aguardar secagem e aplicar primer álcali-resistente antes do fundo']},
+  impermeab: {cor:'#0369A1',num:'★',titulo:'Impermeabilização',
+   desc:'Proteção obrigatória para áreas com histórico de umidade ascendente ou infiltração.',
+   passos:['Identificar e eliminar a fonte da umidade (vazamento, drenagem, calha)',
+           'Aplicar impermeabilizante acrílico ou manta líquida em 3 demãos cruzadas',
+           'Respeitar intervalo de 4–6h entre demãos',
+           'Aguardar cura total de 72h antes do fundo preparador']},
+  anticorr:  {cor:'#991B1B',num:'★',titulo:'Tratamento Anticorrosivo',
+   desc:'Proteção de superfícies metálicas antes da pintura — impede retorno da ferrugem.',
+   passos:['Remover toda a ferrugem com lixa d\'água, disco de desbaste ou escova de aço',
+           'Aplicar convertedor de ferrugem (aguardar reação — 30 min)',
+           'Aplicar primer anticorrosivo epóxi em 2 demãos',
+           'Aguardar cura 24h antes do acabamento']},
+  fissuras:  {cor:'#B45309',num:'★',titulo:'Tratamento de Fissuras e Movimentações',
+   desc:'Indicado para fissuras ativas, áreas com histórico de trincas e junções entre materiais diferentes.',
+   passos:['Identificar e classificar cada fissura (estrutural vs superficial)',
+           'Para fissuras ativas: aplicar Selatrinca + tela de reforço',
+           'Aplicar 3 demãos de produto elástico (Metalatex Elastic) em toda a área afetada',
+           'Bloquear passagem de umidade sem impedir respiração da parede']},
+  fundo:     {cor:'#15803D',num:'3',titulo:'Fundo Preparador',
+   desc:'Aplicação de fundo selador para uniformizar a superfície e garantir aderência máxima.',
+   passos:['Verificar se o substrato está firme, limpo e seco',
+           'Aplicar fundo preparador uniformemente com rolo de lã média em toda a área',
+           'Aglutinar partículas soltas e selar a porosidade da parede',
+           'Aguardar secagem completa — 4 a 6 horas antes da próxima etapa']},
+  massa:     {cor:'#1A56A0',num:'4',titulo:'Massa de Nivelamento',
+   desc:'Aplicação de massa acrílica para criar superfície perfeitamente lisa antes do acabamento final.',
+   passos:['Aplicar massa acrílica em camada uniforme com desempenadeira',
+           'Corrigir pequenas imperfeições restantes (ondulações, marcas de espátula)',
+           'Lixar com lixa P120 após secagem para acabamento ao toque',
+           'Aguardar 24 horas de secagem total antes da pintura de acabamento']},
+ };
+
+ // Decidir quais etapas incluir com base nas patologias
+ const ids=psel.map(p=>p.id);
+ const cats=[...new Set(psel.map(p=>p.cat))];
+ const etapas=[];
+
+ // Sempre: limpeza
+ etapas.push('limpeza');
+ // Mofo/bolor
+ if(ids.includes(6)) etapas.push('antifungico');
+ // Eflorescência/sais
+ if(ids.includes(5)||ids.includes(8)) etapas.push('sais');
+ // Umidade/impermeabilização
+ if(ids.includes(7)||ids.includes(4)||ids.includes(15)) etapas.push('impermeab');
+ // Corrosão
+ if(ids.includes(12)) etapas.push('anticorr');
+ // Fissuras
+ if(ids.includes(3)||ids.includes(14)) etapas.push('fissuras');
+ // Reparos estruturais (vários)
+ if(ids.some(id=>[2,3,4,7,12,14,15].includes(id))) etapas.push('reparos');
+ // Sempre: fundo
+ etapas.push('fundo');
+ // Massa (para acabamento)
+ if(ids.some(id=>[1,2,9,10,13,16].includes(id))) etapas.push('massa');
+
+ // Deduplicar mantendo ordem
+ const seen=new Set(); const etapasUnicas=etapas.filter(e=>seen.has(e)?false:seen.add(e));
+
+ // Produtos específicos das patologias
+ const prodsSW=[...new Set(psel.flatMap(p=>p.prods.sw.slice(0,2)))].slice(0,6);
+ const prodsEU=[...new Set(psel.flatMap(p=>p.prods.eucatex.slice(0,2)))].slice(0,6);
+
+ // Cronograma: 1 dia por etapa numerada + 1 dia para acabamento
+ const etapasNum=etapasUnicas.filter(e=>['limpeza','reparos','fundo','massa'].includes(e));
+ const etapasExt=etapasUnicas.filter(e=>!['limpeza','reparos','fundo','massa'].includes(e));
+ const diasTotal=1+etapasExt.length+(etapasNum.includes('reparos')?1:0)+(etapasNum.includes('fundo')?1:0)+(etapasNum.includes('massa')?1:0)+1;
+
+ // ── HTML ──
+ let etapasHTML=etapasUnicas.map(ek=>{
+  const e=ETAPA_MAP[ek];
+  const passosH=e.passos.map((p,i)=>'<div style="display:flex;gap:8px;margin-bottom:4px;align-items:flex-start">'
+   +'<div style="min-width:18px;height:18px;border-radius:50%;background:'+e.cor+';color:#fff;font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>'
+   +'<div style="font-size:10px;color:#222;line-height:1.5">'+p+'</div></div>').join('');
+  return '<div style="margin-bottom:10px;page-break-inside:avoid">'
+   +'<div style="display:flex;align-items:center;gap:8px;background:'+e.cor+';color:#fff;padding:5px 10px;border-radius:4px 4px 0 0">'
+   +'<div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">'+e.num+'</div>'
+   +'<div style="font-size:11px;font-weight:700">'+e.titulo+'</div></div>'
+   +'<div style="border:1px solid #E5E7EB;border-top:none;padding:8px 10px;background:#FDFCFA">'
+   +'<div style="font-size:9.5px;color:#555;margin-bottom:7px;font-style:italic">'+e.desc+'</div>'
+   +passosH+'</div></div>';
+ }).join('');
+
+ // Cronograma
+ let diaIdx=1;
+ const cronoRows=[];
+ cronoRows.push([diaIdx++,'Limpeza, remoção e início dos reparos']);
+ if(etapasUnicas.includes('antifungico'))cronoRows.push([diaIdx++,'Tratamento antifúngico e neutralização']);
+ if(etapasUnicas.includes('sais'))cronoRows.push([diaIdx++,'Neutralização de sais e eflorescência']);
+ if(etapasUnicas.includes('impermeab'))cronoRows.push([diaIdx,'Impermeabilização (múltiplas demãos + cura 72h)']);diaIdx+=2;
+ if(etapasUnicas.includes('anticorr'))cronoRows.push([diaIdx++,'Tratamento anticorrosivo e primer']);
+ if(etapasUnicas.includes('fissuras'))cronoRows.push([diaIdx++,'Tratamento de fissuras e reforço estrutural']);
+ if(etapasUnicas.includes('reparos'))cronoRows.push([diaIdx++,'Conclusão dos reparos e cura (24–48h)']);
+ if(etapasUnicas.includes('fundo'))cronoRows.push([diaIdx++,'Aplicação do fundo preparador (secagem 4–6h)']);
+ if(etapasUnicas.includes('massa'))cronoRows.push([diaIdx++,'Massa de nivelamento e lixamento (secagem 24h)']);
+ cronoRows.push([diaIdx,'Pintura de acabamento (se contratada)']);
+
+ const cronoH=cronoRows.map((r,i)=>'<tr style="background:'+(i%2===0?'#F9FAFB':'#fff')+'">'
+  +'<td style="padding:4px 10px;font-size:10px;font-weight:700;color:#0D2E6B;text-align:center;width:50px">'+r[0]+'</td>'
+  +'<td style="padding:4px 10px;font-size:10px;color:#222">'+r[1]+'</td></tr>').join('');
+
+ const prodsH=prodsSW.length?
+  '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">'
+  +'<div style="flex:1;min-width:140px"><div style="font-size:8.5px;font-weight:700;color:#1A56A0;margin-bottom:4px">SHERWIN-WILLIAMS</div>'
+  +prodsSW.map(p=>'<div style="font-size:9.5px;padding:2px 0;border-bottom:1px solid #DBEAFE;color:#1e3a5f">'+p+'</div>').join('')+'</div>'
+  +(prodsEU.length?'<div style="flex:1;min-width:140px"><div style="font-size:8.5px;font-weight:700;color:#15803D;margin-bottom:4px">EUCATEX</div>'
+  +prodsEU.map(p=>'<div style="font-size:9.5px;padding:2px 0;border-bottom:1px solid #DCFCE7;color:#14532d">'+p+'</div>').join('')+'</div>':'')
+  +'</div>':'';
+
+ return '<div class="sec-wrap" style="margin-top:14px">'
+  +'<div class="sec-hdr" style="background:#E8532A;font-size:11px">📋 MANUAL TÉCNICO DE PREPARAÇÃO — PERSONALIZADO PARA ESTE LAUDO</div>'
+  +'<div style="border:1px solid #D8D5CC;border-top:none;padding:12px;background:#FDFCFA">'
+  +'<div style="font-size:10px;color:#555;margin-bottom:12px;line-height:1.6">'
+  +'Este manual foi gerado com base nas <strong>'+psel.length+' patologia'+(psel.length>1?'s':'')+' identificadas</strong> nesta vistoria. '
+  +'As etapas abaixo são as necessárias especificamente para este imóvel.</div>'
+  +etapasHTML
+  +'<div style="margin-top:12px;margin-bottom:12px">'
+  +'<div style="background:#0D2E6B;color:#fff;padding:5px 10px;font-size:10px;font-weight:700;border-radius:4px 4px 0 0">📅 CRONOGRAMA TÍPICO DO SERVIÇO</div>'
+  +'<table style="width:100%;border-collapse:collapse;border:1px solid #D8D5CC;border-top:none"><tbody>'+cronoH+'</tbody></table>'
+  +'<div style="font-size:8.5px;color:#999;margin-top:4px;font-style:italic">* Cronograma pode variar conforme tamanho da área e condições climáticas.</div>'
+  +'</div>'
+  +(prodsSW.length?'<div><div style="background:#1A56A0;color:#fff;padding:5px 10px;font-size:10px;font-weight:700;border-radius:4px 4px 0 0">🛒 PRODUTOS INDICADOS</div>'
+  +'<div style="border:1px solid #D8D5CC;border-top:none;padding:10px 12px;background:#F0F7FF">'+prodsH+'</div></div>':'')
+  +'<div style="margin-top:12px;background:#F0FDF4;border:1px solid #BBF7D0;border-left:4px solid #16A34A;border-radius:4px;padding:8px 12px">'
+  +'<div style="font-size:9px;font-weight:700;color:#15803D;margin-bottom:3px">✅ POR QUE CONTRATAR A SETE TINTAS?</div>'
+  +'<div style="display:flex;gap:16px;flex-wrap:wrap">'
+  +'<div style="font-size:9.5px;color:#166534">⭐ Revenda Master Sherwin-Williams</div>'
+  +'<div style="font-size:9.5px;color:#166534">⭐ Técnicos certificados</div>'
+  +'<div style="font-size:9.5px;color:#166534">⭐ Garantia de 3 anos</div>'
+  +'<div style="font-size:9.5px;color:#166534">⭐ Orçamento sem surpresas</div>'
+  +'</div></div>'
+  +'</div></div>';
+}
+
+async function doPDF(){
+ const qrImg=await buildQR();
+ function calcCustoTotal(faixa,area){
+  if(!faixa||!area)return '';
+  const m=(faixa||'').replace(/[\s]/g,'').match(/(\d+)[\u2013\-](\d+)/);
+  if(!m)return '';
+  const a=parseFloat(area)||0;
+  const mn=parseInt(m[1])*a, mx=parseInt(m[2])*a;
+  const fmt=v=>v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v.toFixed(0);
+  return '\u2248 '+fmt(mn)+' \u2013 '+fmt(mx)+' ('+a+'m\u00B2)';
+ }
+ const BR='#0D2E6B';const BL='#1A56A0';
+ const psel=PATS.filter(p=>SEL[p.id]);
+ const crit=D.criticidade||calcCriticidade();
+ const critBg={CRÍTICO:'#FEE2E2',RELEVANTE:'#FEF3C7',MODERADO:'#DCFCE7'};
+ const critC={CRÍTICO:'#DC2626',RELEVANTE:'#D97706',MODERADO:'#16A34A'};
+
+ function sec(n,title,content){
+  return `<div class="sec-wrap"><div class="sec-hdr">${n}. ${title.toUpperCase()}</div><div class="sec-body">${content}</div></div>`;
+ }
+
+ // identification table
+ const rows=[
+  ['Nº do Laudo',D.numero||'—'],['Data',fmtDate(D.data)],
+  ['Horário',((D.horarioInicio||'')+(D.horarioFim?' — '+D.horarioFim:''))||'—'],
+  ['Clima',D.clima||'—'],['Acesso',D.acesso||'—'],
+  ['Cliente',D.cliente||'—'],['Contato',D.contato||'—'],
+  ['Endereço',D.obra||'—'],['Cidade/Estado',(D.cidade||'—')+(D.estado?' — '+D.estado:'')],
+  ['Responsável',D.responsavel||CONSULTOR.nome],['Função',D.funcao||CONSULTOR.funcao],
+  ['Ambiente',D.ambiente||'—'],['Substrato',D.substrato||'—'],
+ ];
+ const tbl=`<table class="id-tbl" style="width:100%;border-collapse:collapse">
+  ${rows.map(r=>`<tr><td class="id-tbl lbl">${r[0]}</td><td class="id-tbl">${r[1]}</td></tr>`).join('')}
+  ${D.nbrs?.length?`<tr><td class="id-tbl lbl" style="vertical-align:top">Normas Técnicas</td><td class="id-tbl">${D.nbrs.join('<br>')}</td></tr>`:''}
+ </table>`;
+
+ // pathologies
+ let patHTML='';
+ psel.forEach((p,i)=>{
+  const g=SEL[p.id]?.grav||'Moderada';
+  const nota=SEL[p.id]?.nota||'';
+  const cat=CATS[p.cat];
+  const pfotos=SEL[p.id]?.fotos||[];
+  const fotosH=pfotos.length?`<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">${pfotos.map(f=>`<div style="text-align:center"><img src="${f.b64}" style="width:95px;height:71px;object-fit:cover;border-radius:3px;border:1px solid #D8D5CC">${f.leg?`<div style="font-size:8px;color:#666;margin-top:2px;max-width:110px">${f.leg}</div>`:''}</div>`).join('')}</div>`:'';
+  const passosH=p.passos.map((ps,j)=>`<div style="display:flex;gap:5px;margin-bottom:3px;align-items:flex-start"><div class="step-num">${j+1}</div><div style="font-size:9.5px;color:#222;line-height:1.45">${ps}</div></div>`).join('');
+  const prodH=`<div style="display:flex;gap:16px;flex-wrap:wrap"><div style="flex:1"><div style="font-size:8px;font-weight:700;color:#15803D;margin-bottom:2px">EUCATEX</div>${p.prods.eucatex.map(pr=>`<div style="font-size:9.5px;padding:1px 0;border-bottom:1px solid #D1FAE5">${pr}</div>`).join('')}</div><div style="flex:1"><div style="font-size:8px;font-weight:700;color:#15803D;margin-bottom:2px;color:#1A56A0">SHERWIN-WILLIAMS</div>${p.prods.sw.map(pr=>`<div style="font-size:9.5px;padding:1px 0;border-bottom:1px solid #D1FAE5">${pr}</div>`).join('')}</div></div>`;
+  const gravBrd={Leve:'#16A34A',Moderada:'#D97706',Grave:'#DC2626'};
+  const gravBg={Leve:'#DCFCE7',Moderada:'#FEF3C7',Grave:'#FEE2E2'};
+  patHTML+=`<div style="border-left:3px solid ${gravBrd[g]};padding:6px 9px;margin-bottom:7px;background:#FDFCFA;border:1px solid #D8D5CC;page-break-inside:avoid">
+   <div class="pat-hdr-row" style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+    <div style="font-size:12px;font-weight:700;flex:1;color:#0D2E6B">${i+1}. ${p.nome}</div>
+    <span class="pat-badge" style="background:${gravBg[g]};color:${gravBrd[g]}">${g}</span>
+    <span class="pat-badge" style="background:${cat.bg};color:${cat.c}">${cat.lb}</span>
+   </div>
+   <div style="background:#EBF2FB;border:1px solid #C3D9F0;border-radius:3px;padding:5px 7px;margin-bottom:5px;font-size:10px;color:#1A56A0;line-height:1.5">
+    <div style="font-size:8px;font-weight:700;letter-spacing:.5px;margin-bottom:2px">LINGUAGEM SIMPLIFICADA</div>${p.own}
+   </div>
+   ${nota?`<div style="font-size:9.5px;color:#5A6A7E;margin-bottom:5px;font-style:italic">📝 Obs.: ${nota}</div>`:''}
+   ${fotosH}
+   <div class="pat-subblock" style="margin-top:5px;background:#EEF5FF;border:1px solid #BFDBFE;border-radius:3px;padding:6px"><div style="font-size:8.5px;font-weight:700;color:#1A56A0;margin-bottom:4px">PASSO A PASSO DE CORREÇÃO</div>${passosH}</div>
+   <div class="pat-subblock" style="margin-top:5px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:3px;padding:6px"><div style="font-size:8.5px;font-weight:700;color:#15803D;margin-bottom:4px">PRODUTOS RECOMENDADOS</div>${prodH}</div>
+  </div>`;
+ });
+
+ // follow-ups section
+ // ── Documentos complementares ──
+ const arqs=D.arqs||ARQS||[];
+ function renderArq(a){
+  const isPdf=a.type&&a.type.includes('pdf');
+  const isImg=a.type&&a.type.includes('image');
+  const legH=a.leg?'<div style="font-size:9px;color:#666;margin-top:2px">'+h(a.leg)+'</div>':'';
+  const imgH=(isImg&&a.b64)?'<img src="'+a.b64+'" style="margin-top:5px;max-width:180px;max-height:120px;border-radius:3px;border:1px solid #D8D5CC;object-fit:cover">':'';
+  return '<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid #EBEBEA">'
+   +'<div style="font-size:18px;flex-shrink:0">'+(isPdf?'📄':'🎥')+'</div>'
+   +'<div style="flex:1">'
+   +'<div style="font-size:10px;font-weight:700;color:#222">'+h(a.name||'Arquivo')+'</div>'
+   +legH+imgH
+   +'</div></div>';
+ }
+ const arqsHTML=arqs.length
+  ?'<div class="sec-wrap"><div class="sec-hdr">DOCUMENTOS COMPLEMENTARES</div>'
+   +'<div style="border:1px solid #D8D5CC;border-top:none;padding:8px 12px;background:#FDFCFA">'
+   +arqs.map(renderArq).join('')
+   +'</div></div>'
+  :'';
+ const fups=D.followups||[];
+ const fupsHTML=fups.length?`<div style="margin-bottom:16px">
+  <div class="sec-hdr">HISTÓRICO DE ACOMPANHAMENTO</div>
+  <div style="border:1px solid #D8D5CC;border-top:none;padding:8px 12px;background:#FDFCFA">
+   ${fups.map((f,i)=>`<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f0f0">
+    <div style="font-size:11px;font-weight:700;color:#0D2E6B">Retorno ${i+1} — ${fmtDate(f.data)}</div>
+    <div style="font-size:11px;color:#222;margin-top:4px;line-height:1.6">${f.obs||'—'}</div>
+    ${f.fotos?.length?`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${f.fotos.map(ff=>`<img src="${ff.b64}" style="width:80px;height:62px;object-fit:cover;border-radius:4px;border:1px solid #ddd">`).join('')}</div>`:''}
+   </div>`).join('')}
+  </div>
+ </div>`:'';
+
+ // signature
+ // Bloco de assinaturas — cliente + técnico
+ const sigCliHTML = SIG_DATA
+  ? `<img src="${SIG_DATA}" class="sig-img"><div class="sig-name">${h(D.cliente||'Cliente')} — ${fmtDate(D.data)}</div>`
+  : `<div style="height:55px;border:1px dashed #ccc;border-radius:3px;background:#fff;margin-bottom:5px"></div><div class="sig-name" style="color:#bbb">Sem assinatura registrada</div>`;
+ const sigTecHTML = SIG_TEC
+  ? `<img src="${SIG_TEC}" class="sig-img"><div class="sig-name">${CONSULTOR.nome}<br>${CONSULTOR.funcao}</div>`
+  : `<div style="height:55px;border:1px dashed #ccc;border-radius:3px;background:#fff;margin-bottom:5px"></div><div class="sig-name" style="color:#bbb">${CONSULTOR.nome}</div>`;
+ const sigHTML = `<div class="sig-bloc">
+  <div class="sig-col">
+   <div class="sig-col-title">✍ Assinatura do Cliente</div>
+   ${sigCliHTML}
+  </div>
+  <div class="sig-col">
+   <div class="sig-col-title">✍ Responsável Técnico</div>
+   ${sigTecHTML}
+  </div>
+ </div>`;
+
+ const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+ <title>Laudo ${D.numero||''}</title>
+ <style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#222;background:#F4F3EF}
+
+/* ═══ PAGINAÇÃO
+   Regra: margin ≥ altura do elemento fixed + folga de 4mm
+   Header: 14mm height → margin-top: 18mm
+   Footer: 12mm height → margin-bottom: 16mm
+   ═══════════════════════════════════════════════════════ */
+@page{
+ size:A4;
+ margin:18mm 12mm 16mm;
+ @bottom-right{
+  content:"Pág. " counter(page) " de " counter(pages);
+  font-size:8px;color:#666;font-family:'Segoe UI',Arial;
+ }
+}
+
+/* ── Print color accuracy ── */
+@media print{
+ body{-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#F4F3EF}
+ .pdf-hdr,.pdf-ftr,.sec-hdr,.step-num,.pat-hdr-row{
+  -webkit-print-color-adjust:exact;print-color-adjust:exact
+ }
+ /* Somente elementos pequenos ganham avoid — nunca wrappers grandes */
+ .pat-hdr-row{page-break-inside:avoid;page-break-after:avoid}
+ .pat-subblock{page-break-inside:avoid}
+ .sec-hdr{page-break-after:avoid}
+}
+
+/* ═══ CABEÇALHO FIXO
+   height:14mm → fica dentro da margin-top:18mm (folga 4mm)
+   ═══════════════════════════════════════════════════════ */
+.pdf-hdr{
+ position:fixed;
+ top:0;left:0;right:0;
+ height:14mm;
+ background:#0D2E6B;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ padding:0 12mm;
+ z-index:50;
+}
+.pdf-hdr-logo{height:24px}
+.pdf-hdr-right{display:flex;align-items:center;gap:10px;color:#fff}
+.pdf-hdr-right .laudo-num{font-size:14px;font-weight:700;letter-spacing:.3px}
+.pdf-hdr-right .empresa{font-size:10px;opacity:.8}
+
+/* ═══ RODAPÉ FIXO
+   height:12mm → fica dentro da margin-bottom:16mm (folga 4mm)
+   ═══════════════════════════════════════════════════════ */
+.pdf-ftr{
+ position:fixed;
+ bottom:0;left:0;right:0;
+ height:12mm;
+ background:#F4F3EF;
+ border-top:1px solid #C8C4BC;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ padding:0 12mm;
+ z-index:50;
+}
+
+/* ── Seções ── */
+.sec-hdr{background:#0D2E6B;color:#fff;padding:4px 12px;font-weight:700;font-size:10px;letter-spacing:.5px}
+.sec-body{border:1px solid #D8D5CC;border-top:none;padding:8px 12px;background:#FDFCFA;font-size:10.5px;line-height:1.6;color:#222;white-space:pre-line}
+.sec-wrap{margin-bottom:9px}
+.id-tbl td{padding:3px 8px;border-bottom:1px solid #EBEBEA;font-size:10.5px}
+.id-tbl .lbl{font-weight:700;color:#444;width:33%}
+.pat-badge{font-size:8.5px;font-weight:700;padding:2px 7px;border-radius:9px}
+.step-num{min-width:16px;height:16px;border-radius:50%;background:#1A56A0;color:#fff;font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── Bloco de assinaturas ── */
+.sig-bloc{display:flex;gap:16px;margin-top:14px}
+.sig-col{flex:1;border:1px solid #D8D5CC;border-radius:6px;padding:10px;background:#FDFCFA}
+.sig-col-title{font-size:9px;font-weight:700;color:#1A56A0;letter-spacing:.5px;margin-bottom:8px;text-transform:uppercase;display:flex;align-items:center;gap:4px}
+.sig-img{height:55px;border:1px solid #D8D5CC;border-radius:3px;background:#fff;display:block}
+.sig-name{font-size:9px;color:#555;margin-top:5px;line-height:1.4}
+
+/* SIG LINK */
+.laudo-sig-link{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:12px;margin-top:8px;font-size:12px;}
+.laudo-sig-url{font-family:monospace;font-size:11px;color:#a09890;word-break:break-all;margin:6px 0;}
+</style>
+ </head><body>
+
+ <!-- ═══ CABEÇALHO FIXO ═══ -->
+ <div class="pdf-hdr">
+  <img class="pdf-hdr-logo" src="data:image/png;base64,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">
+  <div class="pdf-hdr-right">
+   <div class="empresa">${CONSULTOR.empresa}</div>
+   <div class="laudo-num">${D.numero||'—'}</div>
+   <span style="background:${critBg[crit]};color:${critC[crit]};font-size:8.5px;font-weight:700;padding:2px 8px;border-radius:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact">${crit}</span>
+  </div>
+ </div>
+
+ <!-- ═══ RODAPÉ FIXO ═══ -->
+ <div class="pdf-ftr">
+  <div style="font-size:10.5px;color:#333">
+   <strong>${CONSULTOR.nome}</strong> — ${CONSULTOR.funcao}
+   &nbsp;|&nbsp; ${CONSULTOR.tel} &nbsp;|&nbsp; ${CONSULTOR.site}
+   &nbsp;|&nbsp; <span style="color:#888">Válido até: ${(()=>{const d=new Date(D.data||Date.now());d.setDate(d.getDate()+90);return d.toLocaleDateString("pt-BR")})()}</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+   ${qrImg?`<div style="text-align:center"><img src="${qrImg}" style="width:26px;height:26px;border-radius:3px;border:1px solid #ccc"><div style="font-size:7px;color:#888;margin-top:1px">WhatsApp</div></div>`:''}
+  </div>
+ </div>
+
+ <!-- ═══ CONTEÚDO ═══ -->
+ <div style="padding:0 0 8px">
+
+  <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #0D2E6B">
+   <div style="font-size:17px;font-weight:700;color:#0D2E6B;letter-spacing:.3px">LAUDO TÉCNICO DE PATOLOGIAS</div>
+   <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+    <div style="font-size:10px;color:#666">${CONSULTOR.empresa}</div>
+    <span style="background:${critBg[crit]};color:${critC[crit]};font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact">${crit}</span>
+   </div>
+  </div>
+
+  <!-- Identificação -->
+  <div class="sec-wrap"><div class="sec-hdr">IDENTIFICAÇÃO</div><div style="border:1px solid #D8D5CC;border-top:none;background:#FDFCFA">${tbl}</div></div>
+
+  ${(()=>{
+   if(!psel.length)return '';
+   const rows=psel.map((p,i)=>{
+    const g=SEL[p.id]?.grav||'Moderada';
+    const c=SEL[p.id]?.custo||CUSTO_DEFAULT[p.id]?.est||'—';
+    const area=SEL[p.id]?.area;
+    const total=area&&c?calcCustoTotal(c,area):'—';
+    const bg={Leve:'#DCFCE7',Moderada:'#FEF3C7',Grave:'#FEE2E2'};
+    const clr={Leve:'#16A34A',Moderada:'#D97706',Grave:'#DC2626'};
+    return '<tr style="border-bottom:1px solid #EBEBEA">'
+     +'<td style="padding:3px 8px;font-size:10px">'+( i+1)+'. '+h(p.nome)+'</td>'
+     +'<td style="padding:3px 8px;text-align:center"><span style="background:'+bg[g]+';color:'+clr[g]+';font-size:8.5px;font-weight:700;padding:1px 6px;border-radius:8px">'+g+'</span></td>'
+     +'<td style="padding:3px 8px;font-size:9.5px;color:#555">'+h(c)+'</td>'
+     +'<td style="padding:3px 8px;font-size:9.5px;color:#16A34A;font-weight:600">'+total+'</td>'
+     +'</tr>';
+   }).join('');
+   return '<div class="sec-wrap"><div class="sec-hdr" style="background:#1A56A0">SUMÁRIO EXECUTIVO</div>'
+    +'<table style="width:100%;border-collapse:collapse;border:1px solid #D8D5CC;background:#FDFCFA">'
+    +'<thead><tr style="background:#EEF3FA"><th style="padding:3px 8px;font-size:9px;text-align:left;color:#444">Patologia</th>'
+    +'<th style="padding:3px 8px;font-size:9px;color:#444">Gravidade</th>'
+    +'<th style="padding:3px 8px;font-size:9px;text-align:left;color:#444">Custo Estimado</th>'
+    +'<th style="padding:3px 8px;font-size:9px;text-align:left;color:#444">Total (área)</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  })()}
+  ${D.objeto?sec(1,'Objeto do Laudo',D.objeto):''}
+  ${D.descricao?sec(2,'Descrição das Patologias',D.descricao):''}
+  ${psel.length?`<div class="sec-wrap"><div class="sec-hdr">3. PATOLOGIAS IDENTIFICADAS (${psel.length})</div><div style="border:1px solid #D8D5CC;border-top:none;padding:8px;background:#FDFCFA">${patHTML}</div></div>`:''}
+  ${D.diagnostico?sec(4,'Diagnóstico Técnico',D.diagnostico):''}
+  ${D.causas?sec(5,'Causas',D.causas):''}
+  ${D.consequencias?sec(6,'Consequências',D.consequencias):''}
+  ${D.recomendacoes?sec(7,'Recomendações',D.recomendacoes):''}
+  ${D.produtos?sec(8,'Produtos Indicados',D.produtos):''}
+  ${D.conclusao?sec(9,'Conclusão',D.conclusao):''}
+  ${gerarManualHTML(psel)}
+  ${arqsHTML}
+  ${fupsHTML}
+
+  <!-- Aviso + Assinaturas -->
+  <div style="border-top:2px solid #0D2E6B;margin-top:14px;padding-top:10px">
+   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:5px 8px;background:#F0F7FF;border:1px solid #BFDBFE;border-radius:4px">
+    <div style="font-size:9px;color:#1A56A0"><strong>Nº do Laudo:</strong> ${D.numero||'—'} &nbsp;|&nbsp; <strong>Código de Verificação:</strong> ${laudoHash(D)}</div>
+    <div style="font-size:8.5px;color:#64748B">Emitido em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+   </div>
+   <div style="background:#FEF2F2;border:1px solid #FECACA;border-left:4px solid #DC2626;border-radius:4px;padding:7px 10px;margin-bottom:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact">
+    <span style="font-size:9px;font-weight:700;color:#DC2626">⚠️ AVISO LEGAL — </span><span style="font-size:8.5px;color:#991B1B;line-height:1.5">Este laudo é de caráter técnico-consultivo. Intervenções estruturais requerem acompanhamento de engenheiro civil habilitado (CREA). Patologias com risco estrutural demandam laudo complementar.</span>
+   </div>
+   ${sigHTML}
+  </div>
+
+ </div>
+
+ <script>window.onload=function(){window.print();}<\/script>
+ </body></html>`;
+
+ const w=window.open('','_blank');
+ if(w){w.document.write(html);w.document.close();}
+ else toast('Permita popups para exportar o PDF');
+}
+
+// ─── CONSULTA RÁPIDA ─────────────────
+function renderConsulta(app){
+ app.innerHTML=`
+ <div class="hdr">
+  <div class="hdr-row">
+   <div class="hdr-logo" style="font-size:16px">Consulta Rápida<span>Patologias e produtos</span></div>
+   <div class="hdr-btns"><button class="hdr-btn" onclick="SCR='home';render()">← Home</button><button class="hdr-btn" onclick="lockApp()">🔒</button></div>
+  </div>
+ </div>
+ <div class="content">
+  <div class="cq-search"><span class="ico">🔍</span><input placeholder="Buscar patologia..." id="cq-input" oninput="filterCQ(this.value)" value="${h(_cqFilter)}"></div>
+  <div id="cq-list">${renderCQList()}</div>
+ </div>`;
+}
+function renderCQList(){
+ const q=_cqFilter.toLowerCase();
+ const filtered=PATS.filter(p=>!q||p.nome.toLowerCase().includes(q)||p.tec.toLowerCase().includes(q)||p.cat.includes(q));
+ if(!filtered.length)return '<div class="empty-state"><div class="ico">🔍</div><p>Nenhuma patologia encontrada</p></div>';
+ return filtered.map(p=>{
+  const cat=CATS[p.cat];
+  const passosH=p.passos.map((s,i)=>`<div class="passo-item"><div class="passo-num">${i+1}</div><div class="passo-txt">${h(s)}</div></div>`).join('');
+  const prodEH=p.prods.eucatex.map(pr=>`<div class="prod-item">${h(pr)}</div>`).join('');
+  const prodSH=p.prods.sw.map(pr=>`<div class="prod-item">${h(pr)}</div>`).join('');
+  return `<div class="cq-card" onclick="tgCQ(${p.id})">
+   <div class="cq-head"><div style="flex:1"><div style="font-weight:600;font-size:13.5px">${h(p.nome)}</div><div style="margin-top:3px"><span class="pat-cat" style="background:${cat.bg};color:${cat.c}">${cat.lb}</span></div></div><div style="font-size:10px;color:var(--sub)" id="cqarr${p.id}">▼</div></div>
+   <div class="cq-body" id="cqb${p.id}">
+    <div class="pat-own" style="margin-top:10px"><strong>Linguagem Simplificada</strong>${h(p.own)}</div>
+    <div class="passo-box" style="margin-top:10px"><div class="passo-tit">🔧 PASSO A PASSO</div>${passosH}</div>
+    <div class="prods-box"><div class="prods-tit">🍃 PRODUTOS RECOMENDADOS</div><div class="prods-cols"><div><div class="prod-marca">Eucatex</div>${prodEH}</div><div><div class="prod-marca">Sherwin-Williams</div>${prodSH}</div></div></div>
+   </div>
+  </div>`;
+ }).join('');
+}
+function filterCQ(v){ _cqFilter=v;const l=document.getElementById('cq-list');if(l)l.innerHTML=renderCQList(); }
+function tgCQ(id){ const b=document.getElementById('cqb'+id);const a=document.getElementById('cqarr'+id);if(!b)return;const o=!b.classList.contains('open');b.classList.toggle('open',o);if(a)a.textContent=o?'▲':'▼'; }
+
+// ─── IMAGE UTILS ─────────────────────
+function resizeImgAsync(b64,maxW,q){
+ return new Promise(resolve=>{
+  try{
+   const img=new Image();
+   img.onload=()=>{
+    try{
+     const w=Math.min(img.width,maxW);const r=w/img.width;
+     const c=document.createElement('canvas');c.width=w;c.height=Math.round(img.height*r);
+     const ctx=c.getContext('2d');ctx.drawImage(img,0,0,c.width,c.height);
+     resolve(c.toDataURL('image/jpeg',q));
+    }catch{resolve(b64);}
+   };img.onerror=()=>resolve(b64);img.src=b64;
+  }catch{resolve(b64);}
+ });
+}
+
+// drag and drop
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{
+ e.preventDefault();
+ if(SCR!=='form'||STEP!==2)return;
+ const files=[...e.dataTransfer.files];
+ files.forEach(f=>{const r=new FileReader();r.onload=ev=>{ARQS.push({name:f.name,type:f.type,b64:ev.target.result,leg:''});renderStepContent();};r.readAsDataURL(f);});
+});
+
+// ─── INIT ────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+ loadLaudos();checkPin();render();
+ // Load prof sig from unified storage (safe — no DOM needed)
+ const _unified=localStorage.getItem('pp_sig_profissional');
+ if(_unified){SIG_TEC=_unified;localStorage.setItem(SIG_TEC_KEY,_unified);}
+ else{const _ex=localStorage.getItem(SIG_TEC_KEY);if(_ex)SIG_TEC=_ex;}
+ // Sync sig tokens from Supabase after a delay (parent needs time to set sessionStorage)
+ setTimeout(_syncSigTokens, 1500);
+});
+</script>
+</body>
+</html>

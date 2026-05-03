@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PintorPro — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="pp-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ── TEMAS ── */
+[data-theme="dark"]{
+  --bg:#0a0a0a;--surf:#111;--surf2:#1a1a1a;--surf3:#222;
+  --border:#2a2a2a;--text:#f0ede8;--text2:#a09890;--text3:#5a5450;
+  --sh:0 4px 24px rgba(0,0,0,.5);
+}
+[data-theme="light"]{
+  --bg:#f4f3ef;--surf:#fff;--surf2:#f0ede8;--surf3:#e4e0d8;
+  --border:#d8d4cc;--text:#1a1816;--text2:#5a5450;--text3:#9a9490;
+  --sh:0 4px 24px rgba(0,0,0,.08);
+}
+:root{--acc:#e8770a;--acc2:#f59e2b;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--purple:#8b5cf6;--r:10px;--rs:7px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .2s,color .2s;}
+
+/* ── LOGIN ADMIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:36px;width:100%;max-width:380px;}
+.logo{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--acc);margin-bottom:4px;}
+.logo-sub{font-size:12px;color:var(--text3);margin-bottom:28px;}
+.badge-admin{display:inline-block;background:rgba(239,68,68,.15);color:#f87171;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:20px;letter-spacing:.5px;}
+
+/* ── FIELDS ── */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.field input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:11px 13px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s;}
+.field input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,119,10,.15);}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-acc{background:var(--acc);color:#fff;width:100%;justify-content:center;padding:12px;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;}
+.btn-acc:hover:not(:disabled){background:#d46b08;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-ghost:hover{background:var(--surf2);color:var(--text);}
+.btn-green{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+.btn-green:hover{background:rgba(34,197,94,.25);}
+.btn-red{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#f87171;}
+.btn-red:hover{background:rgba(239,68,68,.22);}
+.btn-blue{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);color:#60a5fa;}
+.btn-blue:hover{background:rgba(59,130,246,.22);}
+
+/* ── MESSAGES ── */
+.msg{border-radius:var(--rs);padding:9px 13px;font-size:12px;margin-bottom:12px;display:none;}
+.msg.show{display:block;}
+.msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+.msg.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--surf);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-l{display:flex;align-items:center;gap:14px;}
+.brand{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--acc);}
+.admin-tag{background:rgba(239,68,68,.15);color:#f87171;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;}
+.topbar-r{display:flex;gap:8px;align-items:center;}
+.theme-t{background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text2);font-family:'DM Sans',sans-serif;}
+.theme-t:hover{border-color:var(--acc);}
+
+/* ── TABS ── */
+.tabs-bar{background:var(--surf);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px;}
+.tab{padding:12px 16px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;border-bottom:2px solid transparent;transition:.15s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--acc);border-bottom-color:var(--acc);}
+
+/* ── CONTENT ── */
+.content{padding:24px;max-width:1200px;margin:0 auto;}
+.section{display:none;}
+.section.active{display:block;}
+
+/* ── STAT CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.stat{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.stat .lb{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;}
+.stat .vl{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;}
+.stat .sub{font-size:11px;color:var(--text2);margin-top:3px;}
+
+/* ── CARD ── */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;overflow:hidden;}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+.card-body{padding:0;}
+
+/* ── SEARCH ── */
+.search-bar{display:flex;gap:10px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--border);}
+.search-input{flex:1;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:8px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
+.search-input:focus{border-color:var(--acc);}
+.filter-select{background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:8px 10px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:700px;}
+thead th{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--surf2);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:hover{background:var(--surf2);}
+tbody td{padding:11px 14px;font-size:13px;color:var(--text2);vertical-align:middle;}
+tbody td:first-child{color:var(--text);font-weight:500;}
+.tbl-empty{text-align:center;padding:48px 20px;color:var(--text3);font-size:13px;}
+
+/* ── BADGE ── */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.b-green{background:rgba(34,197,94,.15);color:#4ade80;}
+.b-amber{background:rgba(245,158,43,.15);color:var(--acc2);}
+.b-red{background:rgba(239,68,68,.15);color:#f87171;}
+.b-blue{background:rgba(59,130,246,.15);color:#60a5fa;}
+.b-purple{background:rgba(139,92,246,.15);color:#a78bfa;}
+.b-gray{background:var(--surf3);color:var(--text2);}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;}
+.modal-close{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:2px 6px;}
+.modal-close:hover{color:var(--text);}
+.modal-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.modal-row:last-child{border-bottom:none;}
+.modal-row .lb2{color:var(--text3);font-size:12px;}
+.modal-actions{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;}
+
+/* ── SPINNER ── */
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;display:inline-block;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loading-full{display:flex;align-items:center;justify-content:center;padding:60px;gap:12px;color:var(--text2);font-size:14px;}
+
+/* ── METRICS ── */
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chart-bar-wrap{display:flex;flex-direction:column;gap:8px;}
+.chart-bar-item{display:flex;align-items:center;gap:10px;font-size:13px;}
+.chart-bar-label{width:120px;color:var(--text2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chart-bar{flex:1;height:8px;background:var(--surf3);border-radius:4px;overflow:hidden;}
+.chart-bar-fill{height:100%;background:var(--acc);border-radius:4px;transition:width .5s;}
+.chart-bar-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);min-width:28px;text-align:right;}
+
+/* ── NOTIF ── */
+.notif{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--acc);border-radius:var(--r);padding:10px 16px;font-size:13px;color:var(--text);display:none;z-index:999;box-shadow:var(--sh);max-width:300px;}
+.notif.show{display:flex;align-items:center;gap:8px;animation:slin .3s;}
+@keyframes slin{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* SCREENS */
+.auth-screen{display:block;}
+.app-screen{display:none;}
+
+@media(max-width:768px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .metrics-grid{grid-template-columns:1fr;}
+  .content{padding:14px;}
+  .topbar{padding:0 14px;}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .tabs-bar{overflow-x:auto;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ADMIN ── -->
+<div class="auth-screen login-wrap" id="auth-screen">
+  <div class="login-card">
+    <div class="logo">PintorPro</div>
+    <div class="logo-sub">Painel de Administração</div>
+    <div class="badge-admin">🔐 ACESSO RESTRITO</div>
+    <div class="msg err" id="auth-err"></div>
+    <div class="field"><label>E-mail admin</label><input id="adm-email" type="email" placeholder="seu@email.com" autocomplete="email"></div>
+    <div class="field"><label>Senha</label><input id="adm-senha" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+    <button class="btn btn-acc" onclick="adminLogin()" id="btn-adm-login">Entrar no painel</button>
+  </div>
+</div>
+
+<!-- ── APP ADMIN ── -->
+<div class="app-screen" id="app-screen">
+
+  <div class="topbar">
+    <div class="topbar-l">
+      <div class="brand">PintorPro</div>
+      <div class="admin-tag">ADMIN</div>
+      <span style="font-size:12px;color:var(--text3)" id="adm-nome-top"></span>
+    </div>
+    <div class="topbar-r">
+      <button class="theme-t" onclick="toggleTheme()" id="thm-btn">🌙 Escuro</button>
+      <button class="btn btn-sm btn-ghost" onclick="adminLogout()">↩ Sair</button>
+    </div>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab active" onclick="showTab('visao-geral',this)">📊 Visão Geral</button>
+    <button class="tab" onclick="showTab('usuarios',this)">👥 Usuários</button>
+    <button class="tab" onclick="showTab('pagamentos',this)">💳 Pagamentos</button>
+    <button class="tab" onclick="showTab('metricas',this)">📈 Métricas</button>
+  </div>
+
+  <div class="content">
+
+    <!-- VISÃO GERAL -->
+    <div class="section active" id="sec-visao-geral">
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat"><div class="lb">Total usuários</div><div class="vl" id="st-total">—</div><div class="sub">cadastrados</div></div>
+        <div class="stat"><div class="lb">Planos pagos</div><div class="vl" id="st-pagos" style="color:var(--green)">—</div><div class="sub">ativos</div></div>
+        <div class="stat"><div class="lb">Gratuitos</div><div class="vl" id="st-gratis" style="color:var(--acc2)">—</div><div class="sub">em trial</div></div>
+        <div class="stat"><div class="lb">Pag. pendentes</div><div class="vl" id="st-pendentes" style="color:var(--acc)">—</div><div class="sub">aguardando aprovação</div></div>
+        <div class="stat"><div class="lb">Receita mensal</div><div class="vl" id="st-receita" style="color:var(--green)">—</div><div class="sub">estimada</div></div>
+      </div>
+
+      <!-- Últimos cadastros -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Últimos cadastros</div>
+          <button class="btn btn-sm btn-ghost" onclick="showTab('usuarios',this)">Ver todos →</button>
+        </div>
+        <div class="card-body tbl-wrap" id="ultimos-cadastros">
+          <div class="loading-full"><div class="spin"></div> Carregando...</div>
+        </div>
+      </div>
+
+      <!-- Pagamentos pendentes -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Pagamentos aguardando aprovação</div>
+          <button class="btn btn-sm btn-ghost" onclick="showTab('pagamentos',this)">Ver todos →</button>
+        </div>
+        <div class="card-body tbl-wrap" id="pags-pendentes-wrap">
+          <div class="loading-full"><div class="spin"></div> Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div class="section" id="sec-usuarios">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Todos os usuários</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:12px;color:var(--text3)" id="usr-count"></span>
+            <button class="btn btn-sm btn-acc" onclick="loadUsers()">↻ Atualizar</button>
+          </div>
+        </div>
+        <div class="search-bar">
+          <input class="search-input" id="usr-search" placeholder="Buscar por nome, e-mail ou cidade..." oninput="filterUsers()">
+          <select class="filter-select" id="usr-filter-plano" onchange="filterUsers()">
+            <option value="">Todos os planos</option>
+            <option value="gratuito">Gratuito</option>
+            <option value="pintor-std">Pintor Standard</option>
+            <option value="pintor-pro">Pintor Pro</option>
+            <option value="lojista">Lojista</option>
+            <option value="trial">Trial</option>
+          </select>
+          <select class="filter-select" id="usr-filter-perfil" onchange="filterUsers()">
+            <option value="">Todos os perfis</option>
+            <option value="pintor">Pintor</option>
+            <option value="lojista">Lojista</option>
+          </select>
+        </div>
+        <div class="card-body tbl-wrap" id="users-table-wrap">
+          <div class="loading-full"><div class="spin"></div> Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGAMENTOS -->
+    <div class="section" id="sec-pagamentos">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Gestão de pagamentos</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-acc" onclick="openNovoPag()">+ Registrar pagamento</button>
+            <button class="btn btn-sm btn-ghost" onclick="loadPagamentos()">↻ Atualizar</button>
+          </div>
+        </div>
+        <div class="search-bar">
+          <select class="filter-select" id="pag-filter" onchange="filterPags()">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendentes</option>
+            <option value="aprovado">Aprovados</option>
+            <option value="cancelado">Cancelados</option>
+          </select>
+        </div>
+        <div class="card-body tbl-wrap" id="pags-table-wrap">
+          <div class="loading-full"><div class="spin"></div> Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MÉTRICAS -->
+    <div class="section" id="sec-metricas">
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat"><div class="lb">Total orçamentos</div><div class="vl" id="mt-orcs">—</div></div>
+        <div class="stat"><div class="lb">Total laudos</div><div class="vl" id="mt-laudos">—</div></div>
+        <div class="stat"><div class="lb">Usuários ativos 30d</div><div class="vl" id="mt-ativos">—</div></div>
+        <div class="stat"><div class="lb">Taxa conversão</div><div class="vl" id="mt-conv" style="color:var(--green)">—</div></div>
+      </div>
+      <div class="metrics-grid">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Distribuição de planos</div></div>
+          <div class="card-body" style="padding:16px" id="chart-planos">
+            <div class="loading-full"><div class="spin"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Distribuição de perfis</div></div>
+          <div class="card-body" style="padding:16px" id="chart-perfis">
+            <div class="loading-full"><div class="spin"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Top usuários — orçamentos</div></div>
+          <div class="card-body" style="padding:16px" id="chart-top-orcs">
+            <div class="loading-full"><div class="spin"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Top usuários — laudos</div></div>
+          <div class="card-body" style="padding:16px" id="chart-top-laudos">
+            <div class="loading-full"><div class="spin"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL USUÁRIO -->
+<div class="modal-bg" id="modal-usr">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modal-usr-title">Usuário</span>
+      <button class="modal-close" onclick="closeModal('modal-usr')">✕</button>
+    </div>
+    <div id="modal-usr-body"></div>
+  </div>
+</div>
+
+<!-- MODAL NOVO PAGAMENTO -->
+<div class="modal-bg" id="modal-pag">
+  <div class="modal">
+    <div class="modal-title">
+      <span>Registrar pagamento</span>
+      <button class="modal-close" onclick="closeModal('modal-pag')">✕</button>
+    </div>
+    <div class="field">
+      <label>Usuário</label>
+      <select id="pag-user-sel" style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"></select>
+    </div>
+    <div class="field">
+      <label>Plano a ativar</label>
+      <select id="pag-plano-sel" style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+        <option value="pintor-std">Pintor Standard — R$69/mês</option>
+        <option value="pintor-pro">Pintor Pro — R$99/mês</option>
+        <option value="lojista">Lojista — R$99/mês</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Valor pago (R$)</label>
+      <input id="pag-valor" type="number" value="99" style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+    </div>
+    <div class="field">
+      <label>Observação (opcional)</label>
+      <input id="pag-obs" type="text" placeholder="Ex: PIX recebido 10/04" style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="salvarPagamento()">✓ Registrar e ativar plano</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-pag')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif-el"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────
+// ALTERE AQUI para o seu e-mail
+const ADMIN_EMAIL = 'luizbleidao@gmail.com';
+
+const SUPA_URL = 'https://ufdrxucvyukgzvenfuhj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZHJ4dWN2eXVrZ3p2ZW5mdWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDQ2NjksImV4cCI6MjA5MDYyMDY2OX0.AmnG0ECoAuSZg0a_kz2hOB98vbY5w6z8ziXBukP57dM';
+const { createClient } = supabase;
+const sb = createClient(SUPA_URL, SUPA_KEY);
+
+const PLANO_LABEL = { gratuito:'Gratuito', 'pintor-std':'Pintor Standard', 'pintor-pro':'Pintor Pro', lojista:'Lojista', trial:'Trial' };
+const PLANO_VALOR = { 'pintor-std':69, 'pintor-pro':99, lojista:99 };
+const PLANO_BADGE = { gratuito:'b-gray', 'pintor-std':'b-blue', 'pintor-pro':'b-purple', lojista:'b-amber', trial:'b-amber' };
+const PERFIL_BADGE= { pintor:'b-blue', lojista:'b-amber' };
+
+let allUsers=[], allPags=[], adminUser=null;
+
+// ── Formatação ────────────────────────────────────────────
+const fmtDate = d => { if(!d)return'—'; const dt=new Date(d); return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`; };
+const fmtHora = d => { if(!d)return'—'; const dt=new Date(d); return `${fmtDate(d)} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`; };
+
+// ── Login admin ───────────────────────────────────────────
+async function adminLogin(){
+  const email = document.getElementById('adm-email').value.trim().toLowerCase();
+  const senha = document.getElementById('adm-senha').value;
+  const err   = document.getElementById('auth-err');
+  err.classList.remove('show');
+
+  // Verificar se é o admin
+  if(email !== ADMIN_EMAIL.toLowerCase()){
+    err.textContent = 'Acesso negado. Este e-mail não tem permissão de administrador.';
+    err.classList.add('show'); return;
+  }
+
+  document.getElementById('btn-adm-login').innerHTML = '<div class="spin"></div> Entrando...';
+  document.getElementById('btn-adm-login').disabled = true;
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+  if(error){
+    err.textContent = error.message === 'Invalid login credentials' ? 'Senha incorreta.' : error.message;
+    err.classList.add('show');
+    document.getElementById('btn-adm-login').innerHTML = 'Entrar no painel';
+    document.getElementById('btn-adm-login').disabled = false;
+    return;
+  }
+
+  adminUser = data.user;
+  document.getElementById('adm-nome-top').textContent = email;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display  = 'block';
+  applyTheme();
+  loadAll();
+}
+
+function adminLogout(){ sb.auth.signOut(); location.reload(); }
+
+// ── Carregar tudo ─────────────────────────────────────────
+async function loadAll(){
+  await Promise.all([ loadUsers(), loadPagamentos() ]);
+  updateStats();
+  loadMetricas();
+}
+
+// ── Usuários ──────────────────────────────────────────────
+async function loadUsers(){
+  const { data, error } = await sb.from('profiles')
+    .select('id, nome, perfil, plano, tel, cidade, ativo, criado_em, atualizado_em, obs_admin')
+    .order('criado_em', { ascending: false });
+
+  if(error){
+    console.error('loadUsers error:', error);
+    document.getElementById('users-table-wrap').innerHTML =
+      `<div class="tbl-empty">⚠️ Erro ao carregar: ${error.message}</div>`;
+    notif('⚠️ Erro ao carregar usuários: ' + error.message);
+    return;
+  }
+  allUsers = data || [];
+  document.getElementById('usr-count').textContent = `${allUsers.length} usuário${allUsers.length!==1?'s':''}`;
+  renderUsersTable(allUsers);
+  renderUltimosTable(allUsers.slice(0,5));
+}
+
+function filterUsers(){
+  const q      = document.getElementById('usr-search').value.toLowerCase();
+  const plano  = document.getElementById('usr-filter-plano').value;
+  const perfil = document.getElementById('usr-filter-perfil').value;
+  let filtered = allUsers;
+  if(q)      filtered = filtered.filter(u => (u.nome||'').toLowerCase().includes(q)||(u.cidade||'').toLowerCase().includes(q));
+  if(plano)  filtered = filtered.filter(u => u.plano===plano);
+  if(perfil) filtered = filtered.filter(u => u.perfil===perfil);
+  renderUsersTable(filtered);
+}
+
+function renderUsersTable(list){
+  const wrap = document.getElementById('users-table-wrap');
+  if(!list.length){ wrap.innerHTML='<div class="tbl-empty">Nenhum usuário encontrado</div>'; return; }
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Nome</th><th>Perfil</th><th>Plano</th><th>Cidade</th><th>Cadastro</th><th>Status</th><th>Ações</th></tr></thead>
+    <tbody>${list.map(u=>`<tr>
+      <td>${u.nome||'—'}</td>
+      <td><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${u.perfil||'—'}</span></td>
+      <td><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano||'—'}</span></td>
+      <td>${u.cidade||'—'}</td>
+      <td>${fmtDate(u.criado_em)}</td>
+      <td><span class="badge ${u.ativo!==false?'b-green':'b-red'}">${u.ativo!==false?'Ativo':'Suspenso'}</span></td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-sm btn-ghost" onclick="openUser('${u.id}')">👤 Ver</button>
+        <button class="btn btn-sm btn-blue" onclick="openChangePlan('${u.id}')">↑ Plano</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderUltimosTable(list){
+  const wrap = document.getElementById('ultimos-cadastros');
+  if(!list?.length){ wrap.innerHTML='<div class="tbl-empty">Nenhum usuário ainda</div>'; return; }
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Nome</th><th>Perfil</th><th>Plano</th><th>Cidade</th><th>Cadastro</th></tr></thead>
+    <tbody>${list.map(u=>`<tr>
+      <td>${u.nome||'—'}</td>
+      <td><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${u.perfil||'—'}</span></td>
+      <td><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano||'—'}</span></td>
+      <td>${u.cidade||'—'}</td>
+      <td>${fmtDate(u.criado_em)}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ── Ver / editar usuário ──────────────────────────────────
+function openUser(id){
+  const u = allUsers.find(x=>x.id===id); if(!u) return;
+  document.getElementById('modal-usr-title').textContent = u.nome || 'Usuário';
+  document.getElementById('modal-usr-body').innerHTML = `
+    <div class="modal-row"><span class="lb2">ID</span><span style="font-family:monospace;font-size:11px">${u.id.slice(0,16)}...</span></div>
+    <div class="modal-row"><span class="lb2">Nome</span><span>${u.nome||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">Perfil</span><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${u.perfil||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">Plano</span><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">WhatsApp</span><span>${u.tel||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">Cidade</span><span>${u.cidade||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">Cadastro</span><span>${fmtDate(u.criado_em)}</span></div>
+    <div class="modal-row"><span class="lb2">Status</span><span class="badge ${u.ativo!==false?'b-green':'b-red'}">${u.ativo!==false?'Ativo':'Suspenso'}</span></div>
+    ${u.obs_admin?`<div class="modal-row"><span class="lb2">Obs. admin</span><span style="font-size:12px">${u.obs_admin}</span></div>`:''}
+    <div style="margin-top:14px">
+      <div class="field"><label>Observação interna</label>
+        <input id="obs-inp-${id}" type="text" value="${u.obs_admin||''}" placeholder="Anotação para uso interno..." style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm btn-blue" onclick="openChangePlan('${id}')">↑ Alterar plano</button>
+      <button class="btn btn-sm ${u.ativo!==false?'btn-red':'btn-green'}" onclick="toggleAtivo('${id}',${u.ativo!==false})">${u.ativo!==false?'Suspender conta':'Reativar conta'}</button>
+      <button class="btn btn-sm btn-ghost" onclick="salvarObs('${id}')">💾 Salvar obs.</button>
+    </div>`;
+  openModal('modal-usr');
+}
+
+async function salvarObs(id){
+  const obs = document.getElementById('obs-inp-'+id)?.value || '';
+  const { error } = await sb.from('profiles').update({ obs_admin: obs }).eq('id', id);
+  if(error){ notif('⚠️ Erro ao salvar'); return; }
+  const u = allUsers.find(x=>x.id===id); if(u) u.obs_admin=obs;
+  notif('✅ Observação salva!');
+}
+
+async function toggleAtivo(id, atualAtivo){
+  const { error } = await sb.from('profiles').update({ ativo: !atualAtivo }).eq('id', id);
+  if(error){ notif('⚠️ Erro ao alterar'); return; }
+  const u = allUsers.find(x=>x.id===id); if(u) u.ativo=!atualAtivo;
+  closeModal('modal-usr');
+  renderUsersTable(allUsers);
+  notif(atualAtivo ? '⛔ Conta suspensa' : '✅ Conta reativada');
+}
+
+// ── Alterar plano ─────────────────────────────────────────
+function openChangePlan(id){
+  const u = allUsers.find(x=>x.id===id); if(!u) return;
+  document.getElementById('modal-usr-title').textContent = `Alterar plano — ${u.nome||'Usuário'}`;
+  const planos = ['gratuito','pintor-std','pintor-pro','lojista','trial'];
+  document.getElementById('modal-usr-body').innerHTML = `
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Plano atual: <span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano}</span></p>
+    <div class="field"><label>Novo plano</label>
+      <select id="novo-plano-sel" style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+        ${planos.map(p=>`<option value="${p}" ${p===u.plano?'selected':''}>${PLANO_LABEL[p]||p}</option>`).join('')}
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-acc" onclick="confirmarPlano('${id}')">✓ Confirmar alteração</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-usr')">Cancelar</button>
+    </div>`;
+  openModal('modal-usr');
+}
+
+async function confirmarPlano(id){
+  const novoPlano = document.getElementById('novo-plano-sel').value;
+  const { error } = await sb.from('profiles').update({ plano: novoPlano }).eq('id', id);
+  if(error){ notif('⚠️ Erro ao alterar plano'); return; }
+  const u = allUsers.find(x=>x.id===id); if(u) u.plano=novoPlano;
+  closeModal('modal-usr');
+  renderUsersTable(allUsers);
+  updateStats();
+  notif(`✅ Plano alterado para ${PLANO_LABEL[novoPlano]}!`);
+}
+
+// ── Pagamentos ────────────────────────────────────────────
+async function loadPagamentos(){
+  const { data, error } = await sb.from('pagamentos')
+    .select('*')
+    .order('criado_em', { ascending: false });
+
+  if(error){
+    console.error('loadPagamentos error:', error);
+    document.getElementById('pags-table-wrap').innerHTML =
+      `<div class="tbl-empty">⚠️ Erro: ${error.message}</div>`;
+    notif('⚠️ Erro pagamentos: ' + error.message);
+    return;
+  }
+  allPags = data || [];
+  renderPagsTable(allPags);
+  renderPagsPendentes(allPags.filter(p=>p.status==='pendente'));
+}
+
+function filterPags(){
+  const f = document.getElementById('pag-filter').value;
+  renderPagsTable(f ? allPags.filter(p=>p.status===f) : allPags);
+}
+
+function renderPagsTable(list){
+  const wrap = document.getElementById('pags-table-wrap');
+  if(!list?.length){ wrap.innerHTML='<div class="tbl-empty">Nenhum pagamento registrado</div>'; return; }
+  const statusBadge = { pendente:'b-amber', aprovado:'b-green', cancelado:'b-red' };
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Usuário</th><th>Plano</th><th>Valor</th><th>Status</th><th>Data</th><th>Obs.</th><th>Ações</th></tr></thead>
+    <tbody>${list.map(p=>{
+      const u = allUsers.find(x=>x.id===p.user_id);
+      return `<tr>
+        <td>${u?.nome||p.user_id?.slice(0,8)+'...'||'—'}</td>
+        <td><span class="badge ${PLANO_BADGE[p.plano]||'b-gray'}">${PLANO_LABEL[p.plano]||p.plano}</span></td>
+        <td style="color:var(--green);font-family:'DM Mono',monospace">R$ ${Number(p.valor||0).toFixed(2)}</td>
+        <td><span class="badge ${statusBadge[p.status]||'b-gray'}">${p.status}</span></td>
+        <td>${fmtDate(p.criado_em)}</td>
+        <td style="font-size:12px;color:var(--text3)">${p.observacao||'—'}</td>
+        <td><div style="display:flex;gap:5px">
+          ${p.status==='pendente'?`
+            <button class="btn btn-sm btn-green" onclick="aprovarPag('${p.id}')">✓ Aprovar</button>
+            <button class="btn btn-sm btn-red" onclick="cancelarPag('${p.id}')">✕</button>
+          `:`<span style="font-size:12px;color:var(--text3)">${p.status==='aprovado'?fmtDate(p.aprovado_em):'—'}</span>`}
+        </div></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function renderPagsPendentes(list){
+  const wrap = document.getElementById('pags-pendentes-wrap');
+  if(!list?.length){ wrap.innerHTML='<div class="tbl-empty" style="padding:24px">✅ Nenhum pagamento pendente</div>'; return; }
+  const statusBadge = { pendente:'b-amber', aprovado:'b-green', cancelado:'b-red' };
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Usuário</th><th>Plano</th><th>Valor</th><th>Data</th><th>Ações</th></tr></thead>
+    <tbody>${list.map(p=>{
+      const u = allUsers.find(x=>x.id===p.user_id);
+      return `<tr>
+        <td>${u?.nome||'—'} ${u?.tel?`<a href="https://wa.me/55${u.tel.replace(/\D/g,'')}" target="_blank" style="font-size:11px;color:#25d366;margin-left:6px">📲</a>`:''}
+        </td>
+        <td><span class="badge ${PLANO_BADGE[p.plano]||'b-gray'}">${PLANO_LABEL[p.plano]||p.plano}</span></td>
+        <td style="color:var(--green);font-family:'DM Mono',monospace">R$ ${Number(p.valor||0).toFixed(2)}</td>
+        <td>${fmtDate(p.criado_em)}</td>
+        <td><div style="display:flex;gap:5px">
+          <button class="btn btn-sm btn-green" onclick="aprovarPag('${p.id}')">✓ Aprovar e ativar</button>
+          <button class="btn btn-sm btn-red" onclick="cancelarPag('${p.id}')">✕ Cancelar</button>
+        </div></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+async function aprovarPag(pagId){
+  const pag = allPags.find(p=>p.id===pagId); if(!pag) return;
+  // 1. Aprovar pagamento
+  const { error:e1 } = await sb.from('pagamentos').update({ status:'aprovado', aprovado_em: new Date().toISOString() }).eq('id', pagId);
+  if(e1){ notif('⚠️ Erro ao aprovar'); return; }
+  // 2. Ativar plano no profile
+  const { error:e2 } = await sb.from('profiles').update({ plano: pag.plano }).eq('id', pag.user_id);
+  if(e2){ notif('⚠️ Pagamento aprovado mas erro ao ativar plano'); return; }
+  // Atualizar local
+  pag.status='aprovado'; pag.aprovado_em=new Date().toISOString();
+  const u = allUsers.find(x=>x.id===pag.user_id); if(u) u.plano=pag.plano;
+  renderPagsTable(allPags);
+  renderPagsPendentes(allPags.filter(p=>p.status==='pendente'));
+  updateStats();
+  notif(`✅ Plano ${PLANO_LABEL[pag.plano]} ativado!`);
+}
+
+async function cancelarPag(pagId){
+  const { error } = await sb.from('pagamentos').update({ status:'cancelado' }).eq('id', pagId);
+  if(error){ notif('⚠️ Erro'); return; }
+  const pag = allPags.find(p=>p.id===pagId); if(pag) pag.status='cancelado';
+  renderPagsTable(allPags);
+  renderPagsPendentes(allPags.filter(p=>p.status==='pendente'));
+  notif('Pagamento cancelado');
+}
+
+function openNovoPag(){
+  const sel = document.getElementById('pag-user-sel');
+  sel.innerHTML = allUsers.map(u=>`<option value="${u.id}">${u.nome||'—'} (${PLANO_LABEL[u.plano]||u.plano})</option>`).join('');
+  openModal('modal-pag');
+}
+
+async function salvarPagamento(){
+  const userId = document.getElementById('pag-user-sel').value;
+  const plano  = document.getElementById('pag-plano-sel').value;
+  const valor  = parseFloat(document.getElementById('pag-valor').value)||0;
+  const obs    = document.getElementById('pag-obs').value.trim();
+  if(!userId){ notif('Selecione um usuário'); return; }
+
+  const novoPag = { user_id:userId, plano, valor, observacao:obs, status:'aprovado', aprovado_em:new Date().toISOString() };
+  const { data, error:e1 } = await sb.from('pagamentos').insert(novoPag).select().single();
+  if(e1){ notif('⚠️ Erro ao registrar'); return; }
+
+  const { error:e2 } = await sb.from('profiles').update({ plano }).eq('id', userId);
+  if(e2){ notif('Pag registrado mas erro ao ativar plano'); return; }
+
+  allPags.unshift({...novoPag, id:data.id, criado_em:new Date().toISOString()});
+  const u = allUsers.find(x=>x.id===userId); if(u) u.plano=plano;
+  closeModal('modal-pag');
+  renderPagsTable(allPags);
+  renderUsersTable(allUsers);
+  updateStats();
+  notif(`✅ Plano ${PLANO_LABEL[plano]} ativado para ${u?.nome||'usuário'}!`);
+}
+
+// ── Stats ─────────────────────────────────────────────────
+function updateStats(){
+  const total   = allUsers.length;
+  const pagos   = allUsers.filter(u=>['pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
+  const gratis  = allUsers.filter(u=>u.plano==='gratuito'||u.plano==='trial').length;
+  const pends   = allPags.filter(p=>p.status==='pendente').length;
+  const receita = allUsers.reduce((s,u)=>{return s+(PLANO_VALOR[u.plano]||0);},0);
+  document.getElementById('st-total').textContent    = total;
+  document.getElementById('st-pagos').textContent    = pagos;
+  document.getElementById('st-gratis').textContent   = gratis;
+  document.getElementById('st-pendentes').textContent= pends;
+  document.getElementById('st-receita').textContent  = `R$${receita.toLocaleString('pt-BR')}`;
+}
+
+// ── Métricas ──────────────────────────────────────────────
+async function loadMetricas(){
+  // Laudos do banco
+  const { data: laudos } = await sb.from('laudos').select('user_id, id');
+  const totalLaudos = laudos?.length || 0;
+
+  // Orçamentos do banco (tabela orcamentos, se existir)
+  let totalOrcs = '—';
+  try{
+    const { data: orcsData, error: orcsErr } = await sb.from('orcamentos').select('id', {count:'exact',head:true});
+    if(!orcsErr) totalOrcs = orcsData?.length ?? (orcsData === null ? 0 : '—');
+    // Para count exato:
+    const { count } = await sb.from('orcamentos').select('*',{count:'exact',head:true});
+    if(count!=null) totalOrcs=count;
+  }catch(e){ totalOrcs='—'; }
+
+  document.getElementById('mt-orcs').textContent   = totalOrcs;
+  document.getElementById('mt-laudos').textContent = totalLaudos;
+  document.getElementById('mt-ativos').textContent = allUsers.filter(u=>u.atualizado_em && new Date(u.atualizado_em)>new Date(Date.now()-30*86400000)).length;
+
+  const total  = allUsers.length;
+  const pagos  = allUsers.filter(u=>['pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
+  document.getElementById('mt-conv').textContent = total>0 ? Math.round(pagos/total*100)+'%' : '—';
+
+  // Chart planos
+  const planoCounts = {};
+  allUsers.forEach(u=>{ const p=u.plano||'gratuito'; planoCounts[p]=(planoCounts[p]||0)+1; });
+  renderBarChart('chart-planos', Object.entries(planoCounts).map(([k,v])=>({label:PLANO_LABEL[k]||k, val:v})), allUsers.length);
+
+  // Chart perfis
+  const perfilCounts = {};
+  allUsers.forEach(u=>{ const p=u.perfil||'pintor'; perfilCounts[p]=(perfilCounts[p]||0)+1; });
+  renderBarChart('chart-perfis', Object.entries(perfilCounts).map(([k,v])=>({label:k,val:v})), allUsers.length);
+
+  // Top usuários por laudo
+  if(laudos?.length){
+    const byUser = {};
+    laudos.forEach(l=>{ byUser[l.user_id]=(byUser[l.user_id]||0)+1; });
+    const topLaudos = Object.entries(byUser).sort((a,b)=>b[1]-a[1]).slice(0,5)
+      .map(([uid,cnt])=>({ label: allUsers.find(u=>u.id===uid)?.nome||uid.slice(0,8), val:cnt }));
+    renderBarChart('chart-top-laudos', topLaudos, Math.max(...topLaudos.map(x=>x.val)));
+  } else {
+    document.getElementById('chart-top-laudos').innerHTML='<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Nenhum laudo ainda</div>';
+  }
+
+  // Top usuários por orçamento (via Supabase se disponível)
+  try{
+    const { data: orcsAll } = await sb.from('orcamentos').select('user_id');
+    if(orcsAll?.length){
+      const byUserOrc={};
+      orcsAll.forEach(o=>{ byUserOrc[o.user_id]=(byUserOrc[o.user_id]||0)+1; });
+      const topOrcs=Object.entries(byUserOrc).sort((a,b)=>b[1]-a[1]).slice(0,5)
+        .map(([uid,cnt])=>({label:allUsers.find(u=>u.id===uid)?.nome||uid.slice(0,8),val:cnt}));
+      renderBarChart('chart-top-orcs',topOrcs,Math.max(...topOrcs.map(x=>x.val)));
+    } else {
+      document.getElementById('chart-top-orcs').innerHTML='<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Nenhum orçamento sincronizado ainda</div>';
+    }
+  }catch(e){
+    document.getElementById('chart-top-orcs').innerHTML='<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Orçamentos não sincronizados</div>';
+  }
+}
+
+function renderBarChart(elId, items, maxVal){
+  const el = document.getElementById(elId);
+  if(!items?.length){ el.innerHTML='<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Sem dados</div>'; return; }
+  el.innerHTML=`<div class="chart-bar-wrap">${items.map(item=>`
+    <div class="chart-bar-item">
+      <div class="chart-bar-label">${item.label}</div>
+      <div class="chart-bar"><div class="chart-bar-fill" style="width:${maxVal>0?Math.round(item.val/maxVal*100):0}%"></div></div>
+      <div class="chart-bar-val">${item.val}</div>
+    </div>`).join('')}</div>`;
+}
+
+// ── Tabs ──────────────────────────────────────────────────
+function showTab(id, el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const sec = document.getElementById('sec-'+id);
+  if(sec) sec.classList.add('active');
+  // el pode ser o botão ou o elemento pai
+  const btn = el ? el.closest('.tab')||el : null;
+  if(btn) btn.classList.add('active');
+}
+
+// ── Modais ────────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
+
+// ── Tema ──────────────────────────────────────────────────
+let dark = localStorage.getItem('pp_adm_theme') !== 'light';
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  const btn=document.getElementById('thm-btn');
+  if(btn) btn.textContent=dark?'🌙 Escuro':'☀️ Claro';
+  localStorage.setItem('pp_adm_theme',dark?'dark':'light');
+}
+function toggleTheme(){ dark=!dark; applyTheme(); }
+
+// ── Notif ─────────────────────────────────────────────────
+let _nt;
+function notif(msg){ const n=document.getElementById('notif-el'); n.textContent=msg; n.classList.add('show'); clearTimeout(_nt); _nt=setTimeout(()=>n.classList.remove('show'),3500); }
+
+// ── Verificar sessão ──────────────────────────────────────
+applyTheme();
+(async()=>{
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session && session.user.email === ADMIN_EMAIL){
+    adminUser = session.user;
+    document.getElementById('adm-nome-top').textContent = session.user.email;
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app-screen').style.display='block';
+    loadAll();
+  }
+})();
+</script>
+</body>
+</html>

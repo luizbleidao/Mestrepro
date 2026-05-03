@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#e8770a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MestrePro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="pp-config.js"></script>
+<script src="pp-modules.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+[data-theme="dark"]{--bg:#0f0f0f;--surf:#171717;--surf2:#1f1f1f;--surf3:#2a2a2a;--border:#2e2e2e;--text:#f0ede8;--text2:#a09890;--text3:#6a6460;--sh:0 4px 20px rgba(0,0,0,.4);}
+[data-theme="light"]{--bg:#f4f3ef;--surf:#fff;--surf2:#f0ede8;--surf3:#e4e0d8;--border:#d8d4cc;--text:#1a1816;--text2:#5a5450;--text3:#9a9490;--sh:0 4px 20px rgba(0,0,0,.08);}
+:root{--acc:#e8770a;--acc2:#f59e2b;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--r:10px;--rs:7px;--sw:220px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:14px;transition:background .2s,color .2s;}
+.app{display:flex;height:100vh;overflow:hidden;}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:98;}
+.ov.open{display:block;}
+/* SIDEBAR */
+.sb{width:var(--sw);min-width:var(--sw);background:var(--surf);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:transform .25s;z-index:100;}
+.sb-logo{padding:18px 18px 14px;border-bottom:1px solid var(--border);}
+.sb-logo .brand{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--acc);letter-spacing:-.5px;}
+.sb-logo .sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.sb-user{padding:12px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.av{width:32px;height:32px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:#fff;flex-shrink:0;}
+.ui .name{font-size:13px;font-weight:500;}
+.ui .pl{font-size:10px;color:var(--acc2);font-weight:600;}
+.sb-nav{flex:1;padding:8px 0;overflow-y:auto;}
+.ns{font-size:10px;font-weight:600;letter-spacing:1.2px;color:var(--text3);padding:12px 18px 5px;text-transform:uppercase;}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;color:var(--text2);font-size:13px;transition:.15s;border-left:2px solid transparent;user-select:none;}
+.ni:hover{background:var(--surf2);color:var(--text);}
+.ni.active{background:rgba(232,119,10,.12);color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.ni.locked{opacity:.4;cursor:not-allowed;}
+.ni.locked:hover{background:transparent;color:var(--text2);}
+.ni .ic{width:16px;text-align:center;font-size:15px;flex-shrink:0;}
+.lk{margin-left:auto;font-size:11px;color:var(--text3);}
+.sb-bot{padding:12px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
+.sb-bot button{width:100%;background:transparent;border:1px solid var(--border);color:var(--text2);padding:8px;border-radius:var(--rs);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;text-align:left;}
+.sb-bot button:first-child:hover{border-color:var(--acc);color:var(--acc);}
+.sb-bot button:last-child:hover{border-color:var(--red);color:var(--red);}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.tb{background:var(--surf);border-bottom:1px solid var(--border);padding:0 18px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;}
+.tb-l{display:flex;align-items:center;gap:10px;}
+.hbg{display:none;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;}
+.tb-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;white-space:nowrap;}
+.tb-r{display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.tbtn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--rs);font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.tbtn-a{background:var(--acc);color:#fff;}
+.tbtn-a:hover{background:#d46b08;}
+.theme-t{background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;transition:.15s;}
+.theme-t:hover{border-color:var(--acc);}
+.banner{background:rgba(232,119,10,.1);border-bottom:1px solid rgba(232,119,10,.25);padding:7px 18px;display:flex;align-items:center;justify-content:space-between;font-size:12px;flex-shrink:0;gap:10px;}
+.banner span{color:var(--acc);}
+.up-btn{background:var(--acc);color:#fff;border:none;padding:4px 11px;border-radius:var(--rs);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+/* CONTENT */
+.content{flex:1;overflow:hidden;position:relative;}
+.screen{display:none;height:100%;overflow-y:auto;padding:18px;animation:fi .18s;}
+.screen.active{display:block;}
+.screen.fr{padding:0;}
+.screen.fr.active{display:flex;}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+iframe{width:100%;height:100%;border:none;flex:1;display:block;}
+/* STATS */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.sc{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:15px;}
+.sc .lb{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px;}
+.sc .vl{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;}
+.sc .sb2{font-size:11px;color:var(--green);margin-top:3px;}
+.sc .sb2.ng{color:var(--red);}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.ct{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+table{width:100%;border-collapse:collapse;}
+thead th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:hover{background:var(--surf2);}
+tbody td{padding:10px;font-size:13px;color:var(--text2);}
+tbody td:first-child{color:var(--text);font-weight:500;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:rgba(34,197,94,.15);color:#4ade80;}
+.ba{background:rgba(245,158,43,.15);color:var(--acc2);}
+.br{background:rgba(239,68,68,.15);color:#f87171;}
+.bb{background:rgba(59,130,246,.15);color:#60a5fa;}
+.bz{background:var(--surf3);color:var(--text2);}
+.btn-s{display:inline-flex;align-items:center;padding:5px 10px;border-radius:var(--rs);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;transition:.15s;}
+.btn-s:hover{background:var(--surf2);color:var(--text);}
+.notif{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--acc);border-radius:var(--r);padding:10px 16px;font-size:13px;color:var(--text);display:none;z-index:999;box-shadow:var(--sh);max-width:280px;}
+.notif.show{display:flex;align-items:center;gap:8px;animation:si .3s;}
+@keyframes si{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px;}
+.loading .brand{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--acc);}
+.spin{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+@media(max-width:768px){
+  .sb{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);}
+  .sb.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.5);}
+  .hbg{display:flex;}
+  .sg{grid-template-columns:1fr 1fr;}
+  .screen{padding:14px;}
+  .hide-m{display:none;}
+}
+@media(max-width:460px){.sg{grid-template-columns:1fr 1fr;}.tb-title{font-size:14px;}}
+
+/* CONFIGURAÇÕES */
+.cfg-tabs{display:flex;gap:4px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:4px;margin-bottom:16px;flex-wrap:wrap;}
+.cfg-tab{flex:1;min-width:120px;padding:8px 12px;border:none;background:transparent;color:var(--text2);font-size:12px;font-weight:500;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;text-align:center;}
+.cfg-tab:hover{background:var(--surf2);color:var(--text);}
+.cfg-tab.active{background:var(--acc);color:#fff;}
+.cfg-section{display:none;}.cfg-section.active{display:block;}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.cfg-grid.c1{grid-template-columns:1fr;}
+.cfg-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.cfg-field label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.cfg-field input,.cfg-field select,.cfg-field textarea{background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s;width:100%;}
+.cfg-field input:focus,.cfg-field select:focus,.cfg-field textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,119,10,.12);}
+.cfg-field input:disabled{opacity:.55;cursor:not-allowed;}
+.cfg-field textarea{resize:vertical;min-height:72px;}
+.cfg-field .hint{font-size:11px;color:var(--text3);margin-top:3px;}
+.cfg-logo-wrap{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.cfg-logo-preview{width:72px;height:72px;border-radius:var(--rs);border:1px solid var(--border);object-fit:contain;background:var(--surf2);display:none;}
+.cfg-logo-placeholder{width:72px;height:72px;border-radius:var(--rs);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text3);background:var(--surf2);}
+.cfg-logo-actions{display:flex;flex-direction:column;gap:6px;}
+.cfg-msg{padding:9px 13px;border-radius:var(--rs);font-size:12px;margin-bottom:12px;display:none;}
+.cfg-msg.show{display:block;}
+.cfg-msg.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+.cfg-msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+.cfg-divider{height:1px;background:var(--border);margin:18px 0;}
+.cfg-save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+@media(max-width:600px){.cfg-grid{grid-template-columns:1fr;}.cfg-tabs{flex-direction:column;}.cfg-tab{flex:none;}}
+
+/* ── UPGRADE MODAL ── */
+.up-modal{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;padding:16px;}
+.up-modal.open{display:flex;}
+.up-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);}
+.up-modal-box{position:relative;z-index:1;background:var(--surf);border:1px solid var(--border);border-radius:18px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.5);}
+.up-modal-head{padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;}
+.up-modal-head h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+.up-modal-head p{font-size:12px;color:var(--text2);margin-top:3px;}
+.up-close{background:var(--surf2);border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;flex-shrink:0;}
+.up-toggle{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;font-size:13px;color:var(--text2);}
+.up-toggle-sw{width:46px;height:24px;background:var(--surf3);border:1px solid var(--border);border-radius:12px;position:relative;cursor:pointer;transition:.2s;}
+.up-toggle-sw.on{background:var(--acc);}
+.up-toggle-sw::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;}
+.up-toggle-sw.on::after{left:25px;}
+.up-annual-badge{background:rgba(34,197,94,.15);color:var(--green);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.up-plans{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 24px 24px;}
+.up-plan{border:1.5px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:.2s;position:relative;}
+.up-plan:hover{border-color:var(--acc);transform:translateY(-2px);}
+.up-plan.pop{border-color:var(--acc);background:rgba(232,119,10,.06);}
+.up-plan.current{border-color:var(--green);background:rgba(34,197,94,.06);cursor:default;}
+.up-plan.current:hover{transform:none;}
+.up-pop-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;white-space:nowrap;}
+.up-plan-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;margin-bottom:4px;}
+.up-plan-price{font-size:26px;font-weight:900;color:var(--acc);line-height:1;}
+.up-plan-price sup{font-size:13px;vertical-align:top;margin-top:4px;}
+.up-plan-price span{font-size:11px;color:var(--text2);font-weight:400;}
+.up-plan-annual{font-size:10px;color:var(--green);margin-top:2px;min-height:14px;}
+.up-plan-features{list-style:none;margin:12px 0;display:flex;flex-direction:column;gap:5px;}
+.up-plan-features li{font-size:11.5px;color:var(--text2);}
+.up-plan-features li::before{content:'✓ ';color:var(--green);font-weight:700;}
+.up-plan-features li.no{color:var(--text3);}
+.up-plan-features li.no::before{content:'✗ ';color:var(--text3);}
+.up-cta{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px;transition:.15s;}
+.up-cta.pri{background:var(--acc);color:#fff;}
+.up-cta.pri:hover{background:#d46b08;}
+.up-cta.sec{background:var(--surf2);border:1px solid var(--border);color:var(--text2);}
+.up-cta.sec:hover{border-color:var(--acc);color:var(--acc);}
+.up-cta.cur{background:var(--surf3);color:var(--green);cursor:default;}
+@media(max-width:520px){.up-plans{grid-template-columns:1fr;}}
+
+/* ── ONBOARDING CHECKLIST ── */
+.ob-card{background:linear-gradient(135deg,rgba(232,119,10,.08),rgba(245,158,43,.04));border:1.5px solid rgba(232,119,10,.25);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+.ob-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.ob-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;}
+.ob-progress{font-size:11px;color:var(--text2);}
+.ob-bar-wrap{height:4px;background:var(--surf3);border-radius:2px;margin-bottom:14px;overflow:hidden;}
+.ob-bar{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:2px;transition:width .4s;}
+.ob-steps{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.ob-step{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--surf);border:1px solid var(--border);cursor:pointer;transition:.15s;}
+.ob-step:hover{border-color:var(--acc);}
+.ob-step.done{opacity:.65;cursor:default;}
+.ob-step.done:hover{border-color:var(--border);}
+.ob-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;transition:.15s;}
+.ob-step.done .ob-check{background:var(--green);border-color:var(--green);color:#fff;}
+.ob-step-text{font-size:12px;font-weight:500;}
+.ob-step-sub{font-size:10px;color:var(--text3);margin-top:1px;}
+.ob-dismiss{background:transparent;border:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px;padding:4px;}
+.ob-dismiss:hover{color:var(--text2);}
+@media(max-width:500px){.ob-steps{grid-template-columns:1fr;}}
+
+/* ── TRIAL COUNTDOWN ── */
+.trial-bar{background:linear-gradient(90deg,rgba(239,68,68,.12),rgba(239,68,68,.06));border-bottom:1px solid rgba(239,68,68,.2);padding:8px 18px;display:flex;align-items:center;justify-content:space-between;font-size:12px;flex-shrink:0;gap:10px;}
+.trial-bar span{color:#f87171;}
+.trial-bar strong{color:#fca5a5;}
+.trial-days{background:#ef4444;color:#fff;border-radius:5px;padding:1px 7px;font-weight:700;font-size:11px;margin-left:4px;}
+
+
+/* SIGNATURE PAD (configurações) */
+.sig-pad-wrap{position:relative;touch-action:none;margin-bottom:8px;}
+.sig-pad-canvas{display:block;width:100%;height:120px;background:var(--surf3);border:2px dashed var(--border);border-radius:var(--rs);cursor:crosshair;touch-action:none;}
+.sig-pad-canvas.active{border-color:var(--acc);}
+.sig-pad-clear{position:absolute;top:6px;right:6px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;}
+.sig-saved-preview{max-height:60px;border-radius:var(--rs);border:1px solid var(--border);margin-top:6px;display:none;}
+
+/* ── LIST CARDS (Contratos, Recibos) ── */
+.list-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;transition:.15s;}
+.list-card:hover{border-color:var(--acc);transform:translateY(-1px);}
+
+/* ── CALENDAR / AGENDA ── */
+.ag-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surf);}
+.ag-month{font-size:14px;font-weight:800;font-family:'Syne',sans-serif;}
+.ag-nav{background:var(--surf2);border:1px solid var(--border);color:var(--text);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.ag-nav:hover{background:var(--acc);border-color:var(--acc);}
+.ag-weekdays{display:grid;grid-template-columns:repeat(7,1fr);background:var(--surf2);border-bottom:1px solid var(--border);}
+.ag-weekdays span{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:6px 0;text-transform:uppercase;letter-spacing:.4px;}
+.ag-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+.ag-cell{min-height:64px;padding:4px 6px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:.12s;background:var(--surf);}
+.ag-cell:hover{background:var(--surf2);}
+.ag-cell:nth-child(7n){border-right:none;}
+.ag-cell.ag-hoje{background:rgba(232,119,10,.08);border-color:var(--acc)!important;}
+.ag-cell.ag-hoje .ag-day{color:var(--acc);font-weight:800;}
+.ag-cell.ag-empty{background:var(--bg);cursor:default;}
+.ag-day{font-size:12px;font-weight:500;margin-bottom:3px;}
+.ag-dots{display:flex;flex-wrap:wrap;gap:2px;}
+.ag-dot{width:6px;height:6px;border-radius:50%;}
+.ag-dot-more{font-size:9px;color:var(--text3);margin-left:1px;line-height:6px;}
+.ag-ev-list{display:flex;flex-direction:column;gap:6px;}
+.ag-ev-item{display:flex;align-items:center;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:.12s;}
+.ag-ev-item:hover{border-color:var(--acc);}
+.ag-ev-stripe{width:4px;align-self:stretch;flex-shrink:0;}
+.ag-ev-body{flex:1;padding:7px 10px;}
+.ag-ev-titulo{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ag-ev-meta{font-size:10px;color:var(--text3);margin-top:1px;}
+.ag-ev-del{background:transparent;border:none;color:var(--text3);padding:8px;cursor:pointer;font-size:13px;flex-shrink:0;}
+.ag-ev-del:hover{color:#ef4444;}
+
+/* ── MODULE MODAL ── */
+.mm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:-1;}
+.mm-box{background:var(--surf);border:1px solid var(--border);border-radius:16px;width:90%;max-width:580px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.mm-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+.mm-title{font-size:15px;font-weight:800;font-family:'Syne',sans-serif;}
+.mm-close{background:var(--surf2);border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;}
+.mm-body{flex:1;overflow-y:auto;padding:18px 20px;}
+.mm-footer{display:flex;gap:8px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border);}
+.mf-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.mf-field{display:flex;flex-direction:column;gap:5px;}
+.mf-field.c2{grid-column:span 2;}
+.mf-field label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.mf-field input,.mf-field select,.mf-field textarea{background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:9px 11px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s;width:100%;}
+.mf-field input:focus,.mf-field select:focus,.mf-field textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,119,10,.12);}
+.mf-field textarea{resize:vertical;}
+@media(max-width:600px){.mf-grid{grid-template-columns:1fr;}.mf-field.c2{grid-column:span 1;}.ag-cell{min-height:44px;}}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="brand">MestrePro</div>
+  <div class="spin"></div>
+</div>
+
+<div class="app" style="display:none" id="app-wrap">
+  <div class="ov" id="ov" onclick="closeSB()"></div>
+  <aside class="sb" id="sb">
+    <div class="sb-logo"><div class="brand">MestrePro</div><div class="sub">Plataforma do Profissional</div></div>
+    <div class="sb-user">
+      <div class="av" id="av-in">JP</div>
+      <div class="ui"><div class="name" id="av-nm">—</div><div class="pl" id="av-pl">—</div></div>
+    </div>
+    <nav class="sb-nav" id="sb-nav"></nav>
+    <div class="sb-bot">
+      <button onclick="irPlanos()">↑ Mudar plano</button>
+      <button onclick="sair()">↩ Sair da conta</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="tb">
+      <div class="tb-l">
+        <button class="hbg" onclick="toggleSB()">☰</button>
+        <div class="tb-title" id="pg-title">Dashboard</div>
+      </div>
+      <div class="tb-r">
+        <button class="theme-t" onclick="toggleTheme()" id="thm-btn">🌙 Escuro</button>
+        <button class="tbtn tbtn-a hide-m" id="top-btn" onclick="topAction()">+ Nova Ação</button>
+      </div>
+    </div>
+
+    <div class="banner" id="banner" style="display:none">
+      <span>⏱ Plano Gratuito — <strong id="banner-msg"></strong></span>
+      <button class="up-btn" onclick="irPlanos()">Fazer upgrade</button>
+    </div>
+
+    <!-- TRIAL COUNTDOWN -->
+    <div class="trial-bar" id="trial-bar" style="display:none">
+      <span>⚠️ Trial ativo — <strong id="trial-msg"></strong></span>
+      <button class="up-btn" onclick="irPlanos()">Assinar agora</button>
+    </div>
+
+    <div class="content">
+      <!-- DASHBOARD -->
+      <div class="screen active" id="s-dashboard">
+        <!-- ONBOARDING CHECKLIST -->
+        <div class="ob-card" id="ob-card" style="display:none">
+          <div class="ob-header">
+            <div>
+              <div class="ob-title">🚀 Configure o MestrePro</div>
+              <div class="ob-progress" id="ob-progress">0 de 4 concluídos</div>
+            </div>
+          </div>
+          <div class="ob-bar-wrap"><div class="ob-bar" id="ob-bar" style="width:0%"></div></div>
+          <div class="ob-steps">
+            <div class="ob-step" id="ob-1" onclick="ir('configuracoes')">
+              <div class="ob-check" id="ob-chk-1">1</div>
+              <div><div class="ob-step-text">Configure sua empresa</div><div class="ob-step-sub">Nome, CPF, telefone, PIX</div></div>
+            </div>
+            <div class="ob-step" id="ob-2" onclick="ir('orcamentos')">
+              <div class="ob-check" id="ob-chk-2">2</div>
+              <div><div class="ob-step-text">Crie seu 1º orçamento</div><div class="ob-step-sub">Envie para um cliente</div></div>
+            </div>
+            <div class="ob-step" id="ob-3" onclick="ir('contratos')">
+              <div class="ob-check" id="ob-chk-3">3</div>
+              <div><div class="ob-step-text">Assine um contrato</div><div class="ob-step-sub">Proteja seu serviço</div></div>
+            </div>
+            <div class="ob-step" id="ob-4" onclick="setCfgTab('conta',document.querySelector(\'.cfg-tab\'));ir(\'configuracoes\')">
+              <div class="ob-check" id="ob-chk-4">4</div>
+              <div><div class="ob-step-text">Cadastre sua assinatura</div><div class="ob-step-sub">Aparece em todos os PDFs</div></div>
+            </div>
+          </div>
+          <button class="ob-dismiss" onclick="dispensarOnboarding()">Dispensar →</button>
+        </div>
+        <div class="sg">
+          <div class="sc"><div class="lb">Orçamentos</div><div class="vl" id="d-orc">—</div><div class="sb2" id="d-orc-s">—</div></div>
+          <div class="sc"><div class="lb">Laudos emitidos</div><div class="vl" id="d-ldo">—</div><div class="sb2" id="d-ldo-s">—</div></div>
+          <div class="sc"><div class="lb">Plano atual</div><div class="vl" id="d-plano" style="font-size:15px">—</div><div class="sb2" id="d-plano-s">—</div></div>
+          <div class="sc"><div class="lb">Membro desde</div><div class="vl" id="d-desde" style="font-size:15px">—</div><div class="sb2">data de cadastro</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="card">
+            <div class="ch"><div class="ct">Orçamentos recentes</div><button class="btn-s" onclick="ir('orcamentos')">Ver todos →</button></div>
+            <div id="dash-orcs"><div style="font-size:13px;color:var(--text3);text-align:center;padding:20px">Carregando...</div></div>
+          </div>
+          <div class="card">
+            <div class="ch"><div class="ct">Laudos recentes</div><button class="btn-s" onclick="ir('laudos')">Ver todos →</button></div>
+            <div id="dash-laudos"><div style="font-size:13px;color:var(--text3);text-align:center;padding:20px">Carregando...</div></div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- CONTRATOS -->
+      <div class="screen" id="s-contratos">
+        <div style="text-align:center;padding:60px 20px;color:var(--text2)">
+          <div style="font-size:48px;margin-bottom:12px">📋</div>
+          <div style="font-size:14px">Carregando contratos...</div>
+        </div>
+      </div>
+
+      <!-- RECIBOS -->
+      <div class="screen" id="s-recibos">
+        <div style="text-align:center;padding:60px 20px;color:var(--text2)">
+          <div style="font-size:48px;margin-bottom:12px">🧾</div>
+          <div style="font-size:14px">Carregando recibos...</div>
+        </div>
+      </div>
+
+      <!-- AGENDA -->
+      <div class="screen" id="s-agenda">
+        <div style="text-align:center;padding:60px 20px;color:var(--text2)">
+          <div style="font-size:48px;margin-bottom:12px">📅</div>
+          <div style="font-size:14px">Carregando agenda...</div>
+        </div>
+      </div>
+
+      <!-- CONFIGURAÇÕES -->
+      <div class="screen" id="s-configuracoes">
+        <div class="cfg-tabs">
+          <button class="cfg-tab active" onclick="setCfgTab('conta',this)">👤 Minha Conta</button>
+          <button class="cfg-tab" onclick="setCfgTab('empresa',this)">🏢 Empresa / PDF</button>
+          <button class="cfg-tab" onclick="setCfgTab('preferencias',this)">🎛️ Preferências</button>
+        </div>
+
+        <!-- ABA CONTA -->
+        <div class="cfg-section active" id="cfg-conta">
+          <div class="card" style="max-width:600px;margin-bottom:12px">
+            <div class="ch"><div class="ct">Dados Pessoais</div></div>
+            <div class="cfg-msg" id="cfg-conta-msg"></div>
+            <div class="cfg-grid">
+              <div class="cfg-field">
+                <label>Nome completo</label>
+                <input id="cfg-nome" type="text" placeholder="Seu nome completo">
+              </div>
+              <div class="cfg-field">
+                <label>E-mail (login)</label>
+                <input id="cfg-email" type="email" disabled>
+                <span class="hint">Para alterar o e-mail, entre em contato com o suporte.</span>
+              </div>
+              <div class="cfg-field">
+                <label>WhatsApp / Telefone</label>
+                <input id="cfg-tel" type="tel" placeholder="(17) 99999-9999">
+              </div>
+              <div class="cfg-field">
+                <label>Cidade / UF</label>
+                <input id="cfg-cidade" type="text" placeholder="Ex: Franca / SP">
+              </div>
+            </div>
+            <div class="cfg-save-row">
+              <button class="tbtn tbtn-a" onclick="saveAccountData()">💾 Salvar dados pessoais</button>
+            </div>
+          </div>
+
+          <div class="card" style="max-width:600px;margin-bottom:12px">
+            <div class="ch"><div class="ct">✍️ Assinatura do Profissional</div></div>
+            <div class="cfg-msg" id="cfg-sig-msg"></div>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+              Desenhe sua assinatura abaixo. Ela será inserida automaticamente nos PDFs de orçamentos e laudos.
+            </p>
+            <div class="sig-pad-wrap">
+              <canvas id="prof-sig-canvas" class="sig-pad-canvas"></canvas>
+              <button class="sig-pad-clear" onclick="clearProfSig()">✕ Limpar</button>
+            </div>
+            <p style="font-size:11px;color:var(--text3);margin-bottom:10px">Assine com o mouse ou o dedo</p>
+            <div id="sig-saved-wrap" style="display:none;margin-bottom:10px">
+              <p style="font-size:11px;color:var(--green);margin-bottom:4px">✅ Assinatura salva:</p>
+              <img id="sig-saved-preview" class="sig-saved-preview">
+            </div>
+            <div class="cfg-save-row">
+              <button class="tbtn tbtn-a" onclick="saveProfSig()">💾 Salvar assinatura</button>
+            </div>
+          </div>
+
+          <div class="card" style="max-width:600px">
+            <div class="ch"><div class="ct">Alterar Senha</div></div>
+            <div class="cfg-msg" id="cfg-senha-msg"></div>
+            <div class="cfg-grid">
+              <div class="cfg-field">
+                <label>Nova senha</label>
+                <input id="cfg-senha-nova" type="password" placeholder="Mínimo 6 caracteres">
+              </div>
+              <div class="cfg-field">
+                <label>Confirmar nova senha</label>
+                <input id="cfg-senha-conf" type="password" placeholder="Repita a nova senha">
+              </div>
+            </div>
+            <div class="cfg-save-row">
+              <button class="tbtn tbtn-a" onclick="changePassword()">🔑 Alterar senha</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABA EMPRESA -->
+        <div class="cfg-section" id="cfg-empresa">
+          <div class="card" style="max-width:700px">
+            <div class="ch"><div class="ct">Dados da Empresa / Cabeçalho do PDF</div></div>
+            <div class="cfg-msg" id="cfg-empresa-msg"></div>
+
+            <div style="margin-bottom:18px">
+              <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:8px">Logo da Empresa</label>
+              <div class="cfg-logo-wrap">
+                <div id="cfg-logo-placeholder" class="cfg-logo-placeholder">🏢</div>
+                <img id="cfg-logo-preview" class="cfg-logo-preview" alt="Logo">
+                <div class="cfg-logo-actions">
+                  <label class="tbtn" style="background:var(--surf2);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:12px;">
+                    📁 Escolher logo
+                    <input type="file" accept="image/*" id="cfg-logo-file" style="display:none" onchange="previewCfgLogo(this)">
+                  </label>
+                  <button class="tbtn" style="background:transparent;border:1px solid var(--border);color:var(--text3);font-size:12px;" onclick="removeCfgLogo()">🗑 Remover</button>
+                </div>
+              </div>
+              <span style="font-size:11px;color:var(--text3)">Aparece no cabeçalho de todos os PDFs gerados.</span>
+            </div>
+
+            <div class="cfg-divider"></div>
+
+            <div class="cfg-grid">
+              <div class="cfg-field">
+                <label>Nome / Razão Social *</label>
+                <input id="cfg-emp-nome" type="text" placeholder="Ex: João Silva Pinturas ME">
+              </div>
+              <div class="cfg-field">
+                <label>CPF / CNPJ</label>
+                <input id="cfg-emp-doc" type="text" placeholder="000.000.000-00 ou 00.000.000/0001-00">
+              </div>
+              <div class="cfg-field">
+                <label>Telefone / WhatsApp *</label>
+                <input id="cfg-emp-tel" type="tel" placeholder="(17) 99999-9999">
+              </div>
+              <div class="cfg-field">
+                <label>E-mail comercial</label>
+                <input id="cfg-emp-email" type="email" placeholder="contato@empresa.com">
+              </div>
+              <div class="cfg-field">
+                <label>Cidade / UF</label>
+                <input id="cfg-emp-cidade" type="text" placeholder="Ex: Ribeirão Preto / SP">
+              </div>
+              <div class="cfg-field">
+                <label>Endereço completo</label>
+                <input id="cfg-emp-endereco" type="text" placeholder="Rua, nº, bairro">
+              </div>
+              <div class="cfg-field">
+                <label>Site / Instagram</label>
+                <input id="cfg-emp-site" type="text" placeholder="@pintor_silva ou www.empresa.com">
+              </div>
+              <div class="cfg-field">
+                <label>Registro profissional (CREA, CRQ...)</label>
+                <input id="cfg-emp-reg" type="text" placeholder="Opcional">
+              </div>
+            </div>
+
+            <div class="cfg-divider"></div>
+            <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Recebimento / PIX</div>
+            <div class="cfg-grid">
+              <div class="cfg-field">
+                <label>Chave PIX</label>
+                <input id="cfg-pix-chave" type="text" placeholder="CPF, e-mail, telefone ou chave aleatória">
+                <span class="hint">Usada na tela de pagamento após o cliente escolher um plano.</span>
+              </div>
+              <div class="cfg-field">
+                <label>WhatsApp para comprovante</label>
+                <input id="cfg-pix-wpp" type="tel" placeholder="5517999999999 (com DDI e DDD)">
+                <span class="hint">Número para onde o cliente envia o comprovante via WhatsApp.</span>
+              </div>
+            </div>
+
+            <div class="cfg-divider"></div>
+            <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Rodapé do PDF</div>
+
+            <div class="cfg-grid c1">
+              <div class="cfg-field">
+                <label>Texto do rodapé</label>
+                <textarea id="cfg-emp-rodape" rows="2" placeholder="Ex: Garantia de 1 ano para mão de obra. Serviços executados com materiais de primeira linha."></textarea>
+                <span class="hint">Aparece no rodapé de todos os PDFs de orçamento.</span>
+              </div>
+              <div class="cfg-field">
+                <label>Nota de cabeçalho (opcional)</label>
+                <input id="cfg-emp-nota" type="text" placeholder="Ex: Slogan ou área de atuação">
+              </div>
+            </div>
+
+            <div class="cfg-save-row">
+              <button class="tbtn tbtn-a" onclick="saveCompanyData()">💾 Salvar dados da empresa</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABA PREFERÊNCIAS -->
+        <div class="cfg-section" id="cfg-preferencias">
+          <div class="card" style="max-width:600px">
+            <div class="ch"><div class="ct">Preferências de Orçamento</div></div>
+            <div class="cfg-msg" id="cfg-pref-msg"></div>
+            <div class="cfg-grid">
+              <div class="cfg-field">
+                <label>Validade padrão (dias)</label>
+                <input id="cfg-validade" type="number" min="1" max="90" value="15" placeholder="15">
+                <span class="hint">Pré-preenche o campo de validade em novos orçamentos.</span>
+              </div>
+              <div class="cfg-field">
+                <label>Condição de pagamento padrão</label>
+                <select id="cfg-cond">
+                  <option value="50_50">50% entrada + 50% entrega</option>
+                  <option value="30_70">30% entrada + 70% entrega</option>
+                  <option value="avista">À vista na conclusão</option>
+                  <option value="custom">Outro (ver observações)</option>
+                </select>
+              </div>
+              <div class="cfg-field">
+                <label>Nome para assinatura no PDF</label>
+                <input id="cfg-assinatura" type="text" placeholder="Ex: João da Silva — Pintor Profissional">
+                <span class="hint">Aparece na linha de assinatura do orçamento.</span>
+              </div>
+              <div class="cfg-field">
+                <label>Observações padrão</label>
+                <textarea id="cfg-obs-padrao" rows="3" placeholder="Texto que aparece automaticamente no campo Observações de novos orçamentos."></textarea>
+              </div>
+            </div>
+            <div class="cfg-save-row">
+              <button class="tbtn tbtn-a" onclick="savePreferences()">💾 Salvar preferências</button>
+            </div>
+          </div>
+
+          <div class="card" style="max-width:600px;margin-top:12px">
+            <div class="ch"><div class="ct">Aparência</div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0">
+              <div>
+                <div style="font-size:13px;font-weight:500">Tema da interface</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">Alterne entre modo escuro e claro</div>
+              </div>
+              <button class="theme-t" onclick="toggleTheme()" id="thm-btn-cfg">🌙 Escuro</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ORÇAMENTOS iframe -->
+      <div class="screen fr" id="s-orcamentos">
+        <iframe id="orc-fr" src="pintopro-orcamentos.html" title="Orçamentos"></iframe>
+      </div>
+      <!-- LAUDOS iframe -->
+      <div class="screen fr" id="s-laudos">
+        <iframe id="ldo-fr" src="pintopro-laudos.html" title="Laudos Técnicos"></iframe>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="notif" id="notif-el"></div>
+
+<!-- UPGRADE MODAL -->
+<div class="up-modal" id="up-modal">
+  <div class="up-modal-bg" onclick="fecharModalPlanos()"></div>
+  <div class="up-modal-box">
+    <div class="up-modal-head">
+      <div>
+        <h2>Escolha seu plano</h2>
+        <p>Trabalhe como profissional. Cobre como empresário.</p>
+      </div>
+      <button class="up-close" onclick="fecharModalPlanos()">✕</button>
+    </div>
+    <div class="up-toggle">
+      <span>Mensal</span>
+      <div class="up-toggle-sw" id="up-toggle" onclick="toggleAnual()"></div>
+      <span>Anual</span>
+      <span class="up-annual-badge" id="up-annual-badge">2 meses grátis</span>
+    </div>
+    <div class="up-plans" id="up-plans-grid">
+      <!-- Renderizado por JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+const {createClient} = supabase;
+const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+
+const CFG = {
+  // ─── Isca — sem cobrança ─────────────────────────────────────────────────
+  gratuito: {
+    label:'🆓 Gratuito',
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    orcLim:3,        // 3 total (não/mês) — suficiente para entender, insuficiente para trabalhar
+    laudoLim:1,      // 1 total — mostra a qualidade, não resolve o problema
+    pdfMarca:true,   // marca d'água visível
+    multiUser:false, ia:false,
+  },
+  // ─── Trial 7 dias — acesso completo temporário ───────────────────────────
+  trial: {
+    label:'🕐 Trial 7 dias',
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    orcLim:9999, laudoLim:9999,
+    pdfMarca:false, multiUser:false, ia:false,
+  },
+  // ─── Básico R$49/mês — R$490/ano ─────────────────────────────────────────
+  basico: {
+    label:'⭐ Básico',
+    telas:['dashboard','orcamentos','contratos','recibos','agenda','configuracoes'],
+    orcLim:9999,
+    laudoLim:3,      // 3 laudos/mês — gatilho natural de upgrade para Pro
+    pdfMarca:false, multiUser:false, ia:false,
+    _alias:['pintor-std'],
+  },
+  // ─── Pro R$97/mês — R$970/ano ────────────────────────────────────────────
+  pro: {
+    label:'🚀 Pro',
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    orcLim:9999, laudoLim:9999,
+    pdfMarca:false, multiUser:false, ia:false,
+    _alias:['pintor-pro'],
+  },
+  // ─── Equipe R$197/mês — R$1.970/ano ──────────────────────────────────────
+  equipe: {
+    label:'👥 Equipe',
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    orcLim:9999, laudoLim:9999,
+    pdfMarca:false, multiUser:true, multiUserLim:5, ia:false,
+    _alias:['lojista'],
+  },
+  // ─── IA Pro R$297/mês — R$2.970/ano ──────────────────────────────────────
+  'ia-pro': {
+    label:'🤖 IA Pro',
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    orcLim:9999, laudoLim:9999,
+    pdfMarca:false, multiUser:true, multiUserLim:9999, ia:true,
+    _alias:[],
+  },
+};
+
+// Resolve aliases retroativos: planos antigos do banco → nomes novos
+function _resolverPlano(p){
+  if(!p) return 'gratuito';
+  if(CFG[p]) return p;
+  for(const [key,val] of Object.entries(CFG)){
+    if(val._alias?.includes(p)) return key;
+  }
+  return 'gratuito';
+}
+const NAV = [
+  {id:'dashboard',     ic:'📊', lb:'Dashboard'},
+  {id:'orcamentos',    ic:'📝', lb:'Orçamentos'},
+  {id:'laudos',        ic:'🔬', lb:'Laudos Técnicos'},
+  {id:'contratos',     ic:'📄', lb:'Contratos'},
+  {id:'recibos',       ic:'🧾', lb:'Recibos'},
+  {id:'agenda',        ic:'📅', lb:'Agenda'},
+  {id:'configuracoes', ic:'⚙️', lb:'Configurações'},
+];
+const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',contratos:'Contratos',recibos:'Recibos',agenda:'Agenda',configuracoes:'Configurações'};
+const BTNS   = {dashboard:'+ Nova ação',orcamentos:'+ Novo orçamento',laudos:'+ Novo laudo',contratos:'+ Novo contrato',recibos:'+ Novo recibo',agenda:'+ Agendar',configuracoes:'Salvar'};
+
+let USER=null, PROFILE=null, PLANO='gratuito', cfg=CFG.gratuito;
+
+async function init(){
+  // Demo
+  const demoRaw = sessionStorage.getItem('pp_demo');
+  if(demoRaw){
+    try{
+      const d=JSON.parse(demoRaw);
+      USER={id:'demo',email:'demo@pintopro.com'};
+      PROFILE={nome:d.nome,perfil:d.perfil,plano:d.plano,criado_em:new Date().toISOString()};
+      PLANO=_resolverPlano(d.plano); setup(); return;
+    }catch{}
+  }
+  // Sessão real
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){window.location.href='pintopro-login.html';return;}
+  USER=session.user;
+  const {data:profile}=await sb.from('profiles').select('*').eq('id',USER.id).single();
+  PROFILE=profile||{nome:USER.user_metadata?.nome||USER.email,perfil:'pintor',plano:'gratuito',criado_em:USER.created_at};
+  PLANO=_resolverPlano(PROFILE.plano||'gratuito');
+  // Armazena info do usuário para iframes filhos (orcamentos/laudos)
+  sessionStorage.setItem('pp_user_id', USER.id);
+  sessionStorage.setItem('pp_user_plano', PLANO);
+  setup();
+}
+
+function setup(){
+  cfg=CFG[PLANO]||CFG.gratuito;
+  // Load profissional sig from Supabase into localStorage
+  if(USER?.id && USER.id!=='demo' && PROFILE?.sig_profissional){
+    localStorage.setItem('pp_sig_profissional', PROFILE.sig_profissional);
+  }
+  applyTheme(); renderNav(); setupUser(); loadDashboard();
+  checkTrialCountdown();
+  document.getElementById('loading').style.display='none';
+  document.getElementById('app-wrap').style.display='flex';
+  ir('dashboard');
+  // Ouvir atualizações dos iframes (orçamentos ou laudos salvos)
+  window.addEventListener('message', e => {
+    if(e.data?.type==='pp_orc_updated' || e.data?.type==='pp_ldo_updated'){
+      loadDashboard();
+    }
+  });
+}
+
+function renderNav(){
+  document.getElementById('sb-nav').innerHTML=NAV.map(item=>{
+    const locked=!cfg.telas.includes(item.id);
+    return `<div class="ni${locked?' locked':''}" id="ni-${item.id}" onclick="${locked?'irPlanos()':`ir('${item.id}')`}">
+      <span class="ic">${item.ic}</span><span>${item.lb}</span>
+      ${locked?'<span class="lk">🔒</span>':''}
+    </div>`;
+  }).join('');
+}
+
+function setupUser(){
+  const nome=PROFILE?.nome||USER?.email||'Profissional';
+  document.getElementById('av-in').textContent=nome.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('av-nm').textContent=nome;
+  document.getElementById('av-pl').textContent=cfg.label;
+  document.getElementById('d-plano').textContent=cfg.label;
+
+  const _isPago = !['gratuito','trial'].includes(PLANO);
+  document.getElementById('d-plano-s').textContent = _isPago ? 'Plano ativo ✓' : 'Faça upgrade para mais recursos';
+
+  if(PROFILE?.criado_em){
+    const d=new Date(PROFILE.criado_em);
+    document.getElementById('d-desde').textContent=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+  }
+
+  // Banner genérico só aparece no gratuito (trial tem o trial-bar laranja próprio)
+  if(PLANO==='gratuito'){
+    document.getElementById('banner').style.display='flex';
+    const partes=[];
+    if(cfg.orcLim<9999) partes.push(`${cfg.orcLim} orçamentos`);
+    if(cfg.laudoLim<9999) partes.push(`${cfg.laudoLim} laudo${cfg.laudoLim!==1?'s':''}`);
+    document.getElementById('banner-msg').textContent=`Plano Gratuito — limite de ${partes.join(' e ')}`;
+  }
+}
+
+async function loadDashboard(){
+  // Demo mode
+  if(USER?.id==='demo'){
+    document.getElementById('d-orc').textContent='2/3';
+    document.getElementById('d-orc-s').textContent='1 restante';
+    document.getElementById('d-ldo').textContent='1/1';
+    document.getElementById('d-ldo-s').textContent='0 restantes este mês';
+    renderDashOrcs([{cliente:'Residência Silva',status:'aprovado',total:3200},{cliente:'Comércio Mendes',status:'enviado',total:5400}]);
+    renderDashLaudos([{cliente:'Loja Mendes',criticidade:'CRÍTICO',data:'08/04'},{cliente:'Residência Souza',criticidade:'RELEVANTE',data:'05/04'}]);
+    setTimeout(renderOnboarding, 300);
+    return;
+  }
+
+  // Orçamentos — Supabase como fonte da verdade, localStorage como fallback
+  let orcs = [];
+  try{
+    const {data:orcsDb}=await sb.from('orcamentos').select('id,numero,cliente,status,total').eq('user_id',USER.id).order('criado_em',{ascending:false});
+    orcs = orcsDb || [];
+  }catch(e){
+    const orcKey='orcamentos_'+(USER?.id||'anon');
+    orcs=JSON.parse(localStorage.getItem(orcKey)||'[]');
+  }
+
+  const orcCount=orcs.length;
+  const _limOrc=cfg.orcLim<9999;
+  document.getElementById('d-orc').textContent=_limOrc?`${orcCount}/${cfg.orcLim}`:(orcCount||'—');
+  document.getElementById('d-orc-s').textContent=_limOrc?`${Math.max(0,cfg.orcLim-orcCount)} restante${cfg.orcLim-orcCount!==1?'s':''}`:'Total criados';
+
+  // Laudos — conta do mês corrente para planos com limite
+  const {data:laudos}=await sb.from('laudos').select('id,cliente,criticidade,data').eq('user_id',USER.id).order('data',{ascending:false}).limit(5);
+  const laudoCount=laudos?.length||0;
+  const _limLdo=cfg.laudoLim<9999;
+
+  // Para planos com limite mensal, contar só o mês atual
+  let laudoMes=laudoCount;
+  if(_limLdo && laudos?.length){
+    const agora=new Date();
+    laudoMes=laudos.filter(l=>{
+      if(!l.data) return false;
+      const d=new Date(l.data);
+      return d.getMonth()===agora.getMonth() && d.getFullYear()===agora.getFullYear();
+    }).length;
+  }
+  document.getElementById('d-ldo').textContent=_limLdo?`${laudoMes}/${cfg.laudoLim}`:laudoCount;
+  document.getElementById('d-ldo-s').textContent=_limLdo?`${Math.max(0,cfg.laudoLim-laudoMes)} restante${(cfg.laudoLim-laudoMes)!==1?'s':''} este mês`:'laudos emitidos';
+
+  renderDashLaudos(laudos||[]);
+  renderDashOrcs(orcs.slice(0,3));
+
+  // Onboarding após carregar contratos
+  if(typeof _contratos!=='undefined') renderOnboarding();
+  else setTimeout(renderOnboarding,800);
+}
+
+function renderDashOrcs(list){
+  const el=document.getElementById('dash-orcs');
+  if(!list?.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);text-align:center;padding:20px">Nenhum orçamento ainda</div>';return;}
+  const sm={aprovado:'badge bg',enviado:'badge bb',rascunho:'badge bz',recusado:'badge br'};
+  const fmtVal=v=>v!=null&&v>0?'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';
+  el.innerHTML=`<table><thead><tr><th>Cliente</th><th>Status</th><th>Valor</th></tr></thead><tbody>`+
+    list.map(o=>`<tr><td>${o.cliente||'—'}</td><td><span class="${sm[o.status]||'badge bz'}">${o.status||'—'}</span></td><td>${fmtVal(o.total)}</td></tr>`).join('')+
+  `</tbody></table>`;
+}
+
+function renderDashLaudos(list){
+  const el=document.getElementById('dash-laudos');
+  if(!list?.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);text-align:center;padding:20px">Nenhum laudo ainda</div>';return;}
+  const cm={'CRÍTICO':'badge br','RELEVANTE':'badge ba','MODERADO':'badge bg'};
+  el.innerHTML=`<table><thead><tr><th>Cliente</th><th>Criticidade</th><th>Data</th></tr></thead><tbody>`+
+    list.map(l=>`<tr><td>${l.cliente||'—'}</td><td><span class="${cm[l.criticidade]||'badge bz'}">${l.criticidade||'—'}</span></td><td>${l.data||'—'}</td></tr>`).join('')+
+  `</tbody></table>`;
+}
+
+function ir(id){
+  if(!cfg.telas.includes(id)){irPlanos();return;}
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  const ni=document.getElementById('ni-'+id);if(ni)ni.classList.add('active');
+  document.getElementById('pg-title').textContent=TITLES[id]||id;
+  if(id==='configuracoes'){loadSettings();setTimeout(initProfSigPad,50);}
+  if(id==='contratos')loadContratos();
+  if(id==='recibos')loadRecibos();
+  if(id==='agenda')loadAgenda();
+  document.getElementById('top-btn').textContent=BTNS[id]||'+ Nova ação';
+  closeSB();
+}
+
+function topAction(){
+  const t=document.getElementById('pg-title').textContent;
+  if(t==='Orçamentos'){
+    const fr=document.getElementById('orc-fr');
+    if(fr&&fr.contentWindow){fr.contentWindow.postMessage({type:'pp_cmd',cmd:'novoOrcamento'},'*');}
+    else{notif('📋 Aguardando carregamento...');}
+  }
+  else if(t==='Laudos Técnicos'){
+    const fr=document.getElementById('ldo-fr');
+    if(fr&&fr.contentWindow){fr.contentWindow.postMessage({type:'pp_cmd',cmd:'startNewLaudo'},'*');}
+    else{notif('🔬 Aguardando carregamento...');}
+  }
+  else if(t==='Configurações')saveAllSettings();
+  else if(t==='Contratos')openContratoModal();
+  else if(t==='Recibos')openReciboModal();
+  else if(t==='Agenda')openEventoModal();
+  else notif('✅ Ação executada!');
+}
+
+function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('ov').classList.toggle('open');}
+function closeSB(){document.getElementById('sb').classList.remove('open');document.getElementById('ov').classList.remove('open');}
+
+let dark=localStorage.getItem('pp_theme')!=='light';
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  const btn=document.getElementById('thm-btn');
+  if(btn)btn.textContent=dark?'🌙 Escuro':'☀️ Claro';
+  localStorage.setItem('pp_theme',dark?'dark':'light');
+}
+function toggleTheme(){
+  dark=!dark;applyTheme();
+  // Sync theme with embedded iframes
+  const theme=dark?'dark':'light';
+  ['orc-fr','ldo-fr'].forEach(id=>{
+    const fr=document.getElementById(id);
+    if(fr&&fr.contentWindow)fr.contentWindow.postMessage({type:'pp_cmd',cmd:'syncTheme',theme},'*');
+  });
+}
+
+function irPlanos(){ abrirModalPlanos(); }
+
+// ══════════════════════════════════════════════
+// MODAL DE UPGRADE
+// ══════════════════════════════════════════════
+const PLANOS_CONFIG = [
+  {
+    id: 'basico', nome: 'Básico', preco: 49, precoAnual: 490,
+    features: ['Orçamentos ilimitados','Contratos e recibos','Assinatura digital','Agenda de visitas'],
+    nao: ['Laudos técnicos','IA integrada'],
+  },
+  {
+    id: 'pro', nome: 'Pro', preco: 97, precoAnual: 970, popular: true,
+    features: ['Tudo do Básico','Laudos técnicos ilimitados','Dashboard financeiro','Suporte prioritário'],
+    nao: ['IA integrada'],
+  },
+  {
+    id: 'equipe', nome: 'Equipe', preco: 197, precoAnual: 1970,
+    features: ['Tudo do Pro','Até 5 usuários','Relatórios gerenciais','Multi-usuário'],
+    nao: [],
+  },
+  {
+    id: 'ia-pro', nome: 'IA Pro', preco: 297, precoAnual: 2970,
+    features: ['Tudo do Equipe','IA gera orçamentos','IA responde clientes','Gerador de posts'],
+    nao: [],
+  },
+];
+
+let _anual = false;
+function toggleAnual(){
+  _anual = !_anual;
+  document.getElementById('up-toggle').classList.toggle('on', _anual);
+  renderPlanosGrid();
+}
+
+function renderPlanosGrid(){
+  const grid = document.getElementById('up-plans-grid');
+  const planoAtual = _resolverPlano(PLANO);
+
+  grid.innerHTML = PLANOS_CONFIG.map(p => {
+    const isCurrent = planoAtual === p.id || (PLANO === p.id);
+    const price = _anual ? Math.round(p.precoAnual/12) : p.preco;
+    const saving = _anual ? `Economize R$ ${p.preco*12 - p.precoAnual}` : '';
+    return `
+    <div class="up-plan${p.popular?' pop':''}${isCurrent?' current':''}">
+      ${p.popular ? '<div class="up-pop-badge">⭐ Mais popular</div>' : ''}
+      <div class="up-plan-name">${p.nome}</div>
+      <div class="up-plan-price"><sup>R$</sup>${price}<span>/mês</span></div>
+      <div class="up-plan-annual">${_anual ? saving : ' '}</div>
+      <ul class="up-plan-features">
+        ${p.features.map(f=>`<li>${f}</li>`).join('')}
+        ${p.nao.map(f=>`<li class="no">${f}</li>`).join('')}
+      </ul>
+      ${isCurrent
+        ? `<button class="up-cta cur" disabled>✓ Plano atual</button>`
+        : `<button class="up-cta ${p.popular?'pri':'sec'}" onclick="irCheckout('${p.id}',${_anual})">Assinar ${p.nome} →</button>`
+      }
+    </div>`;
+  }).join('');
+}
+
+function abrirModalPlanos(){
+  document.getElementById('up-modal').classList.add('open');
+  renderPlanosGrid();
+}
+function fecharModalPlanos(){
+  document.getElementById('up-modal').classList.remove('open');
+}
+
+function irCheckout(planoId, anual){
+  // Salva intenção e redireciona para página de checkout
+  try { localStorage.setItem('mp_checkout_intencao', JSON.stringify({planoId, anual, userId: USER?.id, email: USER?.email, ts: Date.now()})); } catch{}
+  // Se existe página de planos na mesma origem, vai para lá; senão usa link direto do MP
+  const links = {
+    basico:  anual ? window.PP?.mpBasicoAnual  || '' : window.PP?.mpBasico  || '',
+    pro:     anual ? window.PP?.mpProAnual     || '' : window.PP?.mpPro     || '',
+    equipe:  anual ? window.PP?.mpEquipeAnual  || '' : window.PP?.mpEquipe  || '',
+    'ia-pro':anual ? window.PP?.mpIaProAnual   || '' : window.PP?.mpIaPro   || '',
+  };
+  const link = links[planoId];
+  if (link) { window.open(link, '_blank'); }
+  else {
+    // Fallback: página de planos interna
+    window.location.href = 'pintopro-planos.html?plano=' + planoId + (anual ? '&periodo=anual' : '');
+  }
+  fecharModalPlanos();
+}
+
+// ══════════════════════════════════════════════
+// ONBOARDING CHECKLIST
+// ══════════════════════════════════════════════
+function renderOnboarding(){
+  const key = 'pp_ob_dismissed_' + (USER?.id || 'anon');
+  if(localStorage.getItem(key)) return;
+
+  const emp = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+  const orcKey = 'orcamentos_' + (USER?.id || 'anon');
+  const orcs = JSON.parse(localStorage.getItem(orcKey) || '[]');
+  const temSig = !!localStorage.getItem('pp_sig_profissional');
+
+  const steps = [
+    !!emp.nome,
+    orcs.length > 0,
+    (_contratos || []).length > 0,
+    temSig,
+  ];
+
+  const done = steps.filter(Boolean).length;
+  if(done === 4){ localStorage.setItem(key, '1'); return; }
+
+  document.getElementById('ob-card').style.display = 'block';
+  document.getElementById('ob-progress').textContent = `${done} de 4 concluídos`;
+  document.getElementById('ob-bar').style.width = (done * 25) + '%';
+
+  steps.forEach((ok, i) => {
+    const step = document.getElementById('ob-' + (i+1));
+    const chk  = document.getElementById('ob-chk-' + (i+1));
+    if(ok){ step.classList.add('done'); chk.textContent = '✓'; }
+    else  { step.classList.remove('done'); chk.textContent = i+1; }
+  });
+}
+
+function dispensarOnboarding(){
+  const key = 'pp_ob_dismissed_' + (USER?.id || 'anon');
+  localStorage.setItem(key, '1');
+  document.getElementById('ob-card').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════
+// TRIAL COUNTDOWN
+// ══════════════════════════════════════════════
+function checkTrialCountdown(){
+  const trialBar = document.getElementById('trial-bar');
+  if(PLANO !== 'trial' || !PROFILE?.criado_em){ trialBar.style.display='none'; return; }
+
+  const criado = new Date(PROFILE.criado_em);
+  const expira = new Date(criado.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const agora  = new Date();
+  const diffMs = expira - agora;
+  const dias   = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if(dias <= 0){
+    trialBar.style.display='flex';
+    document.getElementById('trial-msg').innerHTML = `seu trial <strong>expirou</strong> — faça upgrade para continuar`;
+    return;
+  }
+  trialBar.style.display='flex';
+  document.getElementById('trial-msg').innerHTML = `<span class="trial-days">${dias}d</span> restante${dias===1?'':'s'} no trial`;
+  // Ocultar banner genérico quando trial-bar está visível
+  document.getElementById('banner').style.display='none';
+}
+async function sair(){
+  sessionStorage.removeItem('pp_demo');
+  await sb.auth.signOut();
+  window.location.href='pintopro-login.html';
+}
+
+let _nt;
+function notif(msg){const n=document.getElementById('notif-el');n.textContent=msg;n.classList.add('show');clearTimeout(_nt);_nt=setTimeout(()=>n.classList.remove('show'),3000);}
+
+
+// ── ASSINATURA DO PROFISSIONAL ───────────────────────
+let _profSigCanvas = null, _profSigCtx = null, _profSigDrawing = false, _profSigHasDrawn = false;
+
+function initProfSigPad() {
+  const canvas = document.getElementById('prof-sig-canvas');
+  if (!canvas || _profSigCanvas === canvas) return;
+  _profSigCanvas = canvas;
+  _profSigCtx = canvas.getContext('2d');
+
+  const resize = () => {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const imgData = _profSigCtx.getImageData(0, 0, canvas.width, canvas.height);
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    _profSigCtx.scale(dpr, dpr);
+    _profSigCtx.lineWidth = 2; _profSigCtx.lineCap = 'round'; _profSigCtx.lineJoin = 'round';
+    _profSigCtx.strokeStyle = dark ? '#f0ede8' : '#1a1816';
+  };
+  resize();
+
+  const gp = e => { const r = canvas.getBoundingClientRect(); const s = e.touches ? e.touches[0] : e; return {x: s.clientX - r.left, y: s.clientY - r.top}; };
+  canvas.addEventListener('mousedown', e => { _profSigDrawing = true; const p = gp(e); _profSigCtx.beginPath(); _profSigCtx.moveTo(p.x, p.y); canvas.classList.add('active'); });
+  canvas.addEventListener('mousemove', e => { if (!_profSigDrawing) return; const p = gp(e); _profSigCtx.lineTo(p.x, p.y); _profSigCtx.stroke(); _profSigHasDrawn = true; });
+  canvas.addEventListener('mouseup', () => { _profSigDrawing = false; canvas.classList.remove('active'); });
+  canvas.addEventListener('mouseleave', () => { _profSigDrawing = false; canvas.classList.remove('active'); });
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); _profSigDrawing = true; const p = gp(e); _profSigCtx.beginPath(); _profSigCtx.moveTo(p.x, p.y); canvas.classList.add('active'); }, { passive: false });
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!_profSigDrawing) return; const p = gp(e); _profSigCtx.lineTo(p.x, p.y); _profSigCtx.stroke(); _profSigHasDrawn = true; }, { passive: false });
+  canvas.addEventListener('touchend', () => { _profSigDrawing = false; canvas.classList.remove('active'); });
+
+  // Load existing signature
+  const existing = localStorage.getItem('pp_sig_profissional');
+  if (existing) {
+    const img = new Image();
+    img.onload = () => { _profSigCtx.drawImage(img, 0, 0, canvas.getBoundingClientRect().width, canvas.getBoundingClientRect().height); _profSigHasDrawn = true; };
+    img.src = existing;
+    document.getElementById('sig-saved-preview').src = existing;
+    document.getElementById('sig-saved-preview').style.display = 'block';
+    document.getElementById('sig-saved-wrap').style.display = 'block';
+  }
+}
+
+function clearProfSig() {
+  if (!_profSigCtx || !_profSigCanvas) return;
+  _profSigCtx.clearRect(0, 0, _profSigCanvas.width, _profSigCanvas.height);
+  _profSigHasDrawn = false;
+  _profSigCanvas.classList.remove('active');
+}
+
+async function saveProfSig() {
+  if (!_profSigHasDrawn) { showCfgMsg('cfg-sig-msg', '⚠️ Desenhe sua assinatura antes de salvar.', 'err'); return; }
+  const base64 = _profSigCanvas.toDataURL('image/png');
+  localStorage.setItem('pp_sig_profissional', base64);
+
+  document.getElementById('sig-saved-preview').src = base64;
+  document.getElementById('sig-saved-preview').style.display = 'block';
+  document.getElementById('sig-saved-wrap').style.display = 'block';
+
+  // Save to Supabase profiles
+  if (USER?.id && USER.id !== 'demo') {
+    try { await sb.from('profiles').update({ sig_profissional: base64 }).eq('id', USER.id); }
+    catch(e) { console.warn('Falha ao salvar sig no Supabase:', e); }
+  }
+  showCfgMsg('cfg-sig-msg', '✅ Assinatura salva! Será inserida automaticamente nos PDFs.', 'ok');
+  notif('✍️ Assinatura salva!');
+}
+// ═══════════════════════════════════════
+// CONFIGURAÇÕES
+// ═══════════════════════════════════════
+let cfgLogoBase64 = null;
+
+function setCfgTab(id, btn) {
+  document.querySelectorAll('.cfg-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.cfg-section').forEach(s => s.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const el = document.getElementById('cfg-' + id);
+  if(el) el.classList.add('active');
+}
+
+function showCfgMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'cfg-msg ' + type + ' show';
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function previewCfgLogo(input) {
+  if (!input.files || !input.files[0]) return;
+  const r = new FileReader();
+  r.onload = e => {
+    cfgLogoBase64 = e.target.result;
+    document.getElementById('cfg-logo-preview').src = e.target.result;
+    document.getElementById('cfg-logo-preview').style.display = 'block';
+    document.getElementById('cfg-logo-placeholder').style.display = 'none';
+    // Persist into empresaSalva immediately
+    const emp = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+    emp.logo = cfgLogoBase64;
+    localStorage.setItem('empresaSalva', JSON.stringify(emp));
+  };
+  r.readAsDataURL(input.files[0]);
+}
+
+function removeCfgLogo() {
+  cfgLogoBase64 = null;
+  document.getElementById('cfg-logo-preview').style.display = 'none';
+  document.getElementById('cfg-logo-preview').src = '';
+  document.getElementById('cfg-logo-placeholder').style.display = 'flex';
+  const emp = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+  delete emp.logo;
+  localStorage.setItem('empresaSalva', JSON.stringify(emp));
+}
+
+function loadSettings() {
+  // Conta
+  if (PROFILE) {
+    const el_nome = document.getElementById('cfg-nome');
+    const el_email = document.getElementById('cfg-email');
+    const el_tel = document.getElementById('cfg-tel');
+    const el_cidade = document.getElementById('cfg-cidade');
+    if (el_nome) el_nome.value = PROFILE.nome || '';
+    if (el_email) el_email.value = USER?.email || '';
+    if (el_tel) el_tel.value = PROFILE.tel || '';
+    if (el_cidade) el_cidade.value = PROFILE.cidade || '';
+  }
+
+  // Empresa (from localStorage empresaSalva)
+  const emp = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+  const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+  _s('cfg-emp-nome', emp.nome);
+  _s('cfg-emp-doc', emp.doc);
+  _s('cfg-emp-tel', emp.tel);
+  _s('cfg-emp-email', emp.email);
+  _s('cfg-emp-cidade', emp.cidade);
+  _s('cfg-emp-endereco', emp.endereco);
+  _s('cfg-emp-site', emp.site);
+  _s('cfg-emp-reg', emp.reg);
+  _s('cfg-emp-rodape', emp.rodape);
+  _s('cfg-emp-nota', emp.nota);
+  _s('cfg-pix-chave', emp.pixChave);
+  _s('cfg-pix-wpp', emp.pixWpp);
+
+  if (emp.logo) {
+    cfgLogoBase64 = emp.logo;
+    document.getElementById('cfg-logo-preview').src = emp.logo;
+    document.getElementById('cfg-logo-preview').style.display = 'block';
+    document.getElementById('cfg-logo-placeholder').style.display = 'none';
+  }
+
+  // Preferências
+  const pref = JSON.parse(localStorage.getItem('pp_preferencias') || '{}');
+  if (pref.validade) document.getElementById('cfg-validade').value = pref.validade;
+  if (pref.cond) document.getElementById('cfg-cond').value = pref.cond;
+  if (pref.assinatura) document.getElementById('cfg-assinatura').value = pref.assinatura;
+  if (pref.obsPadrao) document.getElementById('cfg-obs-padrao').value = pref.obsPadrao;
+
+  // Sync theme button in preferences tab
+  const thm = document.getElementById('thm-btn-cfg');
+  if (thm) thm.textContent = dark ? '🌙 Escuro' : '☀️ Claro';
+}
+
+async function saveAccountData() {
+  const nome = document.getElementById('cfg-nome')?.value?.trim();
+  const tel = document.getElementById('cfg-tel')?.value?.trim();
+  const cidade = document.getElementById('cfg-cidade')?.value?.trim();
+  if (!nome) { showCfgMsg('cfg-conta-msg', 'O nome não pode ficar vazio.', 'err'); return; }
+
+  if (USER?.id !== 'demo') {
+    const { error } = await sb.from('profiles').update({ nome, tel, cidade }).eq('id', USER.id);
+    if (error) { showCfgMsg('cfg-conta-msg', 'Erro ao salvar: ' + error.message, 'err'); return; }
+  }
+  if (PROFILE) { PROFILE.nome = nome; PROFILE.tel = tel; PROFILE.cidade = cidade; }
+  setupUser();
+  showCfgMsg('cfg-conta-msg', '✅ Dados pessoais salvos com sucesso!', 'ok');
+  notif('✅ Dados da conta atualizados!');
+}
+
+async function changePassword() {
+  const nova = document.getElementById('cfg-senha-nova')?.value;
+  const conf = document.getElementById('cfg-senha-conf')?.value;
+  if (!nova || nova.length < 6) { showCfgMsg('cfg-senha-msg', 'A nova senha deve ter pelo menos 6 caracteres.', 'err'); return; }
+  if (nova !== conf) { showCfgMsg('cfg-senha-msg', 'As senhas não coincidem.', 'err'); return; }
+  if (USER?.id === 'demo') { showCfgMsg('cfg-senha-msg', 'Modo demonstração — não é possível alterar senha.', 'err'); return; }
+  const { error } = await sb.auth.updateUser({ password: nova });
+  if (error) { showCfgMsg('cfg-senha-msg', 'Erro: ' + error.message, 'err'); return; }
+  document.getElementById('cfg-senha-nova').value = '';
+  document.getElementById('cfg-senha-conf').value = '';
+  showCfgMsg('cfg-senha-msg', '✅ Senha alterada com sucesso!', 'ok');
+}
+
+function saveCompanyData() {
+  const gv = id => document.getElementById(id)?.value?.trim() || '';
+  const emp = {
+    nome: gv('cfg-emp-nome'),
+    doc: gv('cfg-emp-doc'),
+    tel: gv('cfg-emp-tel'),
+    email: gv('cfg-emp-email'),
+    cidade: gv('cfg-emp-cidade'),
+    endereco: gv('cfg-emp-endereco'),
+    site: gv('cfg-emp-site'),
+    reg: gv('cfg-emp-reg'),
+    rodape: gv('cfg-emp-rodape'),
+    nota: gv('cfg-emp-nota'),
+    pixChave: gv('cfg-pix-chave'),
+    pixWpp: gv('cfg-pix-wpp'),
+    logo: cfgLogoBase64 || null
+  };
+  localStorage.setItem('empresaSalva', JSON.stringify(emp));
+  showCfgMsg('cfg-empresa-msg', '✅ Dados da empresa salvos! Serão usados em novos orçamentos e PDFs.', 'ok');
+  notif('🏢 Empresa atualizada!');
+}
+
+function savePreferences() {
+  const pref = {
+    validade: document.getElementById('cfg-validade')?.value || '15',
+    cond: document.getElementById('cfg-cond')?.value || '50_50',
+    assinatura: document.getElementById('cfg-assinatura')?.value?.trim() || '',
+    obsPadrao: document.getElementById('cfg-obs-padrao')?.value?.trim() || ''
+  };
+  localStorage.setItem('pp_preferencias', JSON.stringify(pref));
+  showCfgMsg('cfg-pref-msg', '✅ Preferências salvas com sucesso!', 'ok');
+  notif('⚙️ Preferências atualizadas!');
+}
+
+function saveAllSettings() {
+  saveCompanyData();
+  savePreferences();
+}
+
+init();
+</script>
+</body>
+</html>
