@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PintorPro — Admin</title>
+<title>MestrePro — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,15 +11,15 @@
 /* ── TEMAS ── */
 [data-theme="dark"]{
   --bg:#0a0a0a;--surf:#111;--surf2:#1a1a1a;--surf3:#222;
-  --border:#2a2a2a;--text:#f0ede8;--text2:#a09890;--text3:#5a5450;
+  --border:#253354;--text:#e8eaf6;--text2:#8899bb;--text3:#4a5a80;
   --sh:0 4px 24px rgba(0,0,0,.5);
 }
 [data-theme="light"]{
-  --bg:#f4f3ef;--surf:#fff;--surf2:#f0ede8;--surf3:#e4e0d8;
+  --bg:#f0f4ff;--surf:#fff;--surf2:#e8edf8;--surf3:#d8e2f5;
   --border:#d8d4cc;--text:#1a1816;--text2:#5a5450;--text3:#9a9490;
   --sh:0 4px 24px rgba(0,0,0,.08);
 }
-:root{--acc:#e8770a;--acc2:#f59e2b;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--purple:#8b5cf6;--r:10px;--rs:7px;}
+:root{--acc:#5b7fff;--acc2:#7b9fff;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--purple:#8b5cf6;--r:10px;--rs:7px;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .2s,color .2s;}
 
@@ -34,7 +34,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
 .field input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:11px 13px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s;}
-.field input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,119,10,.15);}
+.field input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(91,127,255,.15);}
 
 /* ── BUTTONS ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
@@ -167,7 +167,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 <!-- ── LOGIN ADMIN ── -->
 <div class="auth-screen login-wrap" id="auth-screen">
   <div class="login-card">
-    <div class="logo">PintorPro</div>
+    <div class="logo">MestrePro</div>
     <div class="logo-sub">Painel de Administração</div>
     <div class="badge-admin">🔐 ACESSO RESTRITO</div>
     <div class="msg err" id="auth-err"></div>
@@ -182,7 +182,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 
   <div class="topbar">
     <div class="topbar-l">
-      <div class="brand">PintorPro</div>
+      <div class="brand">MestrePro</div>
       <div class="admin-tag">ADMIN</div>
       <span style="font-size:12px;color:var(--text3)" id="adm-nome-top"></span>
     </div>
@@ -249,9 +249,14 @@ tbody td:first-child{color:var(--text);font-weight:500;}
           <select class="filter-select" id="usr-filter-plano" onchange="filterUsers()">
             <option value="">Todos os planos</option>
             <option value="gratuito">Gratuito</option>
-            <option value="pintor-std">Pintor Standard</option>
-            <option value="pintor-pro">Pintor Pro</option>
-            <option value="lojista">Lojista</option>
+            <option value="basico">Básico</option>
+            <option value="pro">Pro</option>
+            <option value="equipe">Equipe</option>
+            <option value="ia-pro">IA Pro</option>
+            <option value="trial">Trial</option>
+            <option value="pintor-std">Pintor Standard (legado)</option>
+            <option value="pintor-pro">Pintor Pro (legado)</option>
+            <option value="lojista">Lojista (legado)</option>
             <option value="trial">Trial</option>
           </select>
           <select class="filter-select" id="usr-filter-perfil" onchange="filterUsers()">
@@ -354,9 +359,13 @@ tbody td:first-child{color:var(--text);font-weight:500;}
     <div class="field">
       <label>Plano a ativar</label>
       <select id="pag-plano-sel" style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
-        <option value="pintor-std">Pintor Standard — R$69/mês</option>
-        <option value="pintor-pro">Pintor Pro — R$99/mês</option>
-        <option value="lojista">Lojista — R$99/mês</option>
+        <option value="basico">Básico — R$49/mês</option>
+        <option value="pro">Pro — R$99/mês</option>
+        <option value="equipe">Equipe — R$179/mês</option>
+        <option value="ia-pro">IA Pro — R$249/mês</option>
+        <option value="pintor-std">Pintor Standard — R$69/mês (legado)</option>
+        <option value="pintor-pro">Pintor Pro — R$99/mês (legado)</option>
+        <option value="lojista">Lojista — R$99/mês (legado)</option>
       </select>
     </div>
     <div class="field">
@@ -386,9 +395,9 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const { createClient } = supabase;
 const sb = createClient(SUPA_URL, SUPA_KEY);
 
-const PLANO_LABEL = { gratuito:'Gratuito', 'pintor-std':'Pintor Standard', 'pintor-pro':'Pintor Pro', lojista:'Lojista', trial:'Trial' };
-const PLANO_VALOR = { 'pintor-std':69, 'pintor-pro':99, lojista:99 };
-const PLANO_BADGE = { gratuito:'b-gray', 'pintor-std':'b-blue', 'pintor-pro':'b-purple', lojista:'b-amber', trial:'b-amber' };
+const PLANO_LABEL = { gratuito:'Gratuito', basico:'Básico', pro:'Pro', equipe:'Equipe', 'ia-pro':'IA Pro', trial:'Trial', 'pintor-std':'Pintor Standard', 'pintor-pro':'Pintor Pro', lojista:'Lojista' };
+const PLANO_VALOR = { basico:49, pro:99, equipe:179, 'ia-pro':249, 'pintor-std':69, 'pintor-pro':99, lojista:99 };
+const PLANO_BADGE = { gratuito:'b-gray', basico:'b-blue', pro:'b-purple', equipe:'b-green', 'ia-pro':'b-rose', trial:'b-amber', 'pintor-std':'b-blue', 'pintor-pro':'b-purple', lojista:'b-amber' };
 const PERFIL_BADGE= { pintor:'b-blue', lojista:'b-amber' };
 
 let allUsers=[], allPags=[], adminUser=null;
@@ -442,7 +451,7 @@ async function loadAll(){
 // ── Usuários ──────────────────────────────────────────────
 async function loadUsers(){
   const { data, error } = await sb.from('profiles')
-    .select('id, nome, perfil, plano, tel, cidade, ativo, criado_em, atualizado_em, obs_admin')
+    .select('id, nome, perfil, plano, tel, cidade, email, ativo, criado_em, atualizado_em, trial_fim, obs_admin')
     .order('criado_em', { ascending: false });
 
   if(error){
@@ -512,6 +521,7 @@ function openUser(id){
     <div class="modal-row"><span class="lb2">ID</span><span style="font-family:monospace;font-size:11px">${u.id.slice(0,16)}...</span></div>
     <div class="modal-row"><span class="lb2">Nome</span><span>${u.nome||'—'}</span></div>
     <div class="modal-row"><span class="lb2">Perfil</span><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${u.perfil||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">E-mail</span><span style="font-size:13px;color:var(--text2)">${u.email||'—'}</span></div>
     <div class="modal-row"><span class="lb2">Plano</span><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano||'—'}</span></div>
     <div class="modal-row"><span class="lb2">WhatsApp</span><span>${u.tel||'—'}</span></div>
     <div class="modal-row"><span class="lb2">Cidade</span><span>${u.cidade||'—'}</span></div>
@@ -552,7 +562,7 @@ async function toggleAtivo(id, atualAtivo){
 function openChangePlan(id){
   const u = allUsers.find(x=>x.id===id); if(!u) return;
   document.getElementById('modal-usr-title').textContent = `Alterar plano — ${u.nome||'Usuário'}`;
-  const planos = ['gratuito','pintor-std','pintor-pro','lojista','trial'];
+  const planos = ['gratuito','basico','pro','equipe','ia-pro','trial','pintor-std','pintor-pro','lojista'];
   document.getElementById('modal-usr-body').innerHTML = `
     <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Plano atual: <span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano}</span></p>
     <div class="field"><label>Novo plano</label>
@@ -708,7 +718,7 @@ async function salvarPagamento(){
 // ── Stats ─────────────────────────────────────────────────
 function updateStats(){
   const total   = allUsers.length;
-  const pagos   = allUsers.filter(u=>['pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
+  const pagos   = allUsers.filter(u=>['basico','pro','equipe','ia-pro','pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
   const gratis  = allUsers.filter(u=>u.plano==='gratuito'||u.plano==='trial').length;
   const pends   = allPags.filter(p=>p.status==='pendente').length;
   const receita = allUsers.reduce((s,u)=>{return s+(PLANO_VALOR[u.plano]||0);},0);
@@ -740,7 +750,7 @@ async function loadMetricas(){
   document.getElementById('mt-ativos').textContent = allUsers.filter(u=>u.atualizado_em && new Date(u.atualizado_em)>new Date(Date.now()-30*86400000)).length;
 
   const total  = allUsers.length;
-  const pagos  = allUsers.filter(u=>['pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
+  const pagos  = allUsers.filter(u=>['basico','pro','equipe','ia-pro','pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
   document.getElementById('mt-conv').textContent = total>0 ? Math.round(pagos/total*100)+'%' : '—';
 
   // Chart planos
@@ -832,6 +842,10 @@ applyTheme();
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app-screen').style.display='block';
     loadAll();
+  } else if(session && session.user.email !== ADMIN_EMAIL){
+    // Usuário logado mas não é admin — redirecionar silenciosamente
+    await sb.auth.signOut();
+    document.getElementById('auth-screen').style.display='flex';
   }
 })();
 </script>

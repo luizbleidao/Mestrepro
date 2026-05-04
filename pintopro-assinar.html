@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#e8770a">
-<title>Assinatura Digital — PintorPro</title>
+<meta name="theme-color" content="#5b7fff">
+<title>Assinatura Digital — MestrePro</title>
 <script src="pp-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#0f0f0f;--surf:#181818;--surf2:#222;--border:#2e2e2e;--acc:#e8770a;--text:#f0ede8;--text2:#a09890;--text3:#6a6460;--green:#22c55e;--red:#ef4444;--r:12px;--rs:8px;}
+:root{--bg:#0a0f1e;--surf:#111827;--surf2:#1a2235;--border:#253354;--acc:#5b7fff;--text:#e8eaf6;--text2:#8899bb;--text3:#4a5a80;--green:#22c55e;--red:#ef4444;--r:12px;--rs:8px;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0;}
 .header{background:var(--surf);border-bottom:1px solid var(--border);padding:14px 18px;width:100%;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;}
 .logo{font-family:'Segoe UI',sans-serif;font-size:20px;font-weight:800;color:var(--acc);}
-.badge{font-size:10px;font-weight:700;padding:2px 8px;background:rgba(232,119,10,.15);color:var(--acc);border-radius:4px;letter-spacing:.5px;}
+.badge{font-size:10px;font-weight:700;padding:2px 8px;background:rgba(91,127,255,.15);color:var(--acc);border-radius:4px;letter-spacing:.5px;}
 .wrap{width:100%;max-width:500px;padding:20px 16px 40px;}
 .card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;}
 .card-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
@@ -33,7 +33,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
 .field input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:12px 13px;font-size:14px;font-family:inherit;outline:none;transition:.2s;}
-.field input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,119,10,.12);}
+.field input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(91,127,255,.12);}
 .check-row{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:16px;}
 .check-row input[type=checkbox]{width:16px;height:16px;margin-top:1px;accent-color:var(--acc);flex-shrink:0;}
 .btn{width:100%;border:none;border-radius:var(--rs);padding:14px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
@@ -59,7 +59,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <body>
 
 <div class="header">
-  <div class="logo">PintorPro</div>
+  <div class="logo">MestrePro</div>
   <div class="badge">✍️ ASSINATURA DIGITAL</div>
 </div>
 
@@ -160,7 +160,7 @@ function resizeCanvas() {
   ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#f0ede8';
+  ctx.strokeStyle = '#e8eaf6';
 }
 
 function getPos(e) {

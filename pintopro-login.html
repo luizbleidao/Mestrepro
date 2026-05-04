@@ -3,47 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#e8770a">
-<title>PintorPro — Entrar</title>
+<meta name="theme-color" content="#5b7fff">
+<title>MestrePro — Entrar</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#0f0f0f;--surf:#181818;--surf2:#222;--border:#2e2e2e;--acc:#e8770a;--text:#f0ede8;--text2:#a09890;--text3:#6a6460;--green:#22c55e;--r:12px;--rs:8px;}
+:root{
+  --bg:#0a0f1e;--surf:#111827;--surf2:#1a2235;--surf3:#1e2d4a;
+  --border:#253354;--acc:#5b7fff;--acc2:#7b9fff;
+  --text:#e8eaf6;--text2:#8899bb;--text3:#4a5a80;
+  --green:#22c55e;--red:#ef4444;--r:12px;--rs:8px;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
-.logo{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:var(--acc);letter-spacing:-1px;text-align:center;margin-bottom:4px;}
-.logo-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:28px;}
-.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:28px;width:100%;max-width:420px;}
-.tabs{display:flex;background:var(--surf2);border-radius:var(--rs);padding:4px;margin-bottom:20px;gap:4px;}
+
+.scr{display:none;flex-direction:column;align-items:center;width:100%;min-height:100vh;padding:24px 16px;justify-content:center;}
+.scr.active{display:flex;}
+
+/* ── SPLIT ── */
+.split{display:flex;width:100%;max-width:860px;min-height:560px;border-radius:18px;overflow:hidden;border:1px solid var(--border);}
+
+.split-left{width:42%;background:var(--surf3);border-right:1px solid var(--border);padding:40px 32px;display:flex;flex-direction:column;justify-content:space-between;}
+.sl-logo{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--acc);letter-spacing:-1px;margin-bottom:4px;}
+.sl-tagline{font-size:13px;color:var(--text3);line-height:1.5;margin-bottom:32px;}
+.sl-feats{display:flex;flex-direction:column;gap:16px;flex:1;}
+.sl-feat{display:flex;align-items:flex-start;gap:12px;}
+.sl-feat-icon{width:32px;height:32px;border-radius:8px;background:rgba(91,127,255,.15);border:1px solid rgba(91,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px;}
+.sl-feat-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.sl-feat-desc{font-size:11px;color:var(--text3);line-height:1.4;}
+.sl-bottom{margin-top:28px;}
+.sl-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:var(--green);font-size:11px;font-weight:700;padding:5px 12px;border-radius:99px;margin-bottom:14px;}
+.sl-demo{width:100%;border:1px solid var(--border);background:transparent;color:var(--text2);padding:10px;border-radius:var(--rs);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;text-align:center;}
+.sl-demo:hover{border-color:var(--acc);color:var(--acc);}
+
+.split-right{flex:1;background:var(--surf);padding:40px 36px;display:flex;flex-direction:column;justify-content:center;}
+
+/* ── TABS ── */
+.tabs{display:flex;background:var(--surf2);border-radius:var(--rs);padding:4px;margin-bottom:24px;gap:4px;}
 .tab{flex:1;padding:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;}
 .tab.active{background:var(--acc);color:#fff;}
+
+/* ── CAMPOS ── */
 .field{margin-bottom:13px;}
 .field label{display:block;font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px;letter-spacing:.4px;text-transform:uppercase;}
 .field input,.field select{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:11px 13px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s;}
-.field input:focus,.field select:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,119,10,.15);}
+.field input:focus,.field select:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(91,127,255,.15);}
+.field input::placeholder{color:var(--text3);}
 .field select option{background:var(--surf2);}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── CARDS DE PERFIL ── */
+.perfil-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:13px;}
+.perfil-opt{background:var(--surf2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.2s;}
+.perfil-opt:hover{border-color:var(--acc2);}
+.perfil-opt.selected{border-color:var(--acc);background:rgba(91,127,255,.08);}
+.perfil-opt-icon{font-size:18px;flex-shrink:0;}
+.perfil-opt-label{font-size:12px;font-weight:600;color:var(--text2);}
+.perfil-opt-sub{font-size:10px;color:var(--text3);margin-top:1px;}
+.perfil-opt.selected .perfil-opt-label{color:var(--acc);}
+
+/* ── BOTÕES ── */
 .btn{width:100%;border:none;border-radius:var(--rs);padding:13px;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:.2s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:8px;}
 .btn:disabled{opacity:.6;cursor:not-allowed;}
 .btn-acc{background:var(--acc);color:#fff;}
-.btn-acc:hover:not(:disabled){background:#d46b08;}
+.btn-acc:hover:not(:disabled){background:#4a6fee;}
 .btn-out{background:transparent;border:1px solid var(--border);color:var(--text2);margin-top:8px;font-family:'DM Sans',sans-serif;font-weight:500;}
 .btn-out:hover{border-color:var(--acc);color:var(--acc);}
-.div{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--text3);font-size:12px;}
-.div::before,.div::after{content:'';flex:1;height:1px;background:var(--border);}
+.forgot{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif;float:right;margin:-4px 0 10px;}
+.forgot:hover{color:var(--acc);}
+
+/* ── FEEDBACK ── */
 .msg{border-radius:var(--rs);padding:10px 13px;font-size:12px;margin-bottom:12px;display:none;}
 .msg.show{display:block;}
 .msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;}
 .msg.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green);}
-.scr{display:none;flex-direction:column;align-items:center;width:100%;min-height:100vh;padding:24px 16px;justify-content:center;}
-.scr.active{display:flex;}
+.divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--text3);font-size:12px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;display:inline-block;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── TELA PLANOS ── */
 .ph{text-align:center;margin-bottom:20px;}
 .ph h2{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:5px;}
 .ph p{font-size:14px;color:var(--text2);}
 .pw{width:100%;max-width:980px;}
-
-/* Toggle mensal / anual */
+.logo-plans{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--acc);letter-spacing:-1px;margin-bottom:8px;}
 .billing-toggle{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;font-size:13px;}
 .billing-toggle span{color:var(--text2);transition:.2s;}
 .billing-toggle span.active-lbl{color:var(--text);font-weight:600;}
@@ -54,12 +99,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .toggle-wrap input:checked ~ .toggle-track{background:var(--acc);border-color:var(--acc);}
 .toggle-wrap input:checked ~ .toggle-track::after{left:21px;background:#fff;}
 .eco{display:inline-flex;align-items:center;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:var(--green);font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;margin-left:4px;vertical-align:middle;}
-
-/* Grid de planos */
 .pg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
 .pl{background:var(--surf);border:1.5px solid var(--border);border-radius:var(--r);padding:18px 14px;transition:.2s;position:relative;display:flex;flex-direction:column;}
 .pl.pop::before{content:'Popular';position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:0 0 7px 7px;letter-spacing:.5px;}
-.pl.pop{border-color:rgba(232,119,10,.5);}
+.pl.pop{border-color:rgba(91,127,255,.5);}
 .pn{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:1px;}
 .pfor{font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.4;}
 .ppr{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--acc);}
@@ -73,62 +116,160 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .dim{color:var(--text3);}
 .pbtn{display:block;text-align:center;margin-top:12px;padding:9px;border:1.5px solid var(--border);border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:var(--text2);font-family:'Syne',sans-serif;transition:.2s;width:100%;text-decoration:none;}
 .pbtn:hover,.pl.pop .pbtn{background:var(--acc);border-color:var(--acc);color:#fff;}
-.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;display:inline-block;}
-@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── TELA RECUPERAR ── */
+.rec-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:36px 32px;width:100%;max-width:420px;}
+.rec-icon{width:52px;height:52px;border-radius:14px;background:rgba(91,127,255,.12);border:1px solid rgba(91,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 16px;}
+
+/* ── RESPONSIVO ── */
+@media(max-width:700px){
+  .split{flex-direction:column;min-height:auto;border-radius:14px;}
+  .split-left{width:100%;border-right:none;border-bottom:1px solid var(--border);padding:20px 20px 16px;}
+  .sl-tagline{margin-bottom:12px;}
+  .sl-feats{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .sl-feat-desc{display:none;}
+  .sl-feat-icon{width:26px;height:26px;font-size:12px;}
+  .sl-feat-title{font-size:11px;}
+  .sl-bottom{margin-top:12px;}
+  .split-right{padding:24px 20px;}
+  .f2{grid-template-columns:1fr;}
+}
 @media(max-width:780px){.pg{grid-template-columns:1fr 1fr;}}
-@media(max-width:460px){.pg{grid-template-columns:1fr;}.f2{grid-template-columns:1fr;}}
+@media(max-width:460px){.pg{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 
 <!-- ═══════════ TELA: AUTH ═══════════ -->
 <div class="scr active" id="scr-auth">
-  <div class="logo">PintorPro</div>
-  <div class="logo-sub">Orçamentos · Laudos Técnicos · Gestão</div>
-  <div class="card">
-    <div class="tabs">
-      <button class="tab active" onclick="setTab('l')">Entrar</button>
-      <button class="tab" onclick="setTab('c')">Criar conta</button>
-    </div>
-    <div id="tl">
-      <div class="msg err" id="el"></div>
-      <div class="field"><label>E-mail</label><input id="le" type="email" placeholder="seu@email.com" autocomplete="email"></div>
-      <div class="field"><label>Senha</label><input id="ls" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()"></div>
-      <button class="btn btn-acc" id="btn-login" onclick="login()">Entrar na plataforma</button>
-      <div class="div">ou</div>
-      <button class="btn btn-out" onclick="demo()">▶ Entrar como demonstração</button>
-    </div>
-    <div id="tc" style="display:none">
-      <div class="msg err" id="ec"></div>
-      <div class="field"><label>Nome completo</label><input id="cn" type="text" placeholder="João da Silva"></div>
-      <div class="f2">
-        <div class="field"><label>E-mail</label><input id="ce" type="email" placeholder="seu@email.com"></div>
-        <div class="field"><label>WhatsApp</label><input id="ct" type="tel" placeholder="(17) 99999-9999"></div>
-      </div>
-      <div class="f2">
-        <div class="field"><label>Cidade / UF</label><input id="cc" type="text" placeholder="Ex: Franca / SP"></div>
-        <div class="field"><label>Perfil</label>
-          <select id="cp">
-            <option value="pintor">Pintor imobiliário</option>
-            <option value="lojista">Lojista de tintas</option>
-          </select>
+  <div class="split">
+
+    <!-- Lado esquerdo: branding -->
+    <div class="split-left">
+      <div>
+        <div class="sl-logo">MestrePro</div>
+        <div class="sl-tagline">Trabalhe como profissional.<br>Cobre como empresário.</div>
+        <div class="sl-feats">
+          <div class="sl-feat">
+            <div class="sl-feat-icon">📋</div>
+            <div>
+              <div class="sl-feat-title">Orçamentos em PDF</div>
+              <div class="sl-feat-desc">Profissional, com logo e assinatura digital</div>
+            </div>
+          </div>
+          <div class="sl-feat">
+            <div class="sl-feat-icon">🔬</div>
+            <div>
+              <div class="sl-feat-title">Laudos técnicos</div>
+              <div class="sl-feat-desc">Diagnóstico de patologias com fotos e análise</div>
+            </div>
+          </div>
+          <div class="sl-feat">
+            <div class="sl-feat-icon">✍️</div>
+            <div>
+              <div class="sl-feat-title">Contratos digitais</div>
+              <div class="sl-feat-desc">Assinatura online com validade jurídica</div>
+            </div>
+          </div>
+          <div class="sl-feat">
+            <div class="sl-feat-icon">🤖</div>
+            <div>
+              <div class="sl-feat-title">IA integrada</div>
+              <div class="sl-feat-desc">Orçamento automático e análise de fotos</div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="field"><label>Senha</label><input id="cs" type="password" placeholder="Mínimo 6 caracteres"></div>
-      <button class="btn btn-acc" id="btn-cad" onclick="cadastrar()">Criar conta e escolher plano</button>
+      <div class="sl-bottom">
+        <div class="sl-tag">✦ 7 dias grátis — sem cartão</div>
+        <button class="sl-demo" onclick="demo()">▶ Experimentar sem cadastro</button>
+      </div>
     </div>
+
+    <!-- Lado direito: formulário -->
+    <div class="split-right">
+      <div class="tabs">
+        <button class="tab active" onclick="setTab('l')">Entrar</button>
+        <button class="tab" onclick="setTab('c')">Criar conta</button>
+      </div>
+
+      <!-- ENTRAR -->
+      <div id="tl">
+        <div class="msg err" id="el"></div>
+        <div class="field">
+          <label>E-mail</label>
+          <input id="le" type="email" placeholder="seu@email.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <input id="ls" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+        </div>
+        <button class="forgot" onclick="irRecuperar()">Esqueci minha senha</button>
+        <button class="btn btn-acc" id="btn-login" onclick="login()">Entrar na plataforma</button>
+        <div class="divider">ou</div>
+        <button class="btn btn-out" onclick="setTab('c')">Ainda não tenho conta</button>
+      </div>
+
+      <!-- CRIAR CONTA -->
+      <div id="tc" style="display:none">
+        <div class="msg err" id="ec"></div>
+        <div class="field">
+          <label>Nome completo</label>
+          <input id="cn" type="text" placeholder="João da Silva" autocomplete="name">
+        </div>
+        <div class="f2">
+          <div class="field">
+            <label>E-mail</label>
+            <input id="ce" type="email" placeholder="seu@email.com" autocomplete="email">
+          </div>
+          <div class="field">
+            <label>WhatsApp</label>
+            <input id="ct" type="tel" placeholder="(17) 99999-9999">
+          </div>
+        </div>
+        <div class="field">
+          <label>Como vai usar o MestrePro?</label>
+          <div class="perfil-grid">
+            <div class="perfil-opt selected" id="opt-pintor" onclick="selecionarPerfil('pintor')">
+              <div class="perfil-opt-icon">🎨</div>
+              <div>
+                <div class="perfil-opt-label">Pintor</div>
+                <div class="perfil-opt-sub">Autônomo / equipe</div>
+              </div>
+            </div>
+            <div class="perfil-opt" id="opt-lojista" onclick="selecionarPerfil('lojista')">
+              <div class="perfil-opt-icon">🏪</div>
+              <div>
+                <div class="perfil-opt-label">Lojista</div>
+                <div class="perfil-opt-sub">Revenda de tintas</div>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" id="cp" value="pintor">
+        </div>
+        <div class="field">
+          <label>Cidade / UF</label>
+          <input id="cc" type="text" placeholder="Ex: Barretos / SP">
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <input id="cs" type="password" placeholder="Mínimo 6 caracteres">
+        </div>
+        <button class="btn btn-acc" id="btn-cad" onclick="cadastrar()">Criar conta e escolher plano</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <!-- ═══════════ TELA: PLANOS ═══════════ -->
 <div class="scr" id="scr-planos">
   <div class="ph">
-    <div class="logo" style="margin-bottom:8px">PintorPro</div>
+    <div class="logo-plans">MestrePro</div>
     <h2>Escolha seu plano</h2>
     <p id="psub">Comece agora. Cancele quando quiser.</p>
   </div>
   <div class="pw">
-
     <div class="billing-toggle">
       <span id="lbl-mensal" class="active-lbl">Mensal</span>
       <label class="toggle-wrap">
@@ -137,10 +278,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       </label>
       <span id="lbl-anual">Anual <span class="eco">-17%</span></span>
     </div>
-
     <div class="pg">
-
-      <!-- BÁSICO -->
       <div class="pl">
         <div class="pn">Básico</div>
         <div class="pfor">Para o profissional autônomo</div>
@@ -158,8 +296,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         </div>
         <a class="pbtn" href="#" onclick="irMP('basico',event)">Assinar Básico</a>
       </div>
-
-      <!-- PRO -->
       <div class="pl pop">
         <div class="pn">Pro</div>
         <div class="pfor">Orçamentos + laudos técnicos</div>
@@ -176,8 +312,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         </div>
         <a class="pbtn" href="#" onclick="irMP('pro',event)">Assinar Pro</a>
       </div>
-
-      <!-- EQUIPE -->
       <div class="pl">
         <div class="pn">Equipe</div>
         <div class="pfor">Para lojas e equipes de técnicos</div>
@@ -194,8 +328,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         </div>
         <a class="pbtn" href="#" onclick="irMP('equipe',event)">Assinar Equipe</a>
       </div>
-
-      <!-- IA PRO -->
       <div class="pl">
         <div class="pn">IA Pro</div>
         <div class="pfor">Com inteligência artificial integrada</div>
@@ -212,9 +344,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         </div>
         <a class="pbtn" href="#" onclick="irMP('ia-pro',event)">Assinar IA Pro</a>
       </div>
-
-    </div><!-- /pg -->
-
+    </div>
     <p style="text-align:center;font-size:11px;color:var(--text3);margin-bottom:12px">
       Pagamento via Mercado Pago · Cartão de crédito, débito ou PIX · Acesso imediato após confirmação · Cancele quando quiser
     </p>
@@ -224,26 +354,41 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 </div>
 
+<!-- ═══════════ TELA: RECUPERAR SENHA ═══════════ -->
+<div class="scr" id="scr-rec">
+  <div class="rec-card">
+    <div class="rec-icon">🔑</div>
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">Esqueceu sua senha?</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.5">Digite seu e-mail e enviaremos um link para você criar uma nova senha.</div>
+    </div>
+    <div class="msg err" id="rec-err"></div>
+    <div class="msg ok" id="rec-ok"></div>
+    <div class="field" id="rec-field">
+      <label>E-mail da conta</label>
+      <input id="rec-email" type="email" placeholder="seu@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')enviarRecuperacao()">
+    </div>
+    <button class="btn btn-acc" id="btn-rec" onclick="enviarRecuperacao()">Enviar link de recuperação</button>
+    <button class="btn btn-out" onclick="showS('scr-auth')">← Voltar para o login</button>
+  </div>
+</div>
+
 <script>
 const {createClient} = supabase;
 const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
 
-// Links Mercado Pago
 const MP = {
-  'basico':  { mensal:'https://mpago.la/19VUY91',  anual:'https://mpago.la/2mBWE1i'  },
-  'pro':     { mensal:'https://mpago.la/1ieWwdr',  anual:'https://mpago.la/2YpEhnF'  },
-  'equipe':  { mensal:'https://mpago.la/1YuzDuc',  anual:'https://mpago.la/15PqKDb'  },
-  'ia-pro':  { mensal:'https://mpago.la/1iWJVWP',  anual:'https://mpago.la/119g9kC'  },
+  'basico': { mensal:'https://mpago.la/19VUY91', anual:'https://mpago.la/2mBWE1i' },
+  'pro':    { mensal:'https://mpago.la/1ieWwdr', anual:'https://mpago.la/2YpEhnF' },
+  'equipe': { mensal:'https://mpago.la/1YuzDuc', anual:'https://mpago.la/15PqKDb' },
+  'ia-pro': { mensal:'https://mpago.la/1iWJVWP', anual:'https://mpago.la/119g9kC' },
 };
-
-// Preços para exibição
 const PRECOS = {
-  'basico':  { mensal:49,  anual:490,  eq:41  },
-  'pro':     { mensal:97,  anual:970,  eq:81  },
-  'equipe':  { mensal:197, anual:1970, eq:164 },
-  'ia-pro':  { mensal:297, anual:2970, eq:247 },
+  'basico': { mensal:49,  anual:490,  eq:41  },
+  'pro':    { mensal:97,  anual:970,  eq:81  },
+  'equipe': { mensal:197, anual:1970, eq:164 },
+  'ia-pro': { mensal:297, anual:2970, eq:247 },
 };
-
 let _anual = false;
 
 const showS   = id => { document.querySelectorAll('.scr').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); };
@@ -256,6 +401,12 @@ function setTab(t){
   document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',(t==='l'&&i===0)||(t==='c'&&i===1)));
   document.getElementById('tl').style.display=t==='l'?'block':'none';
   document.getElementById('tc').style.display=t==='c'?'block':'none';
+}
+
+function selecionarPerfil(p){
+  document.getElementById('cp').value=p;
+  document.getElementById('opt-pintor').classList.toggle('selected',p==='pintor');
+  document.getElementById('opt-lojista').classList.toggle('selected',p==='lojista');
 }
 
 function setBilling(anual){
@@ -277,10 +428,9 @@ function setBilling(anual){
   });
 }
 
-function irMP(plano, evt){
+function irMP(plano,evt){
   evt&&evt.preventDefault();
-  const tipo=_anual?'anual':'mensal';
-  const url=MP[plano]?.[tipo];
+  const url=MP[plano]?.[_anual?'anual':'mensal'];
   if(url) window.open(url,'_blank');
 }
 
@@ -310,13 +460,41 @@ async function cadastrar(){
   showS('scr-planos');
 }
 
+function irRecuperar(){
+  document.getElementById('rec-err').classList.remove('show');
+  document.getElementById('rec-ok').classList.remove('show');
+  document.getElementById('rec-field').style.display='block';
+  document.getElementById('btn-rec').style.display='flex';
+  document.getElementById('rec-email').value='';
+  showS('scr-rec');
+}
+
+async function enviarRecuperacao(){
+  const email=document.getElementById('rec-email').value.trim();
+  if(!email){document.getElementById('rec-err').textContent='Digite seu e-mail.';document.getElementById('rec-err').classList.add('show');return;}
+  setBtn('btn-rec','<div class="spin"></div> Enviando...',true);
+  const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  if(error){
+    document.getElementById('rec-err').textContent='Erro ao enviar. Verifique o e-mail e tente novamente.';
+    document.getElementById('rec-err').classList.add('show');
+    setBtn('btn-rec','Enviar link de recuperação',false);
+    return;
+  }
+  document.getElementById('rec-ok').textContent='Link enviado! Verifique sua caixa de entrada (e o spam).';
+  document.getElementById('rec-ok').classList.add('show');
+  document.getElementById('rec-field').style.display='none';
+  setBtn('btn-rec','',false);
+  document.getElementById('btn-rec').style.display='none';
+}
+
 function demo(){
-  sessionStorage.setItem('pp_demo',JSON.stringify({id:'demo',nome:'Demo PintorPro',perfil:'pintor',plano:'pro',isDemo:true}));
+  sessionStorage.setItem('pp_demo',JSON.stringify({id:'demo',nome:'Demo MestrePro',perfil:'pintor',plano:'pro',isDemo:true}));
   window.location.href='pintopro-app.html';
 }
 
 (async()=>{
   const params=new URLSearchParams(window.location.search);
+  if(params.get('tab')==='c') setTab('c');
   const isUpgrade=params.get('upgrade')==='1';
   const{data:{session}}=await sb.auth.getSession();
   if(session&&!isUpgrade){window.location.href='pintopro-app.html';return;}

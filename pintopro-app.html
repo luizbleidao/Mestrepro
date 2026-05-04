@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#e8770a">
+<meta name="theme-color" content="#5b7fff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>MestrePro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
@@ -11,9 +11,9 @@
 <script src="pp-modules.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-[data-theme="dark"]{--bg:#0f0f0f;--surf:#171717;--surf2:#1f1f1f;--surf3:#2a2a2a;--border:#2e2e2e;--text:#f0ede8;--text2:#a09890;--text3:#6a6460;--sh:0 4px 20px rgba(0,0,0,.4);}
-[data-theme="light"]{--bg:#f4f3ef;--surf:#fff;--surf2:#f0ede8;--surf3:#e4e0d8;--border:#d8d4cc;--text:#1a1816;--text2:#5a5450;--text3:#9a9490;--sh:0 4px 20px rgba(0,0,0,.08);}
-:root{--acc:#e8770a;--acc2:#f59e2b;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--r:10px;--rs:7px;--sw:220px;}
+[data-theme="dark"]{--bg:#0a0f1e;--surf:#111827;--surf2:#1a2235;--surf3:#1e2d4a;--border:#253354;--text:#e8eaf6;--text2:#8899bb;--text3:#4a5a80;--sh:0 4px 20px rgba(0,0,0,.5);}
+[data-theme="light"]{--bg:#f0f4ff;--surf:#fff;--surf2:#e8edf8;--surf3:#d8e2f5;--border:#c0cfec;--text:#0f1629;--text2:#4a5a80;--text3:#8899bb;--sh:0 4px 20px rgba(0,0,0,.08);}
+:root{--acc:#5b7fff;--acc2:#7b9fff;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--r:10px;--rs:7px;--sw:220px;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:14px;transition:background .2s,color .2s;}
 .app{display:flex;height:100vh;overflow:hidden;}
@@ -32,7 +32,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .ns{font-size:10px;font-weight:600;letter-spacing:1.2px;color:var(--text3);padding:12px 18px 5px;text-transform:uppercase;}
 .ni{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;color:var(--text2);font-size:13px;transition:.15s;border-left:2px solid transparent;user-select:none;}
 .ni:hover{background:var(--surf2);color:var(--text);}
-.ni.active{background:rgba(232,119,10,.12);color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.ni.active{background:rgba(91,127,255,.12);color:var(--acc);border-left-color:var(--acc);font-weight:500;}
 .ni.locked{opacity:.4;cursor:not-allowed;}
 .ni.locked:hover{background:transparent;color:var(--text2);}
 .ni .ic{width:16px;text-align:center;font-size:15px;flex-shrink:0;}
@@ -53,17 +53,33 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .tbtn-a:hover{background:#d46b08;}
 .theme-t{background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;transition:.15s;}
 .theme-t:hover{border-color:var(--acc);}
-.banner{background:rgba(232,119,10,.1);border-bottom:1px solid rgba(232,119,10,.25);padding:7px 18px;display:flex;align-items:center;justify-content:space-between;font-size:12px;flex-shrink:0;gap:10px;}
+.banner{background:rgba(91,127,255,.08);border-bottom:1px solid rgba(232,119,10,.25);padding:7px 18px;display:flex;align-items:center;justify-content:space-between;font-size:12px;flex-shrink:0;gap:10px;}
 .banner span{color:var(--acc);}
 .up-btn{background:var(--acc);color:#fff;border:none;padding:4px 11px;border-radius:var(--rs);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;}
 /* CONTENT */
 .content{flex:1;overflow:hidden;position:relative;}
-.screen{display:none;height:100%;overflow-y:auto;padding:18px;animation:fi .18s;}
+.screen{display:none;height:100%;overflow-y:auto;padding:18px;animation:fi .22s ease both;}
 .screen.active{display:block;}
-.screen.fr{padding:0;}
+.screen.fr{padding:0;position:relative;}
 .screen.fr.active{display:flex;}
+/* Wrapper do iframe com fade suave */
+.iframe-wrap{position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.iframe-loader{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg);
+  z-index:10;
+  transition:opacity .3s ease;
+  pointer-events:none;
+}
+.iframe-loader.hidden{opacity:0;pointer-events:none;}
+.iframe-loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px;}
+.iframe-loader .spin-lg{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;}
+.iframe-loader span{font-size:12px;color:var(--text3);}
+.screen.fr iframe{width:100%;height:100%;border:none;flex:1;display:block;opacity:0;transition:opacity .3s ease;}
+.screen.fr iframe.loaded{opacity:1;}
 @keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-iframe{width:100%;height:100%;border:none;flex:1;display:block;}
+/* iframe styles handled by .iframe-wrap rules above */
 /* STATS */
 .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
 .sc{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:15px;}
@@ -118,7 +134,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 .cfg-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .cfg-field label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
 .cfg-field input,.cfg-field select,.cfg-field textarea{background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s;width:100%;}
-.cfg-field input:focus,.cfg-field select:focus,.cfg-field textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,119,10,.12);}
+.cfg-field input:focus,.cfg-field select:focus,.cfg-field textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(91,127,255,.12);}
 .cfg-field input:disabled{opacity:.55;cursor:not-allowed;}
 .cfg-field textarea{resize:vertical;min-height:72px;}
 .cfg-field .hint{font-size:11px;color:var(--text3);margin-top:3px;}
@@ -253,7 +269,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 .mf-field.c2{grid-column:span 2;}
 .mf-field label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
 .mf-field input,.mf-field select,.mf-field textarea{background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:9px 11px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:.2s;width:100%;}
-.mf-field input:focus,.mf-field select:focus,.mf-field textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,119,10,.12);}
+.mf-field input:focus,.mf-field select:focus,.mf-field textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(91,127,255,.12);}
 .mf-field textarea{resize:vertical;}
 @media(max-width:600px){.mf-grid{grid-template-columns:1fr;}.mf-field.c2{grid-column:span 1;}.ag-cell{min-height:44px;}}
 </style>
@@ -598,11 +614,29 @@ tbody td:first-child{color:var(--text);font-weight:500;}
       </div>
       <!-- ORÇAMENTOS iframe -->
       <div class="screen fr" id="s-orcamentos">
-        <iframe id="orc-fr" src="pintopro-orcamentos.html" title="Orçamentos"></iframe>
+        <div class="iframe-wrap">
+          <div class="iframe-loader" id="orc-loader">
+            <div class="iframe-loader-inner">
+              <div class="spin-lg"></div>
+              <span>Carregando orçamentos...</span>
+            </div>
+          </div>
+          <iframe id="orc-fr" src="pintopro-orcamentos.html" title="Orçamentos"
+            onload="iframeReady('orc-fr','orc-loader')"></iframe>
+        </div>
       </div>
       <!-- LAUDOS iframe -->
       <div class="screen fr" id="s-laudos">
-        <iframe id="ldo-fr" src="pintopro-laudos.html" title="Laudos Técnicos"></iframe>
+        <div class="iframe-wrap">
+          <div class="iframe-loader" id="ldo-loader">
+            <div class="iframe-loader-inner">
+              <div class="spin-lg"></div>
+              <span>Carregando laudos...</span>
+            </div>
+          </div>
+          <iframe id="ldo-fr" src="pintopro-laudos.html" title="Laudos Técnicos"
+            onload="iframeReady('ldo-fr','ldo-loader')"></iframe>
+        </div>
       </div>
     </div>
   </main>
@@ -719,7 +753,7 @@ async function init(){
     try{
       const d=JSON.parse(demoRaw);
       USER={id:'demo',email:'demo@pintopro.com'};
-      PROFILE={nome:d.nome,perfil:d.perfil,plano:d.plano,criado_em:new Date().toISOString()};
+      PROFILE={nome:d.nome,perfil:d.perfil,plano:d.plano,criado_em:new Date().toISOString(),trial_fim:null};
       PLANO=_resolverPlano(d.plano); setup(); return;
     }catch{}
   }
@@ -728,7 +762,7 @@ async function init(){
   if(!session){window.location.href='pintopro-login.html';return;}
   USER=session.user;
   const {data:profile}=await sb.from('profiles').select('*').eq('id',USER.id).single();
-  PROFILE=profile||{nome:USER.user_metadata?.nome||USER.email,perfil:'pintor',plano:'gratuito',criado_em:USER.created_at};
+  PROFILE=profile||{nome:USER.user_metadata?.nome||USER.email,perfil:'pintor',plano:'gratuito',criado_em:USER.created_at,trial_fim:null};
   PLANO=_resolverPlano(PROFILE.plano||'gratuito');
   // Armazena info do usuário para iframes filhos (orcamentos/laudos)
   sessionStorage.setItem('pp_user_id', USER.id);
@@ -863,18 +897,72 @@ function renderDashLaudos(list){
   `</tbody></table>`;
 }
 
+// Marca iframe como carregado e faz fade-in suave
+function iframeReady(ifrId, loaderId){
+  const fr = document.getElementById(ifrId);
+  const ld = document.getElementById(loaderId);
+  if(fr){ fr.classList.add('loaded'); }
+  if(ld){ ld.classList.add('hidden'); setTimeout(()=>{ ld.style.display='none'; }, 350); }
+  // Sincroniza tema após carregamento
+  if(fr && fr.contentWindow){
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    fr.contentWindow.postMessage({type:'pp_cmd', cmd:'syncTheme', theme}, '*');
+  }
+}
+
+let _irAtivo = null;
 function ir(id){
   if(!cfg.telas.includes(id)){irPlanos();return;}
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  document.getElementById('s-'+id).classList.add('active');
-  const ni=document.getElementById('ni-'+id);if(ni)ni.classList.add('active');
-  document.getElementById('pg-title').textContent=TITLES[id]||id;
-  if(id==='configuracoes'){loadSettings();setTimeout(initProfSigPad,50);}
-  if(id==='contratos')loadContratos();
-  if(id==='recibos')loadRecibos();
-  if(id==='agenda')loadAgenda();
-  document.getElementById('top-btn').textContent=BTNS[id]||'+ Nova ação';
+  if(_irAtivo === id) return; // já está na tela
+  _irAtivo = id;
+
+  // Fade-out das telas anteriores
+  const cur = document.querySelector('.screen.active');
+  if(cur){
+    cur.style.opacity = '0';
+    cur.style.transform = 'translateY(3px)';
+    cur.style.transition = 'opacity .15s ease, transform .15s ease';
+  }
+
+  setTimeout(() => {
+    _irAtivo = null; // reset para permitir re-navegação correta
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+      s.style.opacity = '';
+      s.style.transform = '';
+      s.style.transition = '';
+    });
+    document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+
+    const dest = document.getElementById('s-'+id);
+    if(dest) dest.classList.add('active');
+    const ni = document.getElementById('ni-'+id);
+    if(ni) ni.classList.add('active');
+
+    document.getElementById('pg-title').textContent = TITLES[id]||id;
+    if(id==='configuracoes'){loadSettings();setTimeout(initProfSigPad,50);}
+    if(id==='contratos')loadContratos();
+    if(id==='recibos')loadRecibos();
+    if(id==='agenda')loadAgenda();
+    document.getElementById('top-btn').textContent = BTNS[id]||'+ Nova ação';
+
+    // Sincronizar tema com iframes ao navegar para eles
+    if(id==='orcamentos'){
+      const fr=document.getElementById('orc-fr');
+      if(fr && fr.contentWindow){
+        const theme=document.documentElement.getAttribute('data-theme')||'dark';
+        fr.contentWindow.postMessage({type:'pp_cmd',cmd:'syncTheme',theme},'*');
+      }
+    }
+    if(id==='laudos'){
+      const fr=document.getElementById('ldo-fr');
+      if(fr && fr.contentWindow){
+        const theme=document.documentElement.getAttribute('data-theme')||'dark';
+        fr.contentWindow.postMessage({type:'pp_cmd',cmd:'syncTheme',theme},'*');
+      }
+    }
+  }, cur ? 140 : 0);
+
   closeSB();
 }
 
@@ -1050,10 +1138,17 @@ function dispensarOnboarding(){
 // ══════════════════════════════════════════════
 function checkTrialCountdown(){
   const trialBar = document.getElementById('trial-bar');
-  if(PLANO !== 'trial' || !PROFILE?.criado_em){ trialBar.style.display='none'; return; }
+  if(PLANO !== 'trial'){ trialBar.style.display='none'; return; }
 
-  const criado = new Date(PROFILE.criado_em);
-  const expira = new Date(criado.getTime() + 7 * 24 * 60 * 60 * 1000);
+  // Prioriza trial_fim do banco; fallback para criado_em + 7 dias
+  let expira;
+  if(PROFILE?.trial_fim){
+    expira = new Date(PROFILE.trial_fim);
+  } else if(PROFILE?.criado_em){
+    expira = new Date(new Date(PROFILE.criado_em).getTime() + 7 * 24 * 60 * 60 * 1000);
+  } else {
+    trialBar.style.display='none'; return;
+  }
   const agora  = new Date();
   const diffMs = expira - agora;
   const dias   = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
@@ -1095,7 +1190,7 @@ function initProfSigPad() {
     canvas.height = rect.height * dpr;
     _profSigCtx.scale(dpr, dpr);
     _profSigCtx.lineWidth = 2; _profSigCtx.lineCap = 'round'; _profSigCtx.lineJoin = 'round';
-    _profSigCtx.strokeStyle = dark ? '#f0ede8' : '#1a1816';
+    _profSigCtx.strokeStyle = dark ? '#e8eaf6' : '#0f1629';
   };
   resize();
 

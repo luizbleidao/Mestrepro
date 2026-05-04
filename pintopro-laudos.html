@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<meta name="theme-color" content="#0D2E6B">
+<meta name="theme-color" content="#5b7fff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>LaudosPro — Diagnóstico de Patologias</title>
+<title>MestrePro — Laudos Técnicos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -14,7 +14,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#0D2E6B;--blue:#1A56A0;--blue2:#2563EB;--sky:#EEF3FA;--sky2:#DDE8F7;
+  --navy:#111827;--blue:#1A56A0;--blue2:#2563EB;--sky:#EEF3FA;--sky2:#DDE8F7;
   --green:#16A34A;--amber:#D97706;--red:#DC2626;--purple:#9333EA;
   --txt:#1E2A3A;--sub:#5A6A7E;--border:#C8D8EE;--white:#fff;
   --r:10px;--r2:6px;--sh:0 2px 12px rgba(13,46,107,.10);
@@ -177,19 +177,7 @@ textarea.inp{resize:vertical;min-height:80px;line-height:1.6}
 .followup-photo{width:60px;height:48px;object-fit:cover;border-radius:4px;border:1px solid var(--border)}
 
 /* PIN */
-.pin-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,var(--navy) 0%,var(--blue) 100%)}
-.pin-logo{font-family:var(--hfont);font-size:28px;font-weight:700;color:#fff;text-align:center;margin-bottom:4px}
-.pin-sub{font-size:13px;color:rgba(255,255,255,.7);text-align:center;margin-bottom:32px}
-.pin-card{background:#fff;border-radius:14px;padding:24px 22px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.pin-dots{display:flex;gap:12px;justify-content:center;margin:16px 0 20px}
-.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:.2s}
-.pin-dot.filled{background:var(--blue);border-color:var(--blue)}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pin-key{background:var(--sky);border:1px solid var(--border);border-radius:var(--r);padding:14px 0;font-size:18px;font-weight:600;font-family:var(--hfont);color:var(--navy);transition:.2s;text-align:center}
-.pin-key:hover{background:var(--sky2)}
-.pin-key.del{color:var(--red);font-size:14px}
-.pin-err{color:var(--red);font-size:12px;text-align:center;margin-top:8px;height:16px}
-.pin-hint{font-size:11px;color:var(--sub);text-align:center;margin-top:14px}
+
 
 /* ARQUIVO */
 .drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:.2s;color:var(--sub)}
@@ -233,7 +221,7 @@ textarea.inp{resize:vertical;min-height:80px;line-height:1.6}
 .sig-clear{background:var(--sky);border:1px solid var(--border);color:var(--sub);border-radius:var(--r2);padding:7px 14px;font-size:12px;font-weight:600}
 
 /* FINALIZAÇÃO */
-.fin-overlay{position:fixed;inset:0;background:#0D2E6B;z-index:999;display:none;flex-direction:column;overflow-y:auto}
+.fin-overlay{position:fixed;inset:0;background:#111827;z-index:999;display:none;flex-direction:column;overflow-y:auto}
 .fin-overlay.open{display:flex}
 .fin-hdr{background:linear-gradient(135deg,var(--navy),var(--blue));padding:20px 20px 16px;color:#fff;text-align:center}
 .fin-hdr h2{font-family:var(--hfont);font-size:24px;font-weight:700;margin-bottom:3px}
@@ -283,7 +271,7 @@ textarea.inp{resize:vertical;min-height:80px;line-height:1.6}
 
 /* SIG LINK */
 .laudo-sig-link{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:12px;margin-top:8px;font-size:12px;}
-.laudo-sig-url{font-family:monospace;font-size:11px;color:#a09890;word-break:break-all;margin:6px 0;}
+.laudo-sig-url{font-family:monospace;font-size:11px;color:#8899bb;word-break:break-all;margin:6px 0;}
 </style>
 </head>
 <body>
@@ -653,7 +641,7 @@ function buildQR(){
 }
 
 // ═══════════════ STATE ═══════════════
-let SCR   = 'pin';
+let SCR   = 'home';
 let STEP  = 0;
 let D     = {};
 let SEL   = {}; // {id: {grav, nota, fotos:[{b64,leg}], custo}}
@@ -663,7 +651,6 @@ let SIG_DATA = ''; // assinatura cliente base64
 let SIG_TEC  = ''; // assinatura técnico base64
 const SIG_TEC_KEY = 'st_sig_tec_v1';
 
-const PIN_KEY    = 'st_pin_v2';
 const LAUDOS_KEY = 'st_laudos_v3';
 const STEP_NAMES = ['Identificação','Patologias','Técnico','Laudo'];
 
@@ -683,7 +670,6 @@ function _lpGetUserId(){ return sessionStorage.getItem('pp_user_id')||null; }
 
 // Chaves isoladas por usuário — evita compartilhamento entre contas
 function _laudosKey(){ return LAUDOS_KEY + '_' + (_lpGetUserId()||'anon'); }
-function _pinKey(){    return PIN_KEY    + '_' + (_lpGetUserId()||'anon'); }
 
 // Notifica app.html pai para recarregar dashboard
 function _lpNotifyParent(){ try{ window.parent.postMessage({type:'pp_ldo_updated'},'*'); }catch(e){} }
@@ -790,69 +776,23 @@ function deleteLaudo(id){
  if(!confirm('Excluir este laudo?'))return;
  LAUDOS=LAUDOS.filter(l=>l.id!==id);saveLaudos();render();
 }
-function checkPin(){ const s=localStorage.getItem(_pinKey()); SCR=s?'home':'pin-setup'; }
-function verifyPin(p){ return localStorage.getItem(_pinKey())===p; }
-function setPin(p){ localStorage.setItem(_pinKey(),p); }
 function clearAll(){
- if(!confirm('Redefinir PIN e apagar TODOS os laudos?'))return;
- localStorage.removeItem(_pinKey());localStorage.removeItem(_laudosKey());
- LAUDOS=[];D={};SEL={};ARQS=[];SCR='pin-setup';render();
+ if(!confirm('Apagar TODOS os laudos salvos? ⚠️ Isso também apaga todas as fotos armazenadas. Esta ação não pode ser desfeita.'))return;
+ localStorage.removeItem(_laudosKey());
+ LAUDOS=[];D={};SEL={};ARQS=[];SCR='home';render();
 }
 
 // ═══════════════ RENDER ═══════════════
-let _pinBuf='';let _pinStep1='';let _pinMode='';
 let _cqFilter='';
 
 function render(){
  const app=document.getElementById('app');
- if(SCR==='pin'||SCR==='pin-setup'){renderPin(app);return;}
  if(SCR==='home'){renderHome(app);return;}
  if(SCR==='form'){renderForm(app);return;}
  if(SCR==='consulta'){renderConsulta(app);return;}
 }
 
-// ─── PIN ─────────────────────────────
-function renderPin(app){
- const isSetup=(SCR==='pin-setup'||!localStorage.getItem(_pinKey()));
- _pinBuf='';_pinMode=isSetup?'setup':'verify';
- app.innerHTML=`
- <div class="pin-screen">
-  <div class="pin-logo">🎨 LaudosPro</div>
-  <div class="pin-sub">Diagnóstico de Patologias de Superfície</div>
-  <div class="pin-card">
-   <div style="font-size:13px;font-weight:600;color:var(--navy);text-align:center;margin-bottom:4px">${isSetup?'Criar PIN de acesso':'Acesso restrito'}</div>
-   <div style="font-size:11px;color:var(--sub);text-align:center">${isSetup?'Defina um PIN de 4 dígitos':'Digite seu PIN de 4 dígitos'}</div>
-   <div class="pin-dots" id="pin-dots">
-    <div class="pin-dot"></div><div class="pin-dot"></div>
-    <div class="pin-dot"></div><div class="pin-dot"></div>
-   </div>
-   <div class="pin-pad">
-    ${[1,2,3,4,5,6,7,8,9,'','0','⌫'].map(k=>`<button class="pin-key" onclick="pinKey('${k}')">${k}</button>`).join('')}
-   </div>
-   <div class="pin-err" id="pin-err"></div>
-   ${isSetup?'':'<div class="pin-hint">Esqueceu o PIN? <button onclick="clearAll()" style="background:none;color:var(--red);font-size:11px;text-decoration:underline;border:none;cursor:pointer">Redefinir tudo</button></div>'}
-  </div>
- </div>`;
-}
-function pinKey(k){
- if(k==='')return;
- if(k==='⌫'){_pinBuf=_pinBuf.slice(0,-1);updatePinDots();return;}
- if(_pinBuf.length>=4)return;
- _pinBuf+=k;updatePinDots();
- if(_pinBuf.length===4)setTimeout(pinSubmit,150);
-}
-function updatePinDots(){ document.querySelectorAll('.pin-dot').forEach((d,i)=>d.classList.toggle('filled',i<_pinBuf.length)); }
-function pinSubmit(){
- const err=document.getElementById('pin-err');
- if(_pinMode==='setup'){
-  if(!_pinStep1){_pinStep1=_pinBuf;_pinBuf='';updatePinDots();document.querySelector('.pin-card div').textContent='Confirme o PIN';if(err)err.textContent='';return;}
-  if(_pinStep1===_pinBuf){setPin(_pinBuf);_pinStep1='';LAUDOS=[];SCR='home';render();}
-  else{_pinStep1='';_pinBuf='';updatePinDots();if(err)err.textContent='PINs diferentes.';}
- } else {
-  if(verifyPin(_pinBuf)){SCR='home';render();}
-  else{_pinBuf='';updatePinDots();if(err)err.textContent='PIN incorreto.';}
- }
-}
+
 
 // ─── HOME ────────────────────────────
 let _homeSearch='';
@@ -886,11 +826,11 @@ function renderHome(app){
  app.innerHTML=`
  <div class="hdr">
   <div class="hdr-row">
-   <div class="hdr-logo">🎨 LaudosPro<span>Diagnóstico de Patologias</span></div>
+   <div class="hdr-logo">🎨 MestrePro<span>Diagnóstico de Patologias</span></div>
    <div class="hdr-btns">
     <button class="hdr-btn" onclick="SCR='consulta';render()">🔍</button>
     <button class="hdr-btn" title="Configurações" onclick="openSettings()">⚙️</button>
-    <button class="hdr-btn" onclick="lockApp()">🔒</button>
+    
    </div>
   </div>
  </div>
@@ -1041,8 +981,8 @@ async function gerarLinkAssinaturaLaudo(laudoId){
     <div style="font-size:12px;font-weight:700;color:#22c55e;margin-bottom:6px">🔗 Link de assinatura gerado</div>
     <div class="laudo-sig-url">${url}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-      <button onclick="navigator.clipboard.writeText('${url}').then(()=>toast('Link copiado!'))" style="padding:5px 12px;border-radius:6px;border:1px solid #2e2e2e;background:transparent;color:#a09890;font-size:11px;cursor:pointer">📋 Copiar</button>
-      <a href="https://wa.me/?text=${wppMsg}" target="_blank" style="padding:5px 12px;border-radius:6px;border:1px solid #2e2e2e;background:transparent;color:#a09890;font-size:11px;text-decoration:none">📲 WhatsApp</a>
+      <button onclick="navigator.clipboard.writeText('${url}').then(()=>toast('Link copiado!'))" style="padding:5px 12px;border-radius:6px;border:1px solid #253354;background:transparent;color:#8899bb;font-size:11px;cursor:pointer">📋 Copiar</button>
+      <a href="https://wa.me/?text=${wppMsg}" target="_blank" style="padding:5px 12px;border-radius:6px;border:1px solid #253354;background:transparent;color:#8899bb;font-size:11px;text-decoration:none">📲 WhatsApp</a>
     </div>
   </div>`;
 
@@ -1093,7 +1033,7 @@ function openSettings(){
  modal.innerHTML = `
   <div style="background:#fff;border-radius:12px;padding:20px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-    <div style="font-size:15px;font-weight:700;color:#0D2E6B">⚙️ Meu Perfil Técnico</div>
+    <div style="font-size:15px;font-weight:700;color:#111827">⚙️ Meu Perfil Técnico</div>
     <button onclick="document.getElementById('settings-modal').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#666">✕</button>
    </div>
    <div style="font-size:11px;color:#777;margin-bottom:12px">Essas informações aparecem nos seus laudos. Personalize como quiser.</div>
@@ -1113,7 +1053,7 @@ function openSettings(){
    </div>
    <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#5A6A7E;margin-bottom:4px">ENDEREÇO (opcional)</div>
     <input id="cfg-end" value="${cons.end||''}" placeholder="Rua, número, cidade/UF" style="width:100%;border:1px solid #C8D8EE;border-radius:6px;padding:8px;font-size:12px;outline:none;font-family:inherit"></div>
-   <button onclick="salvarPerfil()" style="width:100%;padding:10px;border:none;border-radius:6px;background:#0D2E6B;color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px">💾 Salvar perfil</button>
+   <button onclick="salvarPerfil()" style="width:100%;padding:10px;border:none;border-radius:6px;background:#111827;color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px">💾 Salvar perfil</button>
    <div style="border-top:1px solid #eee;padding-top:12px">
    <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:8px">✍️ ASSINATURA DO RESPONSÁVEL</div>
    <div style="font-size:11px;color:#777;margin-bottom:10px">Assine abaixo. Será salva e aparecerá nos laudos.</div>
@@ -1121,14 +1061,14 @@ function openSettings(){
     style="border:1px solid #C3D9F0;border-radius:6px;background:#fff;width:100%;touch-action:none;cursor:crosshair"></canvas>
    <div style="display:flex;gap:8px;margin-top:12px">
     <button onclick="clearSigTec()" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;font-size:12px;cursor:pointer">🗑 Limpar</button>
-    <button onclick="saveSigTec()" style="flex:2;padding:8px;border:none;border-radius:6px;background:#0D2E6B;color:#fff;font-size:12px;font-weight:700;cursor:pointer">💾 Salvar Assinatura</button>
+    <button onclick="saveSigTec()" style="flex:2;padding:8px;border:none;border-radius:6px;background:#111827;color:#fff;font-size:12px;font-weight:700;cursor:pointer">💾 Salvar Assinatura</button>
    </div>
    ${SIG_TEC ? '<div style="margin-top:12px;font-size:11px;color:#16A34A;text-align:center">✓ Assinatura já cadastrada</div>' : '<div style="margin-top:12px;font-size:11px;color:#D97706;text-align:center">⚠️ Nenhuma assinatura cadastrada</div>'}
    </div>
    <div style="margin-top:18px;border-top:1px solid #eee;padding-top:14px">
     <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:8px">📊 RELATÓRIO E BACKUP</div>
     <button onclick="document.getElementById('settings-modal').remove();gerarRelatorioMensal()"
-     style="width:100%;padding:9px;border:1px solid #1A56A0;border-radius:6px;background:#EEF3FA;color:#0D2E6B;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
+     style="width:100%;padding:9px;border:1px solid #1A56A0;border-radius:6px;background:#EEF3FA;color:#111827;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:6px">
      📊 Relatório do Mês (PDF)
     </button>
     <div style="display:flex;gap:6px">
@@ -1151,7 +1091,7 @@ function initSigTecPad(){
  const c = document.getElementById('sig-tec-canvas');
  if(!c) return;
  const ctx = c.getContext('2d');
- ctx.strokeStyle = '#0D2E6B';
+ ctx.strokeStyle = '#111827';
  ctx.lineWidth = 2;
  ctx.lineCap = 'round';
  ctx.lineJoin = 'round';
@@ -1306,7 +1246,7 @@ function diagnosticarLocalmente(px,pat,subst,amb,grav,patId){
   +'<span style="background:'+gravBg[gravFinal]+';color:'+gravC[gravFinal]+';font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px">'+gravFinal+'</span>'
   +'</div>'
   +'<div style="background:#EEF3FA;border-radius:6px;padding:7px 9px;margin-bottom:7px">'
-  +'<div style="font-size:9px;font-weight:700;color:#0D2E6B;margin-bottom:4px">📷 OBSERVAÇÕES VISUAIS</div>'
+  +'<div style="font-size:9px;font-weight:700;color:#111827;margin-bottom:4px">📷 OBSERVAÇÕES VISUAIS</div>'
   +obs.map(o=>'<div style="font-size:10.5px;color:#1A56A0;margin-bottom:2px">• '+o+'</div>').join('')
   +'</div>'
   +'<div style="font-size:10.5px;color:#222;margin-bottom:5px;line-height:1.6">'
@@ -1318,7 +1258,7 @@ function diagnosticarLocalmente(px,pat,subst,amb,grav,patId){
   +(subObs||ambObs?'<div style="font-size:9.5px;color:#888;margin-bottom:6px;font-style:italic">'+subObs+ambObs+'</div>':'')
   +'<div style="border-top:1px solid #DDD6FE;margin-top:6px;padding-top:6px;display:flex;align-items:center;justify-content:space-between">'
   +'<span style="font-size:9px;font-weight:700;color:#16A34A">🛒 Produto SW: '+prodSW+'</span>'
-  +'<span style="font-size:9px;color:#7C3AED;opacity:.7">Análise local · LaudosPro</span>'
+  +'<span style="font-size:9px;color:#7C3AED;opacity:.7">Análise local · MestrePro</span>'
   +'</div>';
 }
 
@@ -1361,7 +1301,7 @@ function gerarRelatorioMensal(){
   const cC={CRÍTICO:'#DC2626',RELEVANTE:'#D97706',MODERADO:'#16A34A'};
   const c=l.criticidade||'MODERADO';
   return '<tr style="background:'+(i%2===0?'#F9FAFB':'#fff')+';border-bottom:1px solid #E5E7EB">'
-   +'<td style="padding:5px 8px;font-size:10px;font-weight:700;color:#0D2E6B">'+h(l.numero||'—')+'</td>'
+   +'<td style="padding:5px 8px;font-size:10px;font-weight:700;color:#111827">'+h(l.numero||'—')+'</td>'
    +'<td style="padding:5px 8px;font-size:10px">'+h(l.cliente||'—')+'</td>'
    +'<td style="padding:5px 8px;font-size:10px">'+h(l.cidade||'—')+'</td>'
    +'<td style="padding:5px 8px;text-align:center"><span style="background:'+cBg[c]+';color:'+cC[c]+';font-size:8px;font-weight:700;padding:1px 6px;border-radius:8px">'+c+'</span></td>'
@@ -1371,7 +1311,7 @@ function gerarRelatorioMensal(){
    +'</tr>';
  }).join('');
  const topPatsH=topPats.map((p,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #E5E7EB">'
-  +'<div style="font-size:11px;font-weight:700;color:#0D2E6B;min-width:18px">'+(i+1)+'</div>'
+  +'<div style="font-size:11px;font-weight:700;color:#111827;min-width:18px">'+(i+1)+'</div>'
   +'<div style="flex:1;font-size:10px">'+p[0]+'</div>'
   +'<div style="font-size:10px;font-weight:700;color:#1A56A0">'+p[1]+'x</div>'
   +'<div style="height:8px;background:#1A56A0;border-radius:4px;width:'+(p[1]/topPats[0][1]*80)+'px"></div>'
@@ -1384,9 +1324,9 @@ function gerarRelatorioMensal(){
   +'
 /* SIG LINK */
 .laudo-sig-link{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:12px;margin-top:8px;font-size:12px;}
-.laudo-sig-url{font-family:monospace;font-size:11px;color:#a09890;word-break:break-all;margin:6px 0;}
+.laudo-sig-url{font-family:monospace;font-size:11px;color:#8899bb;word-break:break-all;margin:6px 0;}
 </style></head><body>'
-  +'<div style="background:#0D2E6B;color:#fff;padding:16px 20px;margin-bottom:16px;border-radius:6px">'
+  +'<div style="background:#111827;color:#fff;padding:16px 20px;margin-bottom:16px;border-radius:6px">'
   +'<div style="font-size:9px;opacity:.7;margin-bottom:4px">SETE TINTAS — REVENDA MASTER SHERWIN-WILLIAMS</div>'
   +'<div style="font-size:20px;font-weight:700">Relatório de Performance</div>'
   +'<div style="font-size:13px;opacity:.85">'+nomeMes+' / '+ano+' &nbsp;|&nbsp; '+CONSULTOR.nome+'</div>'
@@ -1399,7 +1339,7 @@ function gerarRelatorioMensal(){
   +'</div>'
   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
   +'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:6px;padding:12px">'
-  +'<div style="font-size:10px;font-weight:700;color:#0D2E6B;margin-bottom:8px">CRITICIDADE</div>'
+  +'<div style="font-size:10px;font-weight:700;color:#111827;margin-bottom:8px">CRITICIDADE</div>'
   +Object.entries(crit).map(([k,v])=>{const bg={CRÍTICO:'#FEE2E2',RELEVANTE:'#FEF3C7',MODERADO:'#DCFCE7'}; const c2={CRÍTICO:'#DC2626',RELEVANTE:'#D97706',MODERADO:'#16A34A'};
    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
     +'<span style="background:'+bg[k]+';color:'+c2[k]+';font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;min-width:80px;text-align:center">'+k+'</span>'
@@ -1407,11 +1347,11 @@ function gerarRelatorioMensal(){
     +'<span style="font-size:10px;font-weight:700;color:#222;min-width:20px">'+v+'</span></div>';
   }).join('')+'</div>'
   +'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:6px;padding:12px">'
-  +'<div style="font-size:10px;font-weight:700;color:#0D2E6B;margin-bottom:8px">TOP PATOLOGIAS</div>'
+  +'<div style="font-size:10px;font-weight:700;color:#111827;margin-bottom:8px">TOP PATOLOGIAS</div>'
   +(topPatsH||'<div style="font-size:10px;color:#999">Nenhuma registrada</div>')
   +'</div></div>'
   +'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:6px;margin-bottom:16px">'
-  +'<div style="background:#0D2E6B;color:#fff;padding:6px 12px;font-size:10px;font-weight:700;border-radius:6px 6px 0 0">LAUDOS DO MÊS</div>'
+  +'<div style="background:#111827;color:#fff;padding:6px 12px;font-size:10px;font-weight:700;border-radius:6px 6px 0 0">LAUDOS DO MÊS</div>'
   +'<table style="width:100%;border-collapse:collapse">'
   +'<thead><tr style="background:#EEF3FA"><th style="padding:5px 8px;font-size:9px;text-align:left;color:#444">Nº</th>'
   +'<th style="padding:5px 8px;font-size:9px;text-align:left">Cliente</th>'
@@ -1471,7 +1411,7 @@ function enviarWhatsApp(laudoId){
  const crit=l.criticidade||'MODERADO';
  const emoji={CRÍTICO:'🔴',RELEVANTE:'🟡',MODERADO:'🟢'}[crit]||'⚪';
  const msg=
-  '*Laudo Técnico de Patologias — LaudosPro*\n\n'
+  '*Laudo Técnico de Patologias — MestrePro*\n\n'
   +'📋 *Laudo nº:* '+h(l.numero||'—')+'\n'
   +'👤 *Cliente:* '+h(l.cliente||'—')+'\n'
   +'📍 *Endereço:* '+h(l.obra||'—')+(l.cidade?', '+l.cidade:'')+'\n'
@@ -1486,7 +1426,6 @@ function enviarWhatsApp(laudoId){
  window.open(url,'_blank');
 }
 
-function lockApp(){ SCR='pin';render(); }
 
 // ─── FORM WRAPPER ────────────────────
 function renderForm(app){
@@ -1496,7 +1435,7 @@ function renderForm(app){
    <div class="hdr-logo" style="font-size:16px">${STEP_NAMES[STEP]}<span>Laudo nº ${h(D.numero||'—')}</span></div>
    <div class="hdr-btns">
     <button class="hdr-btn" onclick="saveCurrent();SCR='home';render()">← Laudos</button>
-    <button class="hdr-btn" onclick="lockApp()">🔒</button>
+    
    </div>
   </div>
   <div class="steps-bar">${STEP_NAMES.map((_,i)=>`<div class="step-dot ${i<STEP?'done':i===STEP?'active':''}"></div>`).join('')}</div>
@@ -2229,7 +2168,7 @@ function gerarManualHTML(psel){
  cronoRows.push([diaIdx,'Pintura de acabamento (se contratada)']);
 
  const cronoH=cronoRows.map((r,i)=>'<tr style="background:'+(i%2===0?'#F9FAFB':'#fff')+'">'
-  +'<td style="padding:4px 10px;font-size:10px;font-weight:700;color:#0D2E6B;text-align:center;width:50px">'+r[0]+'</td>'
+  +'<td style="padding:4px 10px;font-size:10px;font-weight:700;color:#111827;text-align:center;width:50px">'+r[0]+'</td>'
   +'<td style="padding:4px 10px;font-size:10px;color:#222">'+r[1]+'</td></tr>').join('');
 
  const prodsH=prodsSW.length?
@@ -2248,7 +2187,7 @@ function gerarManualHTML(psel){
   +'As etapas abaixo são as necessárias especificamente para este imóvel.</div>'
   +etapasHTML
   +'<div style="margin-top:12px;margin-bottom:12px">'
-  +'<div style="background:#0D2E6B;color:#fff;padding:5px 10px;font-size:10px;font-weight:700;border-radius:4px 4px 0 0">📅 CRONOGRAMA TÍPICO DO SERVIÇO</div>'
+  +'<div style="background:#111827;color:#fff;padding:5px 10px;font-size:10px;font-weight:700;border-radius:4px 4px 0 0">📅 CRONOGRAMA TÍPICO DO SERVIÇO</div>'
   +'<table style="width:100%;border-collapse:collapse;border:1px solid #D8D5CC;border-top:none"><tbody>'+cronoH+'</tbody></table>'
   +'<div style="font-size:8.5px;color:#999;margin-top:4px;font-style:italic">* Cronograma pode variar conforme tamanho da área e condições climáticas.</div>'
   +'</div>'
@@ -2276,7 +2215,7 @@ async function doPDF(){
   const fmt=v=>v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v.toFixed(0);
   return '\u2248 '+fmt(mn)+' \u2013 '+fmt(mx)+' ('+a+'m\u00B2)';
  }
- const BR='#0D2E6B';const BL='#1A56A0';
+ const BR='#111827';const BL='#1A56A0';
  const psel=PATS.filter(p=>SEL[p.id]);
  const crit=D.criticidade||calcCriticidade();
  const critBg={CRÍTICO:'#FEE2E2',RELEVANTE:'#FEF3C7',MODERADO:'#DCFCE7'};
@@ -2315,7 +2254,7 @@ async function doPDF(){
   const gravBg={Leve:'#DCFCE7',Moderada:'#FEF3C7',Grave:'#FEE2E2'};
   patHTML+=`<div style="border-left:3px solid ${gravBrd[g]};padding:6px 9px;margin-bottom:7px;background:#FDFCFA;border:1px solid #D8D5CC;page-break-inside:avoid">
    <div class="pat-hdr-row" style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-    <div style="font-size:12px;font-weight:700;flex:1;color:#0D2E6B">${i+1}. ${p.nome}</div>
+    <div style="font-size:12px;font-weight:700;flex:1;color:#111827">${i+1}. ${p.nome}</div>
     <span class="pat-badge" style="background:${gravBg[g]};color:${gravBrd[g]}">${g}</span>
     <span class="pat-badge" style="background:${cat.bg};color:${cat.c}">${cat.lb}</span>
    </div>
@@ -2355,7 +2294,7 @@ async function doPDF(){
   <div class="sec-hdr">HISTÓRICO DE ACOMPANHAMENTO</div>
   <div style="border:1px solid #D8D5CC;border-top:none;padding:8px 12px;background:#FDFCFA">
    ${fups.map((f,i)=>`<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f0f0">
-    <div style="font-size:11px;font-weight:700;color:#0D2E6B">Retorno ${i+1} — ${fmtDate(f.data)}</div>
+    <div style="font-size:11px;font-weight:700;color:#111827">Retorno ${i+1} — ${fmtDate(f.data)}</div>
     <div style="font-size:11px;color:#222;margin-top:4px;line-height:1.6">${f.obs||'—'}</div>
     ${f.fotos?.length?`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${f.fotos.map(ff=>`<img src="${ff.b64}" style="width:80px;height:62px;object-fit:cover;border-radius:4px;border:1px solid #ddd">`).join('')}</div>`:''}
    </div>`).join('')}
@@ -2420,7 +2359,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#222;backgroun
  position:fixed;
  top:0;left:0;right:0;
  height:14mm;
- background:#0D2E6B;
+ background:#111827;
  display:flex;
  align-items:center;
  justify-content:space-between;
@@ -2449,7 +2388,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#222;backgroun
 }
 
 /* ── Seções ── */
-.sec-hdr{background:#0D2E6B;color:#fff;padding:4px 12px;font-weight:700;font-size:10px;letter-spacing:.5px}
+.sec-hdr{background:#111827;color:#fff;padding:4px 12px;font-weight:700;font-size:10px;letter-spacing:.5px}
 .sec-body{border:1px solid #D8D5CC;border-top:none;padding:8px 12px;background:#FDFCFA;font-size:10.5px;line-height:1.6;color:#222;white-space:pre-line}
 .sec-wrap{margin-bottom:9px}
 .id-tbl td{padding:3px 8px;border-bottom:1px solid #EBEBEA;font-size:10.5px}
@@ -2466,7 +2405,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#222;backgroun
 
 /* SIG LINK */
 .laudo-sig-link{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:12px;margin-top:8px;font-size:12px;}
-.laudo-sig-url{font-family:monospace;font-size:11px;color:#a09890;word-break:break-all;margin:6px 0;}
+.laudo-sig-url{font-family:monospace;font-size:11px;color:#8899bb;word-break:break-all;margin:6px 0;}
 </style>
  </head><body>
 
@@ -2495,8 +2434,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#222;backgroun
  <!-- ═══ CONTEÚDO ═══ -->
  <div style="padding:0 0 8px">
 
-  <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #0D2E6B">
-   <div style="font-size:17px;font-weight:700;color:#0D2E6B;letter-spacing:.3px">LAUDO TÉCNICO DE PATOLOGIAS</div>
+  <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #111827">
+   <div style="font-size:17px;font-weight:700;color:#111827;letter-spacing:.3px">LAUDO TÉCNICO DE PATOLOGIAS</div>
    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
     <div style="font-size:10px;color:#666">${CONSULTOR.empresa}</div>
     <span style="background:${critBg[crit]};color:${critC[crit]};font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact">${crit}</span>
@@ -2544,7 +2483,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#222;backgroun
   ${fupsHTML}
 
   <!-- Aviso + Assinaturas -->
-  <div style="border-top:2px solid #0D2E6B;margin-top:14px;padding-top:10px">
+  <div style="border-top:2px solid #111827;margin-top:14px;padding-top:10px">
    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:5px 8px;background:#F0F7FF;border:1px solid #BFDBFE;border-radius:4px">
     <div style="font-size:9px;color:#1A56A0"><strong>Nº do Laudo:</strong> ${D.numero||'—'} &nbsp;|&nbsp; <strong>Código de Verificação:</strong> ${laudoHash(D)}</div>
     <div style="font-size:8.5px;color:#64748B">Emitido em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
@@ -2571,7 +2510,7 @@ function renderConsulta(app){
  <div class="hdr">
   <div class="hdr-row">
    <div class="hdr-logo" style="font-size:16px">Consulta Rápida<span>Patologias e produtos</span></div>
-   <div class="hdr-btns"><button class="hdr-btn" onclick="SCR='home';render()">← Home</button><button class="hdr-btn" onclick="lockApp()">🔒</button></div>
+   <div class="hdr-btns"><button class="hdr-btn" onclick="SCR='home';render()">← Home</button></div>
   </div>
  </div>
  <div class="content">
@@ -2629,13 +2568,30 @@ document.addEventListener('drop',e=>{
 
 // ─── INIT ────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
- loadLaudos();checkPin();render();
+ loadLaudos(); render();
  // Load prof sig from unified storage (safe — no DOM needed)
  const _unified=localStorage.getItem('pp_sig_profissional');
  if(_unified){SIG_TEC=_unified;localStorage.setItem(SIG_TEC_KEY,_unified);}
  else{const _ex=localStorage.getItem(SIG_TEC_KEY);if(_ex)SIG_TEC=_ex;}
  // Sync sig tokens from Supabase after a delay (parent needs time to set sessionStorage)
  setTimeout(_syncSigTokens, 1500);
+
+ // ── Ouvir comandos do app pai (postMessage)
+ window.addEventListener('message', e => {
+   if(!e.data || e.data.type !== 'pp_cmd') return;
+   const cmd = e.data.cmd;
+   if(cmd === 'startNewLaudo'){ startNewLaudo(); }
+   if(cmd === 'syncTheme'){
+     // laudos tem tema próprio mas podemos adaptar o fundo
+     const isDark = e.data.theme === 'dark';
+     document.documentElement.style.setProperty('--sky', isDark ? '#111' : '#EEF3FA');
+     document.documentElement.style.setProperty('--white', isDark ? '#1a1a17' : '#fff');
+     document.documentElement.style.setProperty('--txt', isDark ? '#f2ede6' : '#1E2A3A');
+     document.documentElement.style.setProperty('--border', isDark ? '#2a2a26' : '#C8D8EE');
+     document.documentElement.style.setProperty('--sub', isDark ? '#a09080' : '#5A6A7E');
+     document.body.style.background = isDark ? '#0a0a09' : '#EEF3FA';
+   }
+ });
 });
 </script>
 </body>
