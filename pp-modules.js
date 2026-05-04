@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// PintorPro — Módulos: Contratos, Recibos, Agenda
+// MestrePro — Módulos: Contratos, Recibos, Agenda
 // ═══════════════════════════════════════════════════════════════
 
 // ──────────────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ function renderContratos() {
   const el = document.getElementById('s-contratos');
   if (!el) return;
 
-  const statusColor = { rascunho: '#a09890', ativo: '#e8770a', concluido: '#22c55e', cancelado: '#ef4444' };
+  const statusColor = { rascunho: '#8899bb', ativo: '#5b7fff', concluido: '#22c55e', cancelado: '#ef4444' };
   const statusLabel = { rascunho: 'Rascunho', ativo: 'Ativo', concluido: 'Concluído', cancelado: 'Cancelado' };
 
   const rows = _contratos.length ? _contratos.map(c => `
@@ -322,7 +322,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:10.5px;color:#1a1a1a;padd
 h1{font-size:17px;font-weight:900;color:#0D2E6B;text-align:center;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
 .subtitle{text-align:center;font-size:9px;color:#888;letter-spacing:.5px;text-transform:uppercase;margin-bottom:18px}
 .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #0D2E6B;padding-bottom:10px;margin-bottom:16px}
-.header-logo-text{font-size:22px;font-weight:900;color:#e8770a;letter-spacing:-0.5px}
+.header-logo-text{font-size:22px;font-weight:900;color:#2563eb;letter-spacing:-0.5px}
 .contract-num{text-align:right;font-size:9px;color:#888}
 .contract-num strong{display:block;font-size:14px;font-weight:800;color:#0D2E6B}
 .sec{margin-bottom:14px}
@@ -512,7 +512,7 @@ ${ct.dados?.clausulas ? `<div class="sec">
 
 <div class="footer">
   ${ct.sig_token ? `Cód. verificação: PP-${ct.sig_token.slice(0,8).toUpperCase()} · ` : ''}
-  Gerado por PintorPro — Documento eletrônico com validade jurídica conforme MP nº 2.200-2/2001 e Lei nº 14.063/2020
+  Gerado por MestrePro — Documento eletrônico com validade jurídica conforme MP nº 2.200-2/2001 e Lei nº 14.063/2020
 </div>
 
 <script>window.onload=()=>window.print();<\/script>
@@ -757,7 +757,7 @@ function gerarPDFRecibo(reciboId) {
       ${emp.doc ? `<div class="sig-sub">CPF/CNPJ: ${emp.doc}</div>` : ''}
     </div>
   </div>
-  <div class="footer">${reciboCodigo} · Gerado por PintorPro · Documento com validade legal conforme CC/2002</div>
+  <div class="footer">${reciboCodigo} · Gerado por MestrePro · Documento com validade legal conforme CC/2002</div>
   `;
 
   // Gerar canhoto
@@ -783,8 +783,8 @@ function gerarPDFRecibo(reciboId) {
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;font-size:10.5px;color:#1a1a1a;padding:16mm 20mm;background:#fff;line-height:1.5}
-.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #e8770a;padding-bottom:10px;margin-bottom:14px}
-.logo-text{font-size:20px;font-weight:900;color:#e8770a}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #2563eb;padding-bottom:10px;margin-bottom:14px}
+.logo-text{font-size:20px;font-weight:900;color:#2563eb}
 .header-sub{font-size:9px;color:#888;margin-top:2px}
 .recibo-title{font-size:22px;font-weight:900;color:#0D2E6B;letter-spacing:-0.5px}
 .recibo-num{font-size:9.5px;color:#888;margin-top:2px}
@@ -794,12 +794,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:10.5px;color:#1a1a1a;padd
 .value-main{font-size:30px;font-weight:900;margin-top:3px;letter-spacing:-1px}
 .value-ext{font-size:9.5px;opacity:.7;margin-top:3px;font-style:italic}
 .data-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-bottom:12px}
-.data-sec{font-size:8.5px;font-weight:800;color:#e8770a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid #eee}
+.data-sec{font-size:8.5px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid #eee}
 .detail-sec{font-size:8.5px;font-weight:800;color:#0D2E6B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid #eee}
 .data-row{margin-bottom:4px}
 .data-lbl{font-size:8px;color:#888;text-transform:uppercase;font-weight:700;margin-right:4px}
 .data-val{font-size:10.5px;font-weight:500}
-.clause-box{background:#f8f9fb;border-left:3px solid #e8770a;padding:7px 11px;margin-bottom:6px;border-radius:0 4px 4px 0;font-size:9.5px}
+.clause-box{background:#f8f9fb;border-left:3px solid #2563eb;padding:7px 11px;margin-bottom:6px;border-radius:0 4px 4px 0;font-size:9.5px}
 .quitacao{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:5px;padding:10px 14px;font-size:10px;line-height:1.65;margin:12px 0;color:#14532d}
 .local-data{text-align:center;font-size:10px;color:#555;margin:10px 0 6px}
 .sig-wrap{display:flex;justify-content:center;margin-bottom:6px}
@@ -825,7 +825,7 @@ ${canhotoBrief}
 // ──────────────────────────────────────────────────────────────
 let _eventos = [];
 let _agendaMes = new Date();
-const _TIPO_COR = { servico:'#e8770a', visita:'#3b82f6', reuniao:'#8b5cf6', prazo:'#ef4444', outro:'#6b7280' };
+const _TIPO_COR = { servico:'#5b7fff', visita:'#3b82f6', reuniao:'#8b5cf6', prazo:'#ef4444', outro:'#6b7280' };
 const _TIPO_IC  = { servico:'🔨', visita:'🔍', reuniao:'💬', prazo:'⏰', outro:'📌' };
 
 async function loadAgenda() {
@@ -863,7 +863,7 @@ function renderAgenda() {
       return dDate >= new Date(ini.toDateString()) && dDate <= new Date(fim.toDateString());
     });
     const isHoje = hoje.getFullYear()===ano && hoje.getMonth()===mes && hoje.getDate()===d;
-    const dots = evs.slice(0,3).map(e => `<div class="ag-dot" style="background:${_TIPO_COR[e.tipo]||'#e8770a'}"></div>`).join('');
+    const dots = evs.slice(0,3).map(e => `<div class="ag-dot" style="background:${_TIPO_COR[e.tipo]||'#5b7fff'}"></div>`).join('');
     cells += `<div class="ag-cell ${isHoje?'ag-hoje':''}" onclick="openEventoModal('${dStr}')">
       <div class="ag-day">${d}</div>
       <div class="ag-dots">${dots}${evs.length>3?`<div class="ag-dot-more">+${evs.length-3}</div>`:''}</div>
@@ -885,7 +885,7 @@ function renderAgenda() {
     const dStr = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', weekday:'short' });
     const h = e.hora_inicio ? e.hora_inicio.slice(0,5) : '';
     return `<div class="ag-ev-item" onclick="editEvento('${e.id}')">
-      <div class="ag-ev-stripe" style="background:${_TIPO_COR[e.tipo]||'#e8770a'}"></div>
+      <div class="ag-ev-stripe" style="background:${_TIPO_COR[e.tipo]||'#5b7fff'}"></div>
       <div class="ag-ev-body">
         <div class="ag-ev-titulo">${_TIPO_IC[e.tipo]||'📌'} ${e.titulo}</div>
         <div class="ag-ev-meta">${dStr}${h?' às '+h:''} ${e.cliente?'· '+e.cliente:''}</div>
