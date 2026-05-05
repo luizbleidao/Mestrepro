@@ -132,12 +132,12 @@ const PLANOS = [
     pop: true,
     feats: [
       'Tudo do Básico',
-      'Laudos ilimitados',
-      'IA gera orçamento',
+      'Laudos técnicos ilimitados',
       'PDF com sua marca',
       'Dashboard financeiro',
       'Histórico de clientes',
-      {t:'Multi-usuário', off:true},
+      'Envio por WhatsApp',
+      {t:'IA gera orçamento (em breve)', off:true},
     ]
   },
   {
@@ -150,41 +150,71 @@ const PLANOS = [
     pop: false,
     feats: [
       'Tudo do Pro',
-      'Até 5 usuários',
-      'Painéis separados',
-      'Relatórios por equipe',
       'Suporte prioritário',
-      'Treinamento online',
-      {t:'IA gerador de conteúdo', off:true},
+      {t:'Até 5 usuários (em breve)', off:true},
+      {t:'Painéis por técnico (em breve)', off:true},
+      {t:'Relatórios por equipe (em breve)', off:true},
+      {t:'IA gerador de conteúdo (em breve)', off:true},
     ]
   },
   {
     id: 'ia-pro',
     nome: 'IA Pro',
-    desc: 'Para dominar o mercado',
+    desc: 'Acesso antecipado — recursos de IA em desenvolvimento',
     mensal: 297, anual: 247, totalAnual: 2970,
     mpMensal: 'https://mpago.la/1iWJVWP',
     mpAnual:  'https://mpago.la/119g9kC',
     pop: false,
     feats: [
       'Tudo do Equipe',
-      'IA WhatsApp automático',
-      'Gerador de posts/reels',
-      'IA cria anúncios',
-      'Afiliados 30% comissão',
-      'API para integrações',
-      'Gerente de conta dedicado',
+      '🔒 Acesso garantido a todos os recursos de IA',
+      {t:'IA gera orçamentos (em breve)', off:true},
+      {t:'IA analisa foto de patologia (em breve)', off:true},
+      {t:'IA responde clientes via WhatsApp (em breve)', off:true},
+      {t:'Painel de afiliados 30% (em breve)', off:true},
+      {t:'Gerador de posts/anúncios (em breve)', off:true},
     ]
   },
 ];
 
 let anual = false;
 let planoAtual = '';
+let userId = '';
 
-// Pega plano do usuário logado
+// Pega dados do usuário logado
 try {
   planoAtual = sessionStorage.getItem('pp_user_plano') || '';
+  userId     = sessionStorage.getItem('pp_user_id')   || '';
 } catch {}
+
+// Se não tiver userId no sessionStorage, tenta buscar do Supabase Auth
+async function carregarUserId() {
+  if (userId) return;
+  try {
+    const sb = window.supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user?.id) {
+      userId = session.user.id;
+      sessionStorage.setItem('pp_user_id', userId);
+    }
+  } catch {}
+  renderPlans(); // re-renderiza com userId preenchido
+}
+carregarUserId();
+
+/**
+ * Constrói a URL de checkout do MP com external_reference no formato userId:planoKey
+ * O webhook espera exatamente esse formato para ativar o plano correto.
+ */
+function buildMpLink(baseLink, planoId, isAnual) {
+  if (!baseLink || !userId) return baseLink;
+  // ia-pro → iapro  (sem hífen, conforme PLANO_MAP da edge function)
+  const idNormalizado = planoId.replace('-', '');
+  const periodo       = isAnual ? 'anual' : 'mensal';
+  const planoKey      = `mestrepro_${idNormalizado}_${periodo}`;
+  const extRef        = encodeURIComponent(`${userId}:${planoKey}`);
+  return `${baseLink}?external_reference=${extRef}`;
+}
 
 function renderPlans() {
   document.getElementById('lbl-mensal').style.color = anual ? 'var(--text2)' : 'var(--text)';
@@ -193,7 +223,7 @@ function renderPlans() {
   document.getElementById('plans-grid').innerHTML = PLANOS.map(p => {
     const preco = anual ? p.anual : p.mensal;
     const nota  = anual ? `cobrado R$${p.totalAnual.toLocaleString('pt-BR')}/ano` : '&nbsp;';
-    const link  = anual ? p.mpAnual : p.mpMensal;
+    const link  = buildMpLink(anual ? p.mpAnual : p.mpMensal, p.id, anual);
     const isAtual = planoAtual === p.id;
 
     const feats = p.feats.map(f => {

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MestrePro — Gerador de Posts IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="pp-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0b0f1a;--bg2:#111827;--bg3:#1c2537;--border:#2a3550;
+  --acc:#5b7fff;--acc2:#7b9fff;--acc-dim:rgba(91,127,255,.12);--acc-glow:rgba(91,127,255,.25);
+  --text:#e8ecf4;--text2:#94a3b8;--text3:#64748b;
+  --green:#10b981;--red:#ef4444;--purple:#8b5cf6;
+  --r:10px;--r2:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.logo span{color:var(--acc)}
+.ia-badge{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(91,127,255,.2));border:1px solid rgba(139,92,246,.4);border-radius:99px;padding:4px 12px;font-size:.75rem;font-weight:700;color:#c4b5fd;letter-spacing:.04em}
+
+/* LAYOUT */
+.wrap{max-width:900px;margin:0 auto;padding:24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:640px){.wrap{grid-template-columns:1fr;padding:16px}}
+
+/* PAINEL ESQUERDO */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:22px}
+.panel-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+
+/* FORM */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.field input,.field select,.field textarea{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;padding:10px 13px;outline:none;width:100%;transition:.2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(139,92,246,.12)}
+.field textarea{resize:vertical;min-height:88px}
+.field select option{background:var(--bg2)}
+
+/* TIPO CHIPS */
+.tipo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.tipo-chip{background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:.2s;text-align:center}
+.tipo-chip:hover{border-color:rgba(139,92,246,.5)}
+.tipo-chip.sel{border-color:#a78bfa;background:rgba(139,92,246,.12)}
+.tipo-chip-ico{font-size:1.2rem;display:block;margin-bottom:3px}
+.tipo-chip-lb{font-size:.75rem;font-weight:600;color:var(--text2)}
+.tipo-chip.sel .tipo-chip-lb{color:#c4b5fd}
+
+/* BOTÃO GERAR */
+.btn-gerar{width:100%;padding:14px;background:linear-gradient(135deg,#7c3aed,#5b7fff);color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s;margin-top:6px}
+.btn-gerar:hover{opacity:.9;transform:translateY(-1px)}
+.btn-gerar:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;flex-shrink:0}
+
+/* PAINEL DIREITO — RESULTADO */
+.result-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:22px;display:flex;flex-direction:column;gap:0}
+.result-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:320px;gap:12px;color:var(--text3);text-align:center}
+.result-empty-ico{font-size:2.5rem;opacity:.4}
+.result-empty-txt{font-size:.85rem;line-height:1.6;max-width:220px}
+.result-block{display:none;flex-direction:column;gap:16px;animation:fadeUp .3s ease}
+.result-block.show{display:flex}
+
+.res-section{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.res-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.res-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3)}
+.copy-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:.72rem;padding:3px 8px;cursor:pointer;transition:.15s;font-family:'DM Sans',sans-serif}
+.copy-btn:hover{border-color:var(--acc);color:var(--acc)}
+.copy-btn.copied{border-color:var(--green);color:var(--green)}
+
+.res-legenda{font-size:.9rem;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.res-hashtags{font-size:.82rem;color:#7b9fff;line-height:1.8;font-family:'DM Mono',monospace;white-space:pre-wrap;word-break:break-word}
+.res-cta{font-size:.88rem;font-weight:600;color:#10b981}
+.res-img{font-size:.83rem;color:var(--text2);font-style:italic}
+
+.hist-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.hist-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.hist-list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto}
+.hist-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:.15s}
+.hist-item:hover{border-color:rgba(139,92,246,.4)}
+.hist-item-tipo{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#a78bfa;margin-bottom:3px}
+.hist-item-preview{font-size:.8rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-item-data{font-size:.68rem;color:var(--text3);margin-top:3px}
+.hist-empty{font-size:.82rem;color:var(--text3);text-align:center;padding:16px 0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Mestre<span>Pro</span></div>
+  <div class="ia-badge">✨ IA Pro — Gerador de Posts</div>
+</div>
+
+<div class="wrap">
+
+  <!-- PAINEL ESQUERDO: FORMULÁRIO -->
+  <div class="panel">
+    <div class="panel-title">✍️ Criar novo post</div>
+
+    <div class="field">
+      <label>Tipo de Post</label>
+      <div class="tipo-grid" id="tipoGrid">
+        <div class="tipo-chip sel" data-tipo="educativo" onclick="selTipo(this)">
+          <span class="tipo-chip-ico">🎓</span>
+          <span class="tipo-chip-lb">Educativo</span>
+        </div>
+        <div class="tipo-chip" data-tipo="prova_social" onclick="selTipo(this)">
+          <span class="tipo-chip-ico">⭐</span>
+          <span class="tipo-chip-lb">Prova Social</span>
+        </div>
+        <div class="tipo-chip" data-tipo="promocional" onclick="selTipo(this)">
+          <span class="tipo-chip-ico">📣</span>
+          <span class="tipo-chip-lb">Promocional</span>
+        </div>
+        <div class="tipo-chip" data-tipo="dica_rapida" onclick="selTipo(this)">
+          <span class="tipo-chip-ico">💡</span>
+          <span class="tipo-chip-lb">Dica Rápida</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Tema do Post *</label>
+      <textarea id="tema" placeholder="Ex: Como preparar a parede antes de pintar para evitar descascamento..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Tom de Voz</label>
+      <select id="tom">
+        <option value="profissional e técnico">Profissional e Técnico</option>
+        <option value="amigável e próximo">Amigável e Próximo</option>
+        <option value="direto e objetivo">Direto e Objetivo</option>
+        <option value="inspirador e motivacional">Inspirador e Motivacional</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Cidade / Região</label>
+      <input id="cidade" placeholder="Ex: Barretos, SP">
+    </div>
+
+    <div class="field">
+      <label>Nome da Empresa / Profissional</label>
+      <input id="nomeEmpresa" placeholder="Ex: João Silva Pinturas ou @pintorsilva">
+    </div>
+
+    <button class="btn-gerar" id="btnGerar" onclick="gerarPost()">
+      ✨ Gerar Post com IA
+    </button>
+
+    <!-- HISTÓRICO -->
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+      <div class="hist-header">
+        <div class="hist-title">📋 Histórico</div>
+        <button class="copy-btn" onclick="limparHistorico()">Limpar</button>
+      </div>
+      <div class="hist-list" id="histList">
+        <div class="hist-empty">Nenhum post gerado ainda</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAINEL DIREITO: RESULTADO -->
+  <div class="result-panel">
+    <div class="panel-title">📱 Post gerado</div>
+
+    <div class="result-empty" id="resultEmpty">
+      <div class="result-empty-ico">✨</div>
+      <div class="result-empty-txt">Preencha o formulário ao lado e clique em "Gerar Post" para criar legendas prontas para o Instagram</div>
+    </div>
+
+    <div class="result-block" id="resultBlock">
+
+      <div class="res-section">
+        <div class="res-section-head">
+          <span class="res-label">📝 Legenda</span>
+          <button class="copy-btn" onclick="copiar('legenda-txt','btn-cp-leg')">Copiar</button>
+        </div>
+        <div class="res-legenda" id="legenda-txt"></div>
+      </div>
+
+      <div class="res-section">
+        <div class="res-section-head">
+          <span class="res-label">#️⃣ Hashtags</span>
+          <button class="copy-btn" onclick="copiar('hash-txt','btn-cp-hash')">Copiar</button>
+        </div>
+        <div class="res-hashtags" id="hash-txt"></div>
+      </div>
+
+      <div class="res-section">
+        <div class="res-section-head">
+          <span class="res-label">📢 Call to Action</span>
+          <button class="copy-btn" onclick="copiar('cta-txt','btn-cp-cta')">Copiar</button>
+        </div>
+        <div class="res-cta" id="cta-txt"></div>
+      </div>
+
+      <div class="res-section">
+        <div class="res-section-head">
+          <span class="res-label">🖼️ Sugestão de Imagem</span>
+        </div>
+        <div class="res-img" id="img-txt"></div>
+      </div>
+
+      <button class="btn-gerar" onclick="copiarTudo()" style="background:linear-gradient(135deg,#059669,#10b981);margin-top:4px">
+        📋 Copiar legenda + hashtags
+      </button>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Estado ──────────────────────────────────────────────
+let tipoSelecionado = 'educativo';
+let historico = [];
+const HIST_KEY = 'pp_posts_hist_' + (sessionStorage.getItem('pp_user_id') || 'anon');
+
+function _getSession(){ return sessionStorage; }
+function _getUserPlano(){ return sessionStorage.getItem('pp_user_plano') || 'gratuito'; }
+
+// ─── Init ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Pré-preencher cidade e empresa dos dados salvos
+  try {
+    const emp = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+    if (emp.cidade)   document.getElementById('cidade').value = emp.cidade;
+    if (emp.nomeEmpresa || emp.nome) document.getElementById('nomeEmpresa').value = emp.nomeEmpresa || emp.nome || '';
+  } catch {}
+
+  carregarHistorico();
+
+  if (_getUserPlano() !== 'ia-pro') {
+    document.getElementById('btnGerar').disabled = true;
+    document.getElementById('btnGerar').textContent = '🔒 Disponível apenas no plano IA Pro';
+  }
+});
+
+// ─── Seleção de tipo ──────────────────────────────────────
+function selTipo(el) {
+  document.querySelectorAll('.tipo-chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  tipoSelecionado = el.dataset.tipo;
+}
+
+// ─── Gerar post ───────────────────────────────────────────
+async function gerarPost() {
+  if (_getUserPlano() !== 'ia-pro') {
+    alert('Disponível apenas no plano IA Pro.');
+    return;
+  }
+
+  const tema       = document.getElementById('tema').value.trim();
+  const tom        = document.getElementById('tom').value;
+  const cidade     = document.getElementById('cidade').value.trim() || 'Brasil';
+  const nomeEmpresa= document.getElementById('nomeEmpresa').value.trim() || 'minha empresa';
+
+  if (tema.length < 5) {
+    alert('Descreva o tema do post com pelo menos 5 caracteres.');
+    document.getElementById('tema').focus();
+    return;
+  }
+
+  const btn = document.getElementById('btnGerar');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spin"></div> Gerando...';
+
+  try {
+    const sbClient = supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+    const { data: { session } } = await sbClient.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+    const res = await fetch(`${window.PP.supabaseUrl}/functions/v1/ia-posts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        nicho: 'pintor/prestador de serviços de pintura',
+        tipo: tipoSelecionado,
+        tema, tom, cidade, nomeEmpresa,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao gerar post.');
+
+    exibirResultado(data, tema);
+    salvarHistorico({ tipo: tipoSelecionado, tema, ...data, ts: Date.now() });
+
+  } catch (err) {
+    alert('Erro: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✨ Gerar Post com IA';
+  }
+}
+
+// ─── Exibir resultado ─────────────────────────────────────
+function exibirResultado(data, tema) {
+  document.getElementById('legenda-txt').textContent = data.legenda;
+  document.getElementById('hash-txt').textContent    = data.hashtags;
+  document.getElementById('cta-txt').textContent     = data.cta;
+  document.getElementById('img-txt').textContent     = data.sugestaoImagem;
+
+  document.getElementById('resultEmpty').style.display = 'none';
+  document.getElementById('resultBlock').classList.add('show');
+}
+
+// ─── Copiar ───────────────────────────────────────────────
+function copiar(elId, btnId) {
+  const txt = document.getElementById(elId)?.textContent || '';
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.querySelector(`[onclick="copiar('${elId}','${btnId}')"]`);
+    if (btn) { btn.textContent = 'Copiado ✓'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000); }
+  });
+}
+
+function copiarTudo() {
+  const legenda  = document.getElementById('legenda-txt')?.textContent || '';
+  const hashtags = document.getElementById('hash-txt')?.textContent || '';
+  const full = `${legenda}\n\n${hashtags}`;
+  navigator.clipboard.writeText(full).then(() => {
+    const btn = document.querySelector('[onclick="copiarTudo()"]');
+    if (btn) { btn.textContent = '✅ Copiado!'; setTimeout(() => { btn.innerHTML = '📋 Copiar legenda + hashtags'; }, 2000); }
+  });
+}
+
+// ─── Histórico ────────────────────────────────────────────
+const TIPO_LABEL = { educativo:'Educativo', prova_social:'Prova Social', promocional:'Promocional', dica_rapida:'Dica Rápida' };
+
+function salvarHistorico(item) {
+  historico.unshift(item);
+  if (historico.length > 20) historico = historico.slice(0, 20);
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(historico)); } catch {}
+  renderHistorico();
+}
+
+function carregarHistorico() {
+  try { historico = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch { historico = []; }
+  renderHistorico();
+}
+
+function renderHistorico() {
+  const el = document.getElementById('histList');
+  if (!historico.length) { el.innerHTML = '<div class="hist-empty">Nenhum post gerado ainda</div>'; return; }
+  el.innerHTML = historico.map((h, i) => `
+    <div class="hist-item" onclick="carregarDoHistorico(${i})">
+      <div class="hist-item-tipo">${TIPO_LABEL[h.tipo] || h.tipo}</div>
+      <div class="hist-item-preview">${h.tema}</div>
+      <div class="hist-item-data">${new Date(h.ts).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</div>
+    </div>`).join('');
+}
+
+function carregarDoHistorico(i) {
+  const h = historico[i];
+  if (!h) return;
+  document.getElementById('tema').value = h.tema || '';
+  document.querySelectorAll('.tipo-chip').forEach(c => {
+    c.classList.toggle('sel', c.dataset.tipo === h.tipo);
+    if (c.dataset.tipo === h.tipo) tipoSelecionado = h.tipo;
+  });
+  exibirResultado(h, h.tema);
+}
+
+function limparHistorico() {
+  if (!confirm('Limpar todo o histórico de posts?')) return;
+  historico = [];
+  try { localStorage.removeItem(HIST_KEY); } catch {}
+  renderHistorico();
+}
+</script>
+
+<script>
+// Sync tema com app pai
+window.addEventListener('message', e => {
+  if (!e.data || e.data.type !== 'pp_cmd') return;
+  if (e.data.cmd === 'syncTheme') {
+    const d = e.data.theme === 'dark';
+    document.documentElement.style.setProperty('--bg',     d ? '#0a0a09' : '#f8fafc');
+    document.documentElement.style.setProperty('--bg2',    d ? '#131311' : '#ffffff');
+    document.documentElement.style.setProperty('--bg3',    d ? '#1a1a17' : '#f1f5f9');
+    document.documentElement.style.setProperty('--border', d ? '#2a2a26' : '#e2e8f0');
+    document.documentElement.style.setProperty('--text',   d ? '#f2ede6' : '#1e293b');
+    document.documentElement.style.setProperty('--text2',  d ? '#a09080' : '#64748b');
+    document.documentElement.style.setProperty('--text3',  d ? '#5a5448' : '#94a3b8');
+    document.body.style.background = d ? '#0a0a09' : '#f8fafc';
+  }
+});
+</script>
+</body>
+</html>
