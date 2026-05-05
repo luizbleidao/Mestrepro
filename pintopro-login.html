@@ -54,14 +54,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
 /* ── CARDS DE PERFIL ── */
-.perfil-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:13px;}
-.perfil-opt{background:var(--surf2);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.2s;}
-.perfil-opt:hover{border-color:var(--acc2);}
-.perfil-opt.selected{border-color:var(--acc);background:rgba(91,127,255,.08);}
-.perfil-opt-icon{font-size:18px;flex-shrink:0;}
-.perfil-opt-label{font-size:12px;font-weight:600;color:var(--text2);}
-.perfil-opt-sub{font-size:10px;color:var(--text3);margin-top:1px;}
-.perfil-opt.selected .perfil-opt-label{color:var(--acc);}
+
 
 /* ── BOTÕES ── */
 .btn{width:100%;border:none;border-radius:var(--rs);padding:13px;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:.2s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:8px;}
@@ -227,26 +220,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
             <input id="ct" type="tel" placeholder="(17) 99999-9999">
           </div>
         </div>
-        <div class="field">
-          <label>Como vai usar o MestrePro?</label>
-          <div class="perfil-grid">
-            <div class="perfil-opt selected" id="opt-pintor" onclick="selecionarPerfil('pintor')">
-              <div class="perfil-opt-icon">🎨</div>
-              <div>
-                <div class="perfil-opt-label">Pintor</div>
-                <div class="perfil-opt-sub">Autônomo / equipe</div>
-              </div>
-            </div>
-            <div class="perfil-opt" id="opt-lojista" onclick="selecionarPerfil('lojista')">
-              <div class="perfil-opt-icon">🏪</div>
-              <div>
-                <div class="perfil-opt-label">Lojista</div>
-                <div class="perfil-opt-sub">Revenda de tintas</div>
-              </div>
-            </div>
-          </div>
-          <input type="hidden" id="cp" value="pintor">
-        </div>
+        <!-- perfil fixo como pintor; lojista disponível em versão futura -->
+        <input type="hidden" id="cp" value="pintor">
         <div class="field">
           <label>Cidade / UF</label>
           <input id="cc" type="text" placeholder="Ex: Barretos / SP">
@@ -314,16 +289,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       </div>
       <div class="pl">
         <div class="pn">Equipe</div>
-        <div class="pfor">Para lojas e equipes de técnicos</div>
+        <div class="pfor">Para equipes de pintores</div>
         <div class="ppr" id="pr-equipe">R$197<span>/mês</span></div>
         <div class="ppr-eq" id="eq-equipe"></div>
         <div class="pdiv"></div>
         <div class="pfs">
           <div class="pf"><span class="ok">✓</span>Tudo do Pro</div>
-          <div class="pf"><span class="ok">✓</span>Múltiplos técnicos</div>
-          <div class="pf"><span class="ok">✓</span>Dashboard compartilhado</div>
-          <div class="pf"><span class="ok">✓</span>Histórico de clientes</div>
           <div class="pf"><span class="ok">✓</span>Suporte prioritário</div>
+          <div class="pf dim"><span class="no">—</span>Múltiplos técnicos (em breve)</div>
+          <div class="pf dim"><span class="no">—</span>Dashboard compartilhado (em breve)</div>
+          <div class="pf dim"><span class="no">—</span>Histórico unificado (em breve)</div>
           <div class="pf dim"><span class="no">—</span>Sem IA</div>
         </div>
         <a class="pbtn" href="#" onclick="irMP('equipe',event)">Assinar Equipe</a>
@@ -336,11 +311,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div class="pdiv"></div>
         <div class="pfs">
           <div class="pf"><span class="ok">✓</span>Tudo do Equipe</div>
-          <div class="pf"><span class="ok">✓</span>IA gera orçamento automático</div>
-          <div class="pf"><span class="ok">✓</span>IA analisa foto de patologia</div>
-          <div class="pf"><span class="ok">✓</span>IA sugere preço de mercado</div>
-          <div class="pf"><span class="ok">✓</span>IA responde clientes</div>
-          <div class="pf"><span class="ok">✓</span>Criativos para Instagram</div>
+          <div class="pf"><span class="ok">✓</span>🔒 Acesso garantido a todos os recursos de IA</div>
+          <div class="pf dim"><span class="no">—</span>IA gera orçamento automático (em breve)</div>
+          <div class="pf dim"><span class="no">—</span>IA analisa foto de patologia (em breve)</div>
+          <div class="pf dim"><span class="no">—</span>IA responde clientes (em breve)</div>
+          <div class="pf dim"><span class="no">—</span>Gerador de posts/anúncios (em breve)</div>
         </div>
         <a class="pbtn" href="#" onclick="irMP('ia-pro',event)">Assinar IA Pro</a>
       </div>
@@ -405,8 +380,7 @@ function setTab(t){
 
 function selecionarPerfil(p){
   document.getElementById('cp').value=p;
-  document.getElementById('opt-pintor').classList.toggle('selected',p==='pintor');
-  document.getElementById('opt-lojista').classList.toggle('selected',p==='lojista');
+  // perfil fixo como pintor; seleção de lojista disponível em versão futura
 }
 
 function setBilling(anual){
@@ -504,5 +478,13 @@ function demo(){
   }
 })();
 </script>
+
+<footer style="text-align:center;padding:24px 16px 32px;color:var(--text3);font-size:.75rem">
+  <a href="termos.html" style="color:var(--text3);text-decoration:none" target="_blank">Termos de Uso</a>
+  &nbsp;·&nbsp;
+  <a href="termos.html#política-de-privacidade" style="color:var(--text3);text-decoration:none" target="_blank">Política de Privacidade</a>
+  &nbsp;·&nbsp;
+  <a href="mailto:suporte@mestrepro.com.br" style="color:var(--text3);text-decoration:none">Suporte</a>
+</footer>
 </body>
 </html>

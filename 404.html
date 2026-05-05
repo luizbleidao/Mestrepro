@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MestrePro — Página não encontrada</title>
+<style>
+:root{--acc:#5b7fff;--bg:#0b0f1a;--bg2:#111827;--border:#2a3550;--text:#e8ecf4;--text2:#94a3b8;--text3:#64748b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.ico{font-size:5rem;animation:float 3s ease-in-out infinite;display:block;margin-bottom:24px}
+.code{font-size:6rem;font-weight:900;letter-spacing:-.04em;line-height:1;background:linear-gradient(135deg,#5b7fff,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;animation:fadeUp .5s ease both}
+.title{font-size:1.4rem;font-weight:700;margin-bottom:12px;animation:fadeUp .5s .1s ease both;opacity:0}
+.desc{color:var(--text2);font-size:.95rem;max-width:360px;line-height:1.7;animation:fadeUp .5s .2s ease both;opacity:0;margin-bottom:36px}
+.btn-group{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;animation:fadeUp .5s .3s ease both;opacity:0}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:.2s}
+.btn-primary{background:linear-gradient(135deg,#5b7fff,#8b5cf6);color:#fff}
+.btn-primary:hover{opacity:.9;transform:translateY(-2px)}
+.btn-secondary{background:transparent;border:1.5px solid var(--border);color:var(--text2)}
+.btn-secondary:hover{border-color:var(--acc);color:var(--acc)}
+.footer{position:fixed;bottom:20px;color:var(--text3);font-size:.78rem}
+.footer a{color:var(--text3);text-decoration:none}.footer a:hover{color:var(--acc)}
+</style>
+</head>
+<body>
+
+<span class="ico">🔍</span>
+<div class="code">404</div>
+<div class="title">Página não encontrada</div>
+<div class="desc">O endereço que você tentou acessar não existe ou foi movido. Mas não se preocupe — o MestrePro está aqui.</div>
+
+<div class="btn-group">
+  <a href="/pintopro-login.html" class="btn btn-primary">🏠 Ir para o Login</a>
+  <a href="javascript:history.back()" class="btn btn-secondary">← Voltar</a>
+</div>
+
+<div class="footer">
+  <a href="/termos.html">Termos de Uso</a> &nbsp;·&nbsp;
+  <a href="mailto:suporte@mestrepro.com.br">Suporte</a>
+</div>
+
+</body>
+</html>

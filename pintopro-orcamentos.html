@@ -167,6 +167,41 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .pdf-overlay .spin-lg{width:40px;height:40px;border:3px solid rgba(91,127,255,.2);border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite;}
 .pdf-overlay p{color:var(--text);font-size:14px;font-weight:500;}
 /* MODAL CONFIRMAR */
+/* ── Análise IA Patologia ─────────────────────────────── */
+.ia-pat-result{background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.25);border-radius:var(--r);padding:12px 14px;margin-top:10px;font-size:.82rem}
+.ia-pat-result-head{display:flex;align-items:center;gap:6px;font-weight:700;color:#c4b5fd;margin-bottom:8px;font-size:.83rem}
+.ia-pat-row{display:flex;gap:6px;margin-bottom:4px;color:var(--text2);line-height:1.5}
+.ia-pat-row strong{color:var(--text);min-width:80px;flex-shrink:0}
+.ia-pat-sev-leve{color:#4ade80}.ia-pat-sev-moderada{color:#fb923c}.ia-pat-sev-grave{color:#f87171}
+.ia-pat-btn{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(91,127,255,.2));border:1px solid rgba(139,92,246,.35);border-radius:6px;color:#c4b5fd;font-size:.78rem;font-weight:600;padding:5px 10px;cursor:pointer;transition:.2s;font-family:'DM Sans',sans-serif}
+.ia-pat-btn:hover{background:linear-gradient(135deg,rgba(139,92,246,.35),rgba(91,127,255,.35))}
+.ia-pat-btn:disabled{opacity:.45;cursor:not-allowed}
+.ia-btn{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(91,127,255,.18));border:1.5px solid rgba(139,92,246,.4);border-radius:var(--r);color:#c4b5fd;font-size:.88rem;font-weight:600;padding:12px 16px;cursor:pointer;width:100%;justify-content:center;transition:.2s;font-family:'DM Sans',sans-serif;margin-bottom:10px}
+.ia-btn:hover{background:linear-gradient(135deg,rgba(139,92,246,.3),rgba(91,127,255,.3));border-color:#a78bfa;transform:translateY(-1px)}
+.ia-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9000;align-items:center;justify-content:center;padding:16px}
+.ia-modal-bg.open{display:flex}
+.ia-modal{background:var(--bg2);border:1px solid rgba(139,92,246,.4);border-radius:var(--r2);width:100%;max-width:520px;overflow:hidden;animation:iaIn .2s ease}
+@keyframes iaIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.ia-modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ia-modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;color:#c4b5fd}
+.ia-modal-body{padding:20px}
+.ia-field{margin-bottom:14px}
+.ia-field label{font-size:.75rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px}
+.ia-field input,.ia-field select,.ia-field textarea{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;padding:10px 12px;outline:none;width:100%;transition:.2s}
+.ia-field input:focus,.ia-field select:focus,.ia-field textarea:focus{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(139,92,246,.12)}
+.ia-field textarea{resize:vertical;min-height:100px}
+.ia-hint{font-size:.75rem;color:var(--text3);margin-top:5px;line-height:1.4}
+.ia-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ia-generating{display:none;align-items:center;gap:10px;color:#c4b5fd;font-size:.88rem;padding:12px 0}
+.ia-generating.show{display:flex}
+.ia-spin{width:18px;height:18px;border:2px solid rgba(139,92,246,.3);border-top-color:#a78bfa;border-radius:50%;animation:sp .8s linear infinite;flex-shrink:0}
+.ia-result-preview{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:var(--r);padding:14px;margin-top:14px;display:none}
+.ia-result-preview.show{display:block}
+.ia-result-title{font-size:.75rem;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.ia-result-item{font-size:.82rem;color:var(--text2);padding:3px 0;display:flex;gap:6px}
+.ia-result-item::before{content:'✓';color:#a78bfa;flex-shrink:0}
+.ia-modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+.ia-lock-msg{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--r);padding:12px 14px;font-size:.83rem;color:#fca5a5;margin-bottom:14px;display:none}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:8888;align-items:center;justify-content:center;padding:20px;}
 .modal-bg.open{display:flex;}
 .modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:26px;max-width:380px;width:100%;}
@@ -680,7 +715,12 @@ function renderStep3(){
   if(orcMode==='rel'){wrap.innerHTML=renderRelStep();return;}
   if(!servicos.length)servicos.push(servicoDef());
   const pill=`<span class="mode-pill ${orcMode==='mao'?'pill-mao':'pill-prod'}">${MODE_LABEL[orcMode]}</span>`;
-  let html=`<div class="section-title">🔨 Ambientes / Serviços ${pill}</div>`;
+  const plano=_getUserPlano();
+  const temIA=(plano==='ia-pro');
+  const iaBtnHtml=`<button class="ia-btn" onclick="abrirIAModal()" ${temIA?'':'title="Disponível no plano IA Pro"'} style="${temIA?'':'opacity:.45;cursor:not-allowed'}">
+    ✨ ${temIA?'Gerar ambientes com IA':'IA indisponível no seu plano — upgrade para IA Pro'}
+  </button>`;
+  let html=`<div class="section-title">🔨 Ambientes / Serviços ${pill}</div>${iaBtnHtml}`;
   servicos.forEach((s,i)=>html+=renderServicoCard(s,i));
   html+=`<button class="add-btn" onclick="addServico()">＋ Adicionar Ambiente / Serviço</button>`;
   wrap.innerHTML=html;
@@ -736,6 +776,13 @@ function renderServicoCard(s,i){
           <input type="file" accept="image/*" multiple onchange="addFotosPatologia(${i},this)">
           <span class="tooltip">As fotos aparecem como anexo no PDF. Clique na miniatura para ampliar.</span>
         </div>
+        ${fotos.length ? `<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button class="ia-pat-btn" id="ia-pat-btn-${i}" onclick="analisarFotoPatologia(${i})" ${_getUserPlano()==='ia-pro'?'':'disabled title="Disponível no plano IA Pro"'}>
+            🔬 ${_getUserPlano()==='ia-pro'?'Analisar com IA':'IA Pro necessário'}
+          </button>
+          <span id="ia-pat-status-${i}" style="font-size:.75rem;color:var(--text3)"></span>
+        </div>
+        <div id="ia-pat-result-${i}"></div>` : ''}
         ${fotoHtml}
       </div>`:''}
     </div>
@@ -1368,5 +1415,294 @@ window.addEventListener('message', e => {
     </div>
   </div>
 </div>
+<!-- ═══════════ MODAL IA ORÇAMENTO ═══════════ -->
+<div class="ia-modal-bg" id="ia-modal-bg" onclick="fecharIAModal(event)">
+  <div class="ia-modal" onclick="event.stopPropagation()">
+    <div class="ia-modal-head">
+      <div class="ia-modal-title">✨ IA — Gerar Ambientes e Serviços</div>
+      <button onclick="fecharIAModal()" style="background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div class="ia-modal-body">
+      <div class="ia-lock-msg" id="ia-lock-msg"></div>
+      <div class="ia-field">
+        <label>Descrição do Serviço *</label>
+        <textarea id="ia-descricao" placeholder="Ex: Pintar apartamento de 70m², 2 quartos, sala, cozinha e 1 banheiro. Paredes com textura existente, teto liso. Cliente quer tinta premium Sherwin-Williams. Área externa da sacada precisa de selador antes da pintura..."></textarea>
+        <div class="ia-hint">Quanto mais detalhar (cômodos, estado das paredes, tipo de tinta), melhor o resultado.</div>
+      </div>
+      <div class="ia-grid">
+        <div class="ia-field">
+          <label>Tipo de Imóvel</label>
+          <select id="ia-tipo">
+            <option value="residencial apartamento">Apartamento</option>
+            <option value="residencial casa">Casa</option>
+            <option value="comercial escritório">Escritório/Comercial</option>
+            <option value="industrial galpão">Galpão/Industrial</option>
+            <option value="condomínio fachada">Fachada/Condomínio</option>
+          </select>
+        </div>
+        <div class="ia-field">
+          <label>Cidade / Região</label>
+          <input id="ia-cidade" placeholder="Ex: Barretos, SP" value="">
+        </div>
+      </div>
+      <div class="ia-field">
+        <label>Área Total Estimada (opcional)</label>
+        <input id="ia-area" placeholder="Ex: 120m² de parede + 40m² de teto">
+      </div>
+      <div class="ia-generating" id="ia-generating">
+        <div class="ia-spin"></div>
+        <span>Gerando orçamento com IA... aguarde alguns segundos</span>
+      </div>
+      <div class="ia-result-preview" id="ia-result-preview">
+        <div class="ia-result-title">✅ IA gerou os seguintes ambientes:</div>
+        <div id="ia-result-list"></div>
+        <div id="ia-obs" style="font-size:.8rem;color:var(--text3);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"></div>
+      </div>
+    </div>
+    <div class="ia-modal-footer">
+      <button class="btn btn-secondary" onclick="fecharIAModal()" style="padding:10px 18px">Cancelar</button>
+      <button class="btn btn-primary" id="ia-btn-gerar" onclick="gerarComIA()" style="padding:10px 18px;background:linear-gradient(135deg,#7c3aed,#5b7fff);color:#fff">✨ Gerar com IA</button>
+      <button class="btn btn-primary" id="ia-btn-aplicar" onclick="aplicarIASugestao()" style="display:none;padding:10px 18px">✓ Aplicar ao Orçamento</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// IA — GERAR ORÇAMENTO
+// ══════════════════════════════════════════════
+let _iaServicosGerados = null;
+let _iaObsGerada = '';
+
+function abrirIAModal(){
+  if(_getUserPlano() !== 'ia-pro'){
+    alert('Este recurso está disponível apenas no plano IA Pro.\n\nFaça upgrade para desbloquear a geração automática de orçamentos com IA.');
+    return;
+  }
+  // Pré-preenche cidade com dados da empresa se disponível
+  try{
+    const emp = JSON.parse(localStorage.getItem('empresaSalva')||'{}');
+    if(emp.cidade && !document.getElementById('ia-cidade').value){
+      document.getElementById('ia-cidade').value = emp.cidade;
+    }
+  }catch{}
+  _iaServicosGerados = null;
+  _iaObsGerada = '';
+  document.getElementById('ia-result-preview').classList.remove('show');
+  document.getElementById('ia-btn-aplicar').style.display = 'none';
+  document.getElementById('ia-btn-gerar').style.display = '';
+  document.getElementById('ia-generating').classList.remove('show');
+  document.getElementById('ia-lock-msg').style.display = 'none';
+  document.getElementById('ia-modal-bg').classList.add('open');
+  setTimeout(()=>document.getElementById('ia-descricao').focus(), 100);
+}
+
+function fecharIAModal(e){
+  if(e && e.target !== document.getElementById('ia-modal-bg')) return;
+  document.getElementById('ia-modal-bg').classList.remove('open');
+}
+
+async function gerarComIA(){
+  const descricao = document.getElementById('ia-descricao').value.trim();
+  if(descricao.length < 10){
+    alert('Por favor, descreva o serviço com mais detalhes (mínimo 10 caracteres).');
+    return;
+  }
+  const tipoImovel = document.getElementById('ia-tipo').value;
+  const cidade     = document.getElementById('ia-cidade').value.trim() || 'Brasil';
+  const areas      = document.getElementById('ia-area').value.trim();
+
+  // UI: modo gerando
+  document.getElementById('ia-btn-gerar').disabled = true;
+  document.getElementById('ia-btn-gerar').textContent = '⏳ Gerando...';
+  document.getElementById('ia-generating').classList.add('show');
+  document.getElementById('ia-result-preview').classList.remove('show');
+  document.getElementById('ia-lock-msg').style.display = 'none';
+
+  try {
+    // Obter token de autenticação
+    const sbClient = supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+    const { data: { session } } = await sbClient.auth.getSession();
+    const token = session?.access_token;
+    if(!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+    const edgeFnUrl = `${window.PP.supabaseUrl}/functions/v1/ia-orcamento`;
+    const res = await fetch(edgeFnUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ descricao, tipoImovel, cidade, areas }),
+    });
+
+    const data = await res.json();
+
+    if(!res.ok){
+      if(res.status === 403){
+        document.getElementById('ia-lock-msg').textContent = '🔒 ' + (data.error || 'Plano IA Pro necessário.');
+        document.getElementById('ia-lock-msg').style.display = 'block';
+      } else {
+        alert('Erro: ' + (data.error || 'Tente novamente.'));
+      }
+      return;
+    }
+
+    // Sucesso — mostrar preview
+    _iaServicosGerados = data.servicos;
+    _iaObsGerada = data.observacoes || '';
+
+    const listEl = document.getElementById('ia-result-list');
+    listEl.innerHTML = _iaServicosGerados.map(s =>
+      `<div class="ia-result-item"><span><strong>${s.nome}</strong> — ${s.tipoServico} ${s.valorServico>0?'<span style="color:var(--acc);font-family:DM Mono,monospace"> R$'+s.valorServico.toLocaleString('pt-BR')+'</span>':''}</span></div>`
+    ).join('');
+
+    if(_iaObsGerada){
+      document.getElementById('ia-obs').textContent = '💡 ' + _iaObsGerada;
+    }
+
+    document.getElementById('ia-result-preview').classList.add('show');
+    document.getElementById('ia-btn-aplicar').style.display = '';
+    document.getElementById('ia-btn-gerar').style.display = 'none';
+
+  } catch(err) {
+    alert('Erro ao chamar IA: ' + err.message);
+  } finally {
+    document.getElementById('ia-btn-gerar').disabled = false;
+    document.getElementById('ia-btn-gerar').textContent = '✨ Gerar com IA';
+    document.getElementById('ia-generating').classList.remove('show');
+  }
+}
+
+function aplicarIASugestao(){
+  if(!_iaServicosGerados || !_iaServicosGerados.length) return;
+
+  // Substitui os serviços atuais pelos gerados pela IA
+  servicos = _iaServicosGerados.map(s => ({
+    ...servicoDef(),
+    nome:         s.nome,
+    tipoServico:  s.tipoServico,
+    valorServico: s.valorServico,
+  }));
+
+  // Se tiver observações, coloca no campo de obs gerais
+  if(_iaObsGerada){
+    try{
+      const obsEl = document.getElementById('obsGeral');
+      if(obsEl && !obsEl.value) obsEl.value = _iaObsGerada;
+    }catch{}
+  }
+
+  document.getElementById('ia-modal-bg').classList.remove('open');
+  renderStep3();
+
+  // Feedback visual
+  setTimeout(()=>{
+    const wrap = document.getElementById('step3content');
+    if(wrap){ wrap.style.animation='iaIn .4s ease'; setTimeout(()=>wrap.style.animation='',500); }
+  }, 50);
+}
+
+// ══════════════════════════════════════════════
+// IA — ANÁLISE DE FOTO DE PATOLOGIA
+// ══════════════════════════════════════════════
+async function analisarFotoPatologia(i){
+  const s = servicos[i];
+  if(!s || !s.fotosPatologia || !s.fotosPatologia.length){
+    alert('Adicione pelo menos uma foto da patologia antes de analisar.');
+    return;
+  }
+  if(_getUserPlano() !== 'ia-pro'){
+    alert('Análise de foto com IA está disponível apenas no plano IA Pro.');
+    return;
+  }
+
+  const btn    = document.getElementById(`ia-pat-btn-${i}`);
+  const status = document.getElementById(`ia-pat-status-${i}`);
+  const result = document.getElementById(`ia-pat-result-${i}`);
+  if(!btn) return;
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Analisando...';
+  if(status) status.textContent = 'Enviando foto para IA...';
+  if(result) result.innerHTML = '';
+
+  try {
+    // Obter token
+    const sbClient = supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+    const { data: { session } } = await sbClient.auth.getSession();
+    const token = session?.access_token;
+    if(!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+    // Usar a primeira foto (base64 já carregado)
+    const dataUrl  = s.fotosPatologia[0];
+    const parts    = dataUrl.split(',');
+    const mimeType = (parts[0].match(/:(.*?);/) || ['','image/jpeg'])[1];
+    const imgB64   = parts[1];
+
+    const edgeFnUrl = `${window.PP.supabaseUrl}/functions/v1/ia-patologia`;
+    const res = await fetch(edgeFnUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        imageBase64: imgB64,
+        mimeType,
+        ambiente: s.nome || `Ambiente ${i+1}`,
+      }),
+    });
+
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Erro na análise.');
+
+    // Aplicar resultado ao serviço
+    sS(i, 'tipoPatologia', data.tipoPatologia);
+    if(!s.obsPatologia && data.descricao) sS(i, 'obsPatologia', data.descricao, true);
+
+    // Renderizar card de resultado
+    const sevClass = `ia-pat-sev-${data.severidade}`;
+    const SEV_LABEL = {leve:'🟢 Leve', moderada:'🟡 Moderada', grave:'🔴 Grave'};
+    const PAT_LABEL = {fissuras:'Fissuras/Trincas',umidade:'Umidade/Infiltração',bolor:'Bolor/Fungo',
+      descascamento:'Descascamento/Bolha',eflorescencia:'Eflorescência',corrosao:'Corrosão/Ferrugem',outro:'Outro'};
+    const custoStr = data.custoAdicionalEstimado > 0
+      ? `R$ ${data.custoAdicionalEstimado.toLocaleString('pt-BR')} (tratamento estimado)`
+      : 'Incluído no serviço';
+
+    if(result) result.innerHTML = `
+      <div class="ia-pat-result">
+        <div class="ia-pat-result-head">🔬 Análise IA — ${PAT_LABEL[data.tipoPatologia]||data.tipoPatologia}</div>
+        <div class="ia-pat-row"><strong>Severidade:</strong><span class="${sevClass}">${SEV_LABEL[data.severidade]||data.severidade}</span></div>
+        <div class="ia-pat-row"><strong>Diagnóstico:</strong><span>${data.descricao}</span></div>
+        <div class="ia-pat-row"><strong>Tratamento:</strong><span>${data.tratamento}</span></div>
+        <div class="ia-pat-row"><strong>Custo extra:</strong><span>${custoStr}</span></div>
+        <div style="margin-top:8px">
+          <button class="ia-pat-btn" onclick="aplicarDiagnostico(${i},'${data.tipoPatologia}',\`${data.descricao.replace(/`/g,"'")}\`)">✓ Aplicar diagnóstico ao campo</button>
+        </div>
+      </div>`;
+
+    if(status) status.textContent = '✅ Análise concluída';
+
+  } catch(err) {
+    if(status) status.textContent = '❌ ' + err.message;
+    console.error('[ia-patologia]', err);
+  } finally {
+    if(btn){
+      btn.disabled = false;
+      btn.innerHTML = '🔬 ' + (_getUserPlano()==='ia-pro'?'Analisar novamente':'IA Pro necessário');
+    }
+  }
+}
+
+function aplicarDiagnostico(i, tipo, descricao){
+  sS(i, 'tipoPatologia', tipo);
+  // Atualiza o select visualmente re-renderizando apenas o card
+  const obsEl = document.querySelector(`#step3content .servico-card:nth-child(${i+2}) input[oninput*="obsPatologia"]`);
+  if(obsEl && !obsEl.value) obsEl.value = descricao;
+  sS(i, 'obsPatologia', descricao, true);
+  renderStep3();
+}
+</script>
 </body>
 </html>

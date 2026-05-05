@@ -638,6 +638,19 @@ tbody td:first-child{color:var(--text);font-weight:500;}
             onload="iframeReady('ldo-fr','ldo-loader')"></iframe>
         </div>
       </div>
+      <!-- POSTS IA iframe -->
+      <div class="screen fr" id="s-posts">
+        <div class="iframe-wrap">
+          <div class="iframe-loader" id="posts-loader">
+            <div class="iframe-loader-inner">
+              <div class="spin-lg"></div>
+              <span>Carregando gerador de posts...</span>
+            </div>
+          </div>
+          <iframe id="posts-fr" src="pintopro-posts.html" title="Gerador de Posts IA"
+            onload="iframeReady('posts-fr','posts-loader')"></iframe>
+        </div>
+      </div>
     </div>
   </main>
 </div>
@@ -716,7 +729,7 @@ const CFG = {
   // ─── IA Pro R$297/mês — R$2.970/ano ──────────────────────────────────────
   'ia-pro': {
     label:'🤖 IA Pro',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','posts','configuracoes'],
     orcLim:9999, laudoLim:9999,
     pdfMarca:false, multiUser:true, multiUserLim:9999, ia:true,
     _alias:[],
@@ -739,6 +752,7 @@ const NAV = [
   {id:'contratos',     ic:'📄', lb:'Contratos'},
   {id:'recibos',       ic:'🧾', lb:'Recibos'},
   {id:'agenda',        ic:'📅', lb:'Agenda'},
+  {id:'posts',         ic:'✨', lb:'Gerador de Posts IA'},
   {id:'configuracoes', ic:'⚙️', lb:'Configurações'},
 ];
 const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',contratos:'Contratos',recibos:'Recibos',agenda:'Agenda',configuracoes:'Configurações'};
@@ -1023,12 +1037,12 @@ const PLANOS_CONFIG = [
   },
   {
     id: 'equipe', nome: 'Equipe', preco: 197, precoAnual: 1970,
-    features: ['Tudo do Pro','Até 5 usuários','Relatórios gerenciais','Multi-usuário'],
+    features: ['Tudo do Pro','Suporte prioritário','Até 5 usuários (em breve)','Multi-usuário (em breve)'],
     nao: [],
   },
   {
     id: 'ia-pro', nome: 'IA Pro', preco: 297, precoAnual: 2970,
-    features: ['Tudo do Equipe','IA gera orçamentos','IA responde clientes','Gerador de posts'],
+    features: ['Tudo do Equipe','🔒 Acesso garantido a IA','IA gera orçamentos (em breve)','IA responde clientes (em breve)'],
     nao: [],
   },
 ];
@@ -1084,7 +1098,14 @@ function irCheckout(planoId, anual){
     equipe:  anual ? window.PP?.mpEquipeAnual  || '' : window.PP?.mpEquipe  || '',
     'ia-pro':anual ? window.PP?.mpIaProAnual   || '' : window.PP?.mpIaPro   || '',
   };
-  const link = links[planoId];
+  let link = links[planoId];
+  // Injeta external_reference para o webhook identificar userId e plano
+  if (link && USER?.id) {
+    const idNormalizado = planoId.replace('-', '');
+    const periodo       = anual ? 'anual' : 'mensal';
+    const planoKey      = `mestrepro_${idNormalizado}_${periodo}`;
+    link = `${link}?external_reference=${encodeURIComponent(USER.id + ':' + planoKey)}`;
+  }
   if (link) { window.open(link, '_blank'); }
   else {
     // Fallback: página de planos interna
