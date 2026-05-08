@@ -220,7 +220,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
             <input id="ct" type="tel" placeholder="(17) 99999-9999">
           </div>
         </div>
-        <!-- perfil fixo como pintor; lojista disponível em versão futura -->
         <input type="hidden" id="cp" value="pintor">
         <div class="field">
           <label>Cidade / UF</label>
@@ -352,18 +351,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 const {createClient} = supabase;
 const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
 
+// Links e preços vêm de pp-config.js — fonte única de verdade
 const MP = {
-  'basico': { mensal:'https://mpago.la/19VUY91', anual:'https://mpago.la/2mBWE1i' },
-  'pro':    { mensal:'https://mpago.la/1ieWwdr', anual:'https://mpago.la/2YpEhnF' },
-  'equipe': { mensal:'https://mpago.la/1YuzDuc', anual:'https://mpago.la/15PqKDb' },
-  'ia-pro': { mensal:'https://mpago.la/1iWJVWP', anual:'https://mpago.la/119g9kC' },
+  'basico': { mensal: window.PP.mpBasico,      anual: window.PP.mpBasicoAnual },
+  'pro':    { mensal: window.PP.mpPro,          anual: window.PP.mpProAnual    },
+  'equipe': { mensal: window.PP.mpEquipe,       anual: window.PP.mpEquipeAnual },
+  'ia-pro': { mensal: window.PP.mpIaPro,        anual: window.PP.mpIaProAnual  },
 };
-const PRECOS = {
-  'basico': { mensal:49,  anual:490,  eq:41  },
-  'pro':    { mensal:97,  anual:970,  eq:81  },
-  'equipe': { mensal:197, anual:1970, eq:164 },
-  'ia-pro': { mensal:297, anual:2970, eq:247 },
-};
+const PRECOS = window.PP.precos;
 let _anual = false;
 
 const showS   = id => { document.querySelectorAll('.scr').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); };
@@ -378,10 +373,7 @@ function setTab(t){
   document.getElementById('tc').style.display=t==='c'?'block':'none';
 }
 
-function selecionarPerfil(p){
-  document.getElementById('cp').value=p;
-  // perfil fixo como pintor; seleção de lojista disponível em versão futura
-}
+// selecionarPerfil: reservado para versão futura (perfil lojista)
 
 function setBilling(anual){
   _anual=anual;
@@ -428,8 +420,24 @@ async function cadastrar(){
   hideMsg('ec');
   if(!nome||!email||!senha||senha.length<6){showMsg('ec','Preencha todos os campos (senha mín. 6 caracteres).','err');return;}
   setBtn('btn-cad','<div class="spin"></div> Criando conta...',true);
-  const{error}=await sb.auth.signUp({email,password:senha,options:{data:{nome,tel,cidade,perfil}}});
+  const{data:signUpData, error}=await sb.auth.signUp({email,password:senha,options:{data:{nome,tel,cidade,perfil}}});
   if(error){showMsg('ec',error.message,'err');setBtn('btn-cad','Criar conta e escolher plano',false);return;}
+
+  // Criar perfil com plano 'trial' imediatamente após o cadastro
+  // Garante que o trial de 7 dias começa mesmo que o usuário feche sem escolher um plano pago
+  // O trigger trg_set_trial_fim no banco define trial_fim = agora + 7 dias automaticamente
+  if(signUpData?.user?.id){
+    await sb.from('profiles').upsert({
+      id:        signUpData.user.id,
+      nome, tel, cidade, email, perfil,
+      plano:     'trial',
+      ativo:     true,
+      criado_em: new Date().toISOString(),
+    }, { onConflict: 'id' }).catch(()=>{});
+    // Armazena userId para a tela de planos poder montar o external_reference
+    sessionStorage.setItem('pp_user_id', signUpData.user.id);
+  }
+
   document.getElementById('psub').textContent=`Bem-vindo, ${nome.split(' ')[0]}! Escolha seu plano abaixo.`;
   showS('scr-planos');
 }

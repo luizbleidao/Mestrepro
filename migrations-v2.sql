@@ -52,8 +52,29 @@ CREATE TABLE IF NOT EXISTS comissoes (
   criado_em    timestamptz DEFAULT now()
 );
 
--- ── 5. Coluna sig_profissional em profiles (se não existir) ─
+-- ── 5. Colunas adicionais (se não existirem) ─────────────────────────────
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS sig_profissional text;
+
+-- IP do assinante para trilha de auditoria jurídica
+ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS sig_cliente_ip   text DEFAULT 'indisponível';
+ALTER TABLE laudos      ADD COLUMN IF NOT EXISTS sig_cliente_ip   text DEFAULT 'indisponível';
+ALTER TABLE contratos   ADD COLUMN IF NOT EXISTS sig_cli_ip       text DEFAULT 'indisponível';
+
+-- ── Expiração de sig_token ─────────────────────────────────────────────────
+-- Adiciona coluna de validade em cada tabela que usa assinatura digital.
+-- O link de assinatura expira em 30 dias se não for usado.
+ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS sig_token_expires_at timestamptz;
+ALTER TABLE laudos      ADD COLUMN IF NOT EXISTS sig_token_expires_at timestamptz;
+ALTER TABLE contratos   ADD COLUMN IF NOT EXISTS sig_token_expires_at timestamptz;
+
+-- Preenche a coluna para links já existentes sem validade (retroativo)
+-- Define expiração = data de criação + 30 dias (ou agora + 30 dias como fallback)
+UPDATE orcamentos SET sig_token_expires_at = COALESCE(criado_em, now()) + interval '30 days'
+  WHERE sig_token IS NOT NULL AND sig_token_expires_at IS NULL;
+UPDATE laudos SET sig_token_expires_at = COALESCE(criado_em, now()) + interval '30 days'
+  WHERE sig_token IS NOT NULL AND sig_token_expires_at IS NULL;
+UPDATE contratos SET sig_token_expires_at = COALESCE(criado_em, now()) + interval '30 days'
+  WHERE sig_token IS NOT NULL AND sig_token_expires_at IS NULL;
 
 -- ── 6. Função ativar_plano() ───────────────────────────────
 -- Chamada pelo webhook do Mercado Pago
@@ -111,14 +132,19 @@ CREATE TABLE IF NOT EXISTS planos_config (
   ativo        boolean DEFAULT true
 );
 
--- Inserir planos padrão (ajuste os links do Mercado Pago)
+-- Planos com links do Mercado Pago (mesmos valores de pp-config.js)
+-- ON CONFLICT DO UPDATE garante que re-rodar a migration atualiza os links
 INSERT INTO planos_config (id, nome, preco_mensal, preco_anual, mp_link_mensal, mp_link_anual)
 VALUES
-  ('basico',  'Básico',  49.00,  490.00, '', ''),
-  ('pro',     'Pro',     97.00,  970.00, '', ''),
-  ('equipe',  'Equipe', 197.00, 1970.00, '', ''),
-  ('ia-pro',  'IA Pro', 297.00, 2970.00, '', '')
-ON CONFLICT (id) DO NOTHING;
+  ('basico',  'Básico',  49.00,  490.00, 'https://mpago.la/19VUY91', 'https://mpago.la/2mBWE1i'),
+  ('pro',     'Pro',     97.00,  970.00, 'https://mpago.la/1ieWwdr', 'https://mpago.la/2YpEhnF'),
+  ('equipe',  'Equipe', 197.00, 1970.00, 'https://mpago.la/1YuzDuc', 'https://mpago.la/15PqKDb'),
+  ('ia-pro',  'IA Pro', 297.00, 2970.00, 'https://mpago.la/1iWJVWP', 'https://mpago.la/119g9kC')
+ON CONFLICT (id) DO UPDATE SET
+  preco_mensal   = EXCLUDED.preco_mensal,
+  preco_anual    = EXCLUDED.preco_anual,
+  mp_link_mensal = EXCLUDED.mp_link_mensal,
+  mp_link_anual  = EXCLUDED.mp_link_anual;
 
 -- ── 8. RLS para tabelas novas ─────────────────────────────
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
@@ -139,14 +165,63 @@ CREATE POLICY "admin_all_subscriptions" ON subscriptions FOR ALL
 CREATE POLICY "admin_all_pagamentos" ON pagamentos FOR ALL
   USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND perfil = 'admin'));
 
--- ── 9. Trigger: expirar trial após 7 dias ─────────────────
--- Rode manualmente via cron ou pg_cron (Supabase Pro):
+-- ── 9. Expirar trial após 7 dias ─────────────────────────────────────────
+--
+-- ESTRATÉGIA DUPLA:
+--   A) Função verificada no login (funciona em qualquer plano do Supabase)
+--   B) pg_cron agendado às 06h (requer Supabase Pro — deixado como extensão opcional)
+--
+-- ── A) Função chamada pelo app no login do usuário ────────────────────────
+CREATE OR REPLACE FUNCTION verificar_expiracao_trial(p_user_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE profiles
+  SET plano = 'gratuito', atualizado_em = now()
+  WHERE id = p_user_id
+    AND plano = 'trial'
+    AND trial_fim IS NOT NULL
+    AND trial_fim < now()
+    AND id NOT IN (
+      SELECT user_id FROM subscriptions WHERE status = 'ativa'
+    );
+END;
+$$;
+
+-- Qualquer usuário autenticado pode chamar apenas para si próprio
+-- (a função já filtra por p_user_id, mas a RLS da tabela protege também)
+GRANT EXECUTE ON FUNCTION verificar_expiracao_trial(uuid) TO authenticated;
+
+-- ── B) pg_cron para Supabase Pro (opcional) ───────────────────────────────
+-- Descomente se você tiver o plano Pro e a extensão pg_cron habilitada:
+--
 -- SELECT cron.schedule('expirar-trials', '0 6 * * *', $$
---   UPDATE profiles SET plano = 'gratuito'
+--   UPDATE profiles
+--   SET plano = 'gratuito', atualizado_em = now()
 --   WHERE plano = 'trial'
---   AND criado_em < now() - interval '7 days'
---   AND id NOT IN (SELECT user_id FROM subscriptions WHERE status = 'ativa');
+--     AND trial_fim IS NOT NULL
+--     AND trial_fim < now()
+--     AND id NOT IN (SELECT user_id FROM subscriptions WHERE status = 'ativa');
 -- $$);
+
+-- ── Trigger: garantir trial_fim ao criar perfil ────────────────────────────
+-- Define trial_fim = agora + 7 dias se não for fornecido no INSERT
+CREATE OR REPLACE FUNCTION set_trial_fim()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.plano = 'trial' AND NEW.trial_fim IS NULL THEN
+    NEW.trial_fim := now() + interval '7 days';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_set_trial_fim ON profiles;
+CREATE TRIGGER trg_set_trial_fim
+  BEFORE INSERT OR UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION set_trial_fim();
 
 -- ── 10. View conveniente para o admin ─────────────────────
 CREATE OR REPLACE VIEW v_usuarios_completos AS
@@ -168,6 +243,33 @@ FROM profiles p
 LEFT JOIN subscriptions s ON s.user_id = p.id;
 
 -- Somente admins podem ver essa view
+-- Revogar acesso de todos os roles públicos
 REVOKE ALL ON v_usuarios_completos FROM anon, authenticated;
-GRANT SELECT ON v_usuarios_completos TO authenticated;
--- (adicionar policy no admin panel)
+
+-- Criar uma função SECURITY DEFINER que só retorna dados para admins
+-- O acesso à view é feito via esta função — nunca diretamente
+CREATE OR REPLACE FUNCTION get_usuarios_completos()
+RETURNS SETOF v_usuarios_completos
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Verifica se o usuário autenticado tem perfil = 'admin' no banco
+  IF NOT EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = auth.uid() AND perfil = 'admin'
+  ) THEN
+    RAISE EXCEPTION 'Acesso negado: permissão de admin necessária.';
+  END IF;
+  RETURN QUERY SELECT * FROM v_usuarios_completos;
+END;
+$$;
+
+-- Garantir que apenas usuários autenticados chamem a função
+REVOKE ALL ON FUNCTION get_usuarios_completos() FROM anon;
+GRANT EXECUTE ON FUNCTION get_usuarios_completos() TO authenticated;
+
+-- Nota: no pintopro-admin.html, substitua queries diretas à view por:
+--   SELECT * FROM get_usuarios_completos()
+-- ou use o RPC do Supabase:
+--   sb.rpc('get_usuarios_completos')

@@ -1,13 +1,12 @@
 [build]
   publish = "."
 
-# Raiz → Landing page
+# ── Rotas limpas ──────────────────────────────────────────────────────────
 [[redirects]]
   from   = "/"
   to     = "/index.html"
   status = 200
 
-# Rotas limpas
 [[redirects]]
   from   = "/entrar"
   to     = "/pintopro-login.html"
@@ -33,7 +32,22 @@
   to     = "/pintopro-planos.html"
   status = 200
 
-# Headers de segurança
+[[redirects]]
+  from   = "/sobre"
+  to     = "/sobre.html"
+  status = 200
+
+[[redirects]]
+  from   = "/blog"
+  to     = "/blog.html"
+  status = 200
+
+[[redirects]]
+  from   = "/cookies"
+  to     = "/cookies.html"
+  status = 200
+
+# ── Headers de segurança (todas as páginas) ───────────────────────────────
 [[headers]]
   for = "/*"
   [headers.values]
@@ -41,13 +55,42 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy        = "strict-origin-when-cross-origin"
     Permissions-Policy     = "camera=(), microphone=(), geolocation=()"
-    Cache-Control          = "no-cache, must-revalidate"
+    # Content-Security-Policy:
+    #  - default-src 'self'          → bloqueia qualquer recurso não listado
+    #  - script-src + cdn permitidos → Supabase, fonts, libs CDN usadas
+    #  - connect-src                 → APIs externas que o app chama
+    #  - img-src data: blob:         → para previews de assinatura canvas e logos
+    #  - frame-ancestors 'self'      → bloqueia embedding exceto mesmo domínio
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.mercadopago.com https://api.ipify.org; img-src 'self' data: blob:; frame-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self';"
+    # Cache para páginas HTML: sem cache (sempre versão mais recente)
+    Cache-Control = "no-cache, must-revalidate"
 
+# ── Cache agressivo para assets estáticos imutáveis ──────────────────────
+# Fontes e libs CDN não mudam — cache de 1 ano (365 dias)
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# JS de configuração: sem cache (atualiza junto com deploys)
 [[headers]]
   for = "/pp-config.js"
   [headers.values]
-    Cache-Control = "no-cache"
+    Cache-Control = "no-cache, must-revalidate"
 
+# JS de módulos: sem cache (atualiza junto com deploys)
+[[headers]]
+  for = "/pp-modules.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# ── Headers específicos por página ────────────────────────────────────────
+# iframes de orçamentos e laudos: permitir embedding no próprio domínio
 [[headers]]
   for = "/pintopro-orcamentos.html"
   [headers.values]
@@ -58,12 +101,16 @@
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
 
+# Admin: nunca indexar
 [[headers]]
   for = "/pintopro-admin.html"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
 
+# Assinar: pode ser embeddado em qualquer origem (link externo ao cliente)
 [[headers]]
   for = "/pintopro-assinar.html"
   [headers.values]
-    X-Frame-Options = "ALLOWALL"
+    X-Frame-Options  = "ALLOWALL"
+    Cache-Control    = "no-cache, must-revalidate"

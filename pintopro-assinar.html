@@ -39,7 +39,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .btn{width:100%;border:none;border-radius:var(--rs);padding:14px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
 .btn-acc{background:var(--acc);color:#fff;}
-.btn-acc:hover:not(:disabled){background:#d46b08;}
+.btn-acc:hover:not(:disabled){background:var(--acc2,#7b9fff);}
 .msg{border-radius:var(--rs);padding:11px 14px;font-size:13px;margin-bottom:12px;display:none;}
 .msg.show{display:block;}
 .msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;}
@@ -194,13 +194,13 @@ async function init() {
   let rec = null, docType = null;
 
   const { data: orc } = await sb.from('orcamentos')
-    .select('id,numero,cliente,endereco,total,status,sig_token,sig_cliente,sig_cliente_at,sig_cliente_nome,data_completa')
+    .select('id,numero,cliente,endereco,total,status,sig_token,sig_token_expires_at,sig_cliente,sig_cliente_at,sig_cliente_nome,data_completa')
     .eq('sig_token', TOKEN).single();
 
   if (orc) { rec = orc; docType = 'orcamento'; }
   else {
     const { data: ldo } = await sb.from('laudos')
-      .select('id,numero,cliente,obra,criticidade,sig_token,sig_cliente,sig_cliente_at,sig_cliente_nome,dados')
+      .select('id,numero,cliente,obra,criticidade,sig_token,sig_token_expires_at,sig_cliente,sig_cliente_at,sig_cliente_nome,dados')
       .eq('sig_token', TOKEN).single();
     if (ldo) { rec = ldo; docType = 'laudo'; }
   }
@@ -208,12 +208,23 @@ async function init() {
   if (!rec) {
     // Try contratos
     const { data: ct } = await sb.from('contratos')
-      .select('id,numero,cliente,endereco,valor,status,sig_token,assinado_cli,sig_cli_at,sig_cli_nome,dados')
+      .select('id,numero,cliente,endereco,valor,status,sig_token,sig_token_expires_at,assinado_cli,sig_cli_at,sig_cli_nome,dados')
       .eq('sig_token', TOKEN).single();
     if (ct) { rec = ct; rec.sig_cliente = ct.assinado_cli; rec.sig_cliente_at = ct.sig_cli_at; rec.sig_cliente_nome = ct.sig_cli_nome; docType = 'contrato'; }
   }
   if (!rec) { show('scr-erro'); return; }
 
+  // Verificar expiração do link (sig_token_expires_at)
+  const expiresAt = rec.sig_token_expires_at;
+  if (expiresAt && new Date(expiresAt) < new Date()) {
+    show('scr-erro');
+    document.getElementById('erro-msg').textContent =
+      `Este link de assinatura expirou em ${new Date(expiresAt).toLocaleDateString('pt-BR')}. ` +
+      `Solicite ao profissional que gere um novo link.`;
+    return;
+  }
+
+  // Adicionar a query para buscar sig_token_expires_at junto
   docRecord = { ...rec, docType };
 
   // Already signed?
@@ -283,6 +294,9 @@ async function assinar() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spin"></div> Registrando assinatura...';
 
+  // Capturar IP do assinante para trilha de auditoria jurídica
+  const clientIP = await getClientIP();
+
   // Capture signature as PNG
   const sigBase64 = canvas.toDataURL('image/png');
   const now = new Date().toISOString();
@@ -290,11 +304,11 @@ async function assinar() {
 
   let updateData = {};
   if (docRecord.docType === 'orcamento') {
-    updateData = { sig_cliente: sigBase64, sig_cliente_at: now, sig_cliente_nome: nome, sig_cliente_ip: 'n/a', status: 'aprovado' };
+    updateData = { sig_cliente: sigBase64, sig_cliente_at: now, sig_cliente_nome: nome, sig_cliente_ip: clientIP, status: 'aprovado' };
   } else if (docRecord.docType === 'laudo') {
-    updateData = { sig_cliente: sigBase64, sig_cliente_at: now, sig_cliente_nome: nome, sig_cliente_ip: 'n/a' };
+    updateData = { sig_cliente: sigBase64, sig_cliente_at: now, sig_cliente_nome: nome, sig_cliente_ip: clientIP };
   } else if (docRecord.docType === 'contrato') {
-    updateData = { assinado_cli: sigBase64, sig_cli_at: now, sig_cli_nome: nome, status: 'ativo' };
+    updateData = { assinado_cli: sigBase64, sig_cli_at: now, sig_cli_nome: nome, sig_cli_ip: clientIP, status: 'ativo' };
   }
   const { error } = await sb.from(table).update(updateData).eq('sig_token', TOKEN);
 
@@ -308,6 +322,21 @@ async function assinar() {
   const code = `PP-${TOKEN.slice(0,8).toUpperCase()}-${docRecord.id.slice(-6).toUpperCase()}`;
   document.getElementById('sucesso-code').textContent = code;
   show('scr-sucesso');
+}
+
+// ── Captura de IP via API pública (para trilha de auditoria) ─────────
+// O IP é capturado no momento da assinatura e registrado junto
+// com data/hora como evidência para validade jurídica da MP 2.200-2/2001.
+async function getClientIP() {
+  try {
+    // api.ipify.org retorna apenas o IP em texto puro (sem dados pessoais extras)
+    const res = await fetch('https://api.ipify.org?format=json');
+    if (!res.ok) return 'indisponível';
+    const data = await res.json();
+    return data.ip || 'indisponível';
+  } catch {
+    return 'indisponível';
+  }
 }
 
 init();

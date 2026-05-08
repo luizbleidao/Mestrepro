@@ -18,6 +18,56 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { hmac } from 'https://deno.land/x/hmac@v2.0.1/mod.ts';
+
+// ── Validação de assinatura HMAC do Mercado Pago ───────────────────────────
+// Docs: https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
+async function validarAssinaturaMP(req: Request, rawBody: string): Promise<boolean> {
+  const secret = Deno.env.get('MP_WEBHOOK_SECRET');
+  if (!secret) {
+    // Se a variável não foi configurada, bloqueia por segurança (fail-closed)
+    console.error('[webhook-mp] MP_WEBHOOK_SECRET não configurada — requisição rejeitada.');
+    return false;
+  }
+
+  // O MP envia: x-signature: ts=<timestamp>,v1=<hash>
+  const xSignature = req.headers.get('x-signature') || '';
+  const xRequestId = req.headers.get('x-request-id') || '';
+  const dataId     = new URL(req.url).searchParams.get('data.id') || '';
+
+  // Extrair ts e v1 do header
+  const parts: Record<string, string> = {};
+  for (const part of xSignature.split(',')) {
+    const [k, v] = part.split('=');
+    if (k && v) parts[k.trim()] = v.trim();
+  }
+  const { ts, v1 } = parts;
+  if (!ts || !v1) {
+    console.error('[webhook-mp] Header x-signature ausente ou malformado.');
+    return false;
+  }
+
+  // Montar o template exato que o MP assina: id:dataId;request-id:xRequestId;ts:ts;
+  const template = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+  // Calcular HMAC-SHA256
+  const calculado = hmac('sha256', secret, template, 'utf8', 'hex') as string;
+
+  if (calculado !== v1) {
+    console.error('[webhook-mp] Assinatura HMAC inválida. Possível requisição forjada.');
+    return false;
+  }
+
+  // Proteção anti-replay: rejeitar notificações com timestamp > 5 minutos de diferença
+  const agora = Math.floor(Date.now() / 1000);
+  const tsNum = parseInt(ts, 10);
+  if (Math.abs(agora - tsNum) > 300) {
+    console.error('[webhook-mp] Timestamp fora da janela de 5 min — possível replay attack.');
+    return false;
+  }
+
+  return true;
+}
 
 // ── Mapa de planos MP → MestrePro ──────────────────────────────────────────
 // Preencha com os seus IDs de plano no painel do Mercado Pago
@@ -46,8 +96,22 @@ serve(async (req: Request) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
   try {
-    const body = await req.json();
-    console.log('[webhook-mp] recebido:', JSON.stringify(body));
+    // Ler o body como texto primeiro (necessário para validar o HMAC)
+    const rawBody = await req.text();
+    let body: Record<string, unknown>;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return new Response('Body inválido', { status: 400 });
+    }
+
+    // ── Validar assinatura HMAC antes de qualquer processamento ───────────
+    const assinaturaValida = await validarAssinaturaMP(req, rawBody);
+    if (!assinaturaValida) {
+      return new Response('Assinatura inválida', { status: 401 });
+    }
+
+    console.log('[webhook-mp] recebido e validado:', JSON.stringify(body));
 
     // O MP envia notificações de dois tipos:
     // 1. { type: "payment", data: { id: "..." } }

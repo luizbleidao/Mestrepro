@@ -1,0 +1,13 @@
+# ── Credenciais locais (NUNCA commitar) ──────────────────────────
+pp-config.local.js
+
+# ── Dependências ──────────────────────────────────────────────────
+node_modules/
+.env
+.env.local
+.env.production
+
+# ── Build / cache ─────────────────────────────────────────────────
+.netlify/
+dist/
+.cache/

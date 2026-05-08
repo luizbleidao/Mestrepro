@@ -1,91 +1,132 @@
 # MestrePro — Deploy Master
-**Pacote unificado v1.0 — gerado em 02/05/2025**
+**Pacote unificado v1.1 — atualizado em 06/05/2026**
 
 ---
 
 ## 📦 Arquivos incluídos
 
-| Arquivo | Função | Fonte |
-|---|---|---|
-| `index.html` | Landing page completa | Conta 2 |
-| `pintopro-app.html` | App principal (merge das 3 contas) | **Merge** |
-| `pintopro-orcamentos.html` | Orçamentos — Supabase como fonte | Conta 1 |
-| `pintopro-laudos.html` | Laudos técnicos | Conta 3 |
-| `pintopro-login.html` | Login + 4 planos + toggle mensal/anual | Conta 1 |
-| `pintopro-planos.html` | Checkout self-service | Conta 2 |
-| `pintopro-admin.html` | Painel administrativo | Conta 2 |
-| `pintopro-assinar.html` | Assinatura digital do cliente | Conta 2 |
-| `pp-modules.js` | Contratos, recibos, agenda | Conta 2/3 |
-| `pp-config.js` | **Config central com links MP** | Unificado |
-| `netlify.toml` | Roteamento e headers de segurança | Conta 2 |
-| `migrations-v2.sql` | Schema completo do banco | Conta 3 |
-| `supabase/functions/webhook-mp/index.ts` | Edge Function MP automática | Conta 3 |
+| Arquivo | Função |
+|---|---|
+| `index.html` | Landing page |
+| `pintopro-app.html` | App principal |
+| `pintopro-orcamentos.html` | Orçamentos (iframe) |
+| `pintopro-laudos.html` | Laudos técnicos (iframe) |
+| `pintopro-login.html` | Login + cadastro + planos |
+| `pintopro-planos.html` | Checkout self-service |
+| `pintopro-admin.html` | Painel administrativo |
+| `pintopro-assinar.html` | Assinatura digital do cliente |
+| `pp-modules.js` | Contratos, recibos, agenda |
+| `pp-config.js` | **Config central — links MP, preços, Supabase** |
+| `pp-config.local.example.js` | Modelo para credenciais locais (ver abaixo) |
+| `netlify.toml` | Roteamento, headers CSP e cache |
+| `migrations-v2.sql` | Schema completo do banco |
+| `supabase/functions/webhook-mp/index.ts` | Edge Function MP com validação HMAC |
+
+---
+
+## 🔐 Configuração de credenciais
+
+> ⚠️ As credenciais do Supabase **não** ficam mais no repositório.
+> Siga um dos caminhos abaixo antes de fazer o deploy.
+
+### Desenvolvimento local
+1. Copie `pp-config.local.example.js` e renomeie para `pp-config.local.js`
+2. Preencha `SUPABASE_URL` e `SUPABASE_ANON_KEY`
+3. Adicione a tag antes de `pp-config.js` em cada HTML:
+   ```html
+   <script src="pp-config.local.js"></script>
+   <script src="pp-config.js"></script>
+   ```
+4. O arquivo `.gitignore` já impede que `pp-config.local.js` entre no git
+
+### Produção (Netlify)
+1. Netlify → **Site settings → Environment variables** → adicione:
+   - `SUPABASE_URL` → `https://SEU-PROJETO.supabase.co`
+   - `SUPABASE_ANON_KEY` → `eyJ...`
+2. Use um plugin ou script de build para injetar os valores nos placeholders
+   `window.__SUPABASE_URL__` e `window.__SUPABASE_ANON__` de `pp-config.js`
 
 ---
 
 ## 🚀 Checklist de ativação — faça nesta ordem
 
-### Passo 1 — Rodar o banco (5 min)
-1. Acesse [supabase.com](https://supabase.com) → projeto `ufdrxucvyukgzvenfuhj`
+### Passo 1 — Rodar a migration no banco (5 min)
+1. Acesse [supabase.com](https://supabase.com) → seu projeto
 2. Vá em **SQL Editor**
 3. Cole e execute o conteúdo de `migrations-v2.sql`
-4. Confirme que as tabelas `subscriptions`, `pagamentos`, `afiliados` foram criadas
+4. Confirme que as tabelas e funções foram criadas, incluindo:
+   - `verificar_expiracao_trial()` (expiração de trial)
+   - `get_usuarios_completos()` (view segura do admin)
+   - Trigger `trg_set_trial_fim`
 
 ### Passo 2 — Deploy no Netlify (5 min)
 1. Acesse [netlify.com](https://netlify.com)
-2. Arraste a pasta inteira para o painel de deploy
-3. Aguarde o deploy terminar
-4. Anote a URL gerada (ex: `mestrepro.netlify.app`)
+2. Arraste a pasta para o painel de deploy
+3. Configure as variáveis de ambiente (ver seção acima)
+4. Aguarde o deploy terminar e anote a URL gerada
 
 ### Passo 3 — Configurar o Webhook do Mercado Pago (15 min)
 1. No Supabase → **Edge Functions** → **Deploy new function**
 2. Cole o conteúdo de `supabase/functions/webhook-mp/index.ts`
-3. Adicione as variáveis de ambiente:
-   - `MP_ACCESS_TOKEN` → seu token de produção do Mercado Pago
-   - `SUPABASE_URL` → `https://ufdrxucvyukgzvenfuhj.supabase.co`
+3. Adicione as variáveis de ambiente **obrigatórias**:
+   - `MP_ACCESS_TOKEN` → token de produção do Mercado Pago
+   - `MP_WEBHOOK_SECRET` → chave secreta do webhook (gerada no painel do MP)
+   - `SUPABASE_URL` → URL do seu projeto Supabase
    - `SUPABASE_SERVICE_ROLE_KEY` → chave service_role do Supabase
-4. No painel do Mercado Pago → **Notificações IPN**
-5. Coloque a URL: `https://ufdrxucvyukgzvenfuhj.supabase.co/functions/v1/webhook-mp`
+4. No Mercado Pago → **Notificações** → **Webhooks**
+5. URL: `https://SEU-PROJETO.supabase.co/functions/v1/webhook-mp`
+6. Ativar a assinatura de notificações para gerar o `MP_WEBHOOK_SECRET`
 
-### Passo 4 — Testar o fluxo completo (10 min)
-1. Acesse `sua-url.netlify.app`
-2. Crie uma conta nova
-3. Entre no trial → tente criar orçamento → veja o trial countdown
-4. Clique em "Assinar" → escolha um plano → confirme que o link do MP abre
-5. (Opcional) Faça um pagamento de teste no MP e confirme que o plano ativa
+> ⚠️ **Sem a `MP_WEBHOOK_SECRET` o webhook rejeita todas as requisições.**
+> Isso é intencional (fail-closed) para impedir ativação fraudulenta de planos.
 
-### Passo 5 — Apontar domínio (opcional)
-1. No Netlify → **Domain settings** → **Add custom domain**
-2. Configure o DNS conforme instruído
+### Passo 4 — Configurar usuário admin
+1. Crie uma conta normalmente em `/entrar`
+2. No Supabase → **Table Editor** → tabela `profiles`
+3. Localize o seu registro e altere `perfil` de `pintor` para `admin`
+4. Acesse `/admin` e faça login com sua conta
+
+### Passo 5 — Testar o fluxo completo (10 min)
+1. Crie uma conta nova → confirme que o trial de 7 dias iniciou imediatamente
+2. Verifique `profiles.trial_fim` no banco (deve ser agora + 7 dias)
+3. Crie um orçamento, laudo, contrato e recibo → confirme sem duplicações
+4. Gere um link de assinatura de contrato → teste o modal com botão WhatsApp
+5. Acesse `/planos` diretamente (sem sessão) → confirme que o botão de checkout aguarda o login
 
 ---
 
-## ⚙️ Ajustes em `pp-config.js`
+## ⚙️ Alterando preços e links do Mercado Pago
 
-Todos os links e configurações ficam num único lugar:
+Tudo em **`pp-config.js`** — fonte única:
 
 ```js
 window.PP = {
-  supabaseUrl: '...',      // já configurado
-  supabaseKey: '...',      // já configurado
-  mpBasico: '...',         // links do Mercado Pago já configurados
-  appNome: 'MestrePro',   // altere aqui para mudar o nome em todo o app
-  appSlogan: '...',        // slogan exibido no login e sidebar
+  mpBasico:      'https://mpago.la/...',
+  mpBasicoAnual: 'https://mpago.la/...',
+  // ...demais planos
+
+  precos: {
+    basico:   { mensal: 49,  anual: 490,  eq: 41  },
+    // ...demais planos
+  },
 }
 ```
 
+Após alterar `pp-config.js` e re-executar a migration, os valores
+aparecem automaticamente em todas as páginas e na tabela `planos_config`.
+
 ---
 
-## 📋 Planos e limites configurados
+## 📋 Planos e status de funcionalidades
 
-| Plano | Orçamentos | Laudos | Usuários | IA |
-|---|---|---|---|---|
-| Gratuito | 3 total | 1 total | 1 | — |
-| Trial 7d | Ilimitado | Ilimitado | 1 | — |
-| Básico R$49 | Ilimitado | 3/mês | 1 | — |
-| Pro R$97 | Ilimitado | Ilimitado | 1 | — |
-| Equipe R$197 | Ilimitado | Ilimitado | Até 5 | — |
-| IA Pro R$297 | Ilimitado | Ilimitado | Ilimitado | ✓ |
+| Plano | Preço | Status |
+|---|---|---|
+| Gratuito | Grátis | ✅ Disponível |
+| Trial 7d | Grátis | ✅ Disponível |
+| Básico | R$49/mês | ✅ Disponível |
+| Pro | R$97/mês | ✅ Disponível |
+| Equipe | R$197/mês | ⚠️ Multi-usuário em desenvolvimento (recebe Pro até lançamento) |
+| IA Pro | R$297/mês | ⚠️ Early access — IA em desenvolvimento (recebe Equipe até lançamento) |
 
 ---
 
@@ -104,19 +145,16 @@ window.PP = {
 
 ## ❗ O que ainda falta implementar
 
-### Crítico (antes de escalar tráfego)
-- [ ] Configurar `external_reference` nos links do MP no formato `userId:plano_periodo`
-- [ ] Testar webhook com pagamento real
-
 ### Curto prazo (próximas 2 semanas)
-- [ ] E-mails automáticos via Resend (boas-vindas, trial expirando)
-- [ ] Contador mensal de laudos persistente no Supabase
+- [ ] E-mails automáticos via Resend (boas-vindas, aviso de trial expirando em 2 dias)
+- [ ] Contador mensal de laudos persistente no Supabase (hoje é in-memory)
 - [ ] Pixel Meta Ads + GA4 na `index.html`
-- [ ] Botão WhatsApp flutuante na landing
+- [ ] Script de build para injetar SUPABASE_URL/ANON_KEY via env no deploy
 
 ### Médio prazo (1–2 meses)
-- [ ] Dashboard financeiro (faturamento, ticket médio, lucro)
+- [ ] Dashboard financeiro (faturamento, ticket médio, churn)
 - [ ] Pipeline de status dos orçamentos
 - [ ] CRM básico de clientes
 - [ ] Multi-usuário completo (plano Equipe)
-- [ ] Painel de afiliados
+- [ ] Painel de afiliados com comissão 30%
+- [ ] IA: gerador de orçamentos e análise de patologias por foto

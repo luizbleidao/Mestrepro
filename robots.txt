@@ -1,0 +1,30 @@
+# MestrePro — robots.txt
+# https://mestrepro.com.br/robots.txt
+
+User-agent: *
+
+# ── Páginas públicas (indexar normalmente) ────────────────────────────────
+Allow: /
+Allow: /index.html
+Allow: /sobre.html
+Allow: /blog.html
+Allow: /cookies.html
+Allow: /termos.html
+
+# ── App interno (não indexar) ─────────────────────────────────────────────
+# Páginas que exigem login ou são de uso exclusivo dos usuários cadastrados
+Disallow: /pintopro-app.html
+Disallow: /pintopro-orcamentos.html
+Disallow: /pintopro-laudos.html
+Disallow: /pintopro-posts.html
+
+# ── Autenticação (não indexar) ────────────────────────────────────────────
+Disallow: /pintopro-login.html
+Disallow: /pintopro-planos.html
+Disallow: /pintopro-assinar.html
+
+# ── Admin (nunca indexar) ─────────────────────────────────────────────────
+Disallow: /pintopro-admin.html
+
+# ── Sitemap ───────────────────────────────────────────────────────────────
+Sitemap: https://mestrepro.com.br/sitemap.xml
