@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Cookies — MestrePro</title>
+<meta name="description" content="Saiba quais cookies o MestrePro utiliza, para que servem e como você pode controlá-los.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --acc:#5b7fff;--acc2:#7b9fff;--acc3:#ff9500;
+  --bg:#0a0a09;--surf:#131311;--surf2:#1a1a17;--surf3:#222220;
+  --border:#2a2a26;--text:#f2ede6;--text2:#a09080;--text3:#5a5448;
+  --green:#22c55e;--r:12px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;font-size:16px;line-height:1.6;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.4;pointer-events:none;z-index:0;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,10,9,.8);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.05);}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo-icon{width:34px;height:34px;background:var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.nav-logo-text{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text);}
+.nav-logo-text span{color:var(--acc);}
+.nav-links{display:flex;align-items:center;gap:8px;}
+.nav-link{color:var(--text2);text-decoration:none;font-size:14px;font-weight:500;padding:7px 14px;border-radius:8px;transition:.15s;}
+.nav-link:hover{color:var(--text);background:var(--surf2);}
+.nav-cta{background:var(--acc);color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:9px 20px;border-radius:8px;transition:.15s;}
+.nav-cta:hover{background:var(--acc2);transform:translateY(-1px);}
+
+/* LAYOUT */
+.wrap{max-width:760px;margin:0 auto;padding:0 24px;}
+.page-hero{padding:130px 24px 56px;position:relative;}
+.page-hero::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(91,127,255,.08) 0%,transparent 70%);pointer-events:none;}
+.section-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--acc);margin-bottom:12px;display:block;}
+h1{font-family:'Syne',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:800;line-height:1.05;letter-spacing:-0.04em;margin-bottom:14px;}
+.hero-meta{font-size:13px;color:var(--text3);margin-top:8px;}
+
+/* CONTEÚDO */
+.content{padding:48px 0 80px;}
+
+/* ÍNDICE */
+.toc{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-bottom:48px;}
+.toc-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text2);letter-spacing:.5px;}
+.toc ol{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.toc li{counter-increment:toc-counter;}
+.toc a{font-size:14px;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:7px;transition:.15s;}
+.toc a::before{content:counter(toc-counter,decimal-leading-zero);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--text3);min-width:22px;}
+.toc a:hover{color:var(--acc);background:var(--surf2);}
+.toc ol{counter-reset:toc-counter;}
+
+/* SEÇÕES */
+.section{margin-bottom:48px;scroll-margin-top:100px;}
+.section h2{font-family:'Syne',sans-serif;font-size:clamp(20px,2.5vw,26px);font-weight:800;letter-spacing:-0.03em;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.section h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin:24px 0 10px;}
+.section p{font-size:15px;color:var(--text2);line-height:1.8;margin-bottom:14px;}
+.section p:last-child{margin-bottom:0;}
+.section a{color:var(--acc);text-decoration:none;}
+.section a:hover{text-decoration:underline;}
+
+/* TABELA DE COOKIES */
+.cookie-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px;}
+.cookie-table th{background:var(--surf2);color:var(--text2);font-weight:600;font-size:11px;letter-spacing:.8px;text-transform:uppercase;padding:12px 16px;text-align:left;border-bottom:1px solid var(--border);}
+.cookie-table td{padding:14px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6;}
+.cookie-table tr:last-child td{border-bottom:none;}
+.cookie-table tr:hover td{background:var(--surf2);}
+.cookie-table td:first-child{font-family:'DM Sans',monospace;color:var(--acc);font-size:12px;white-space:nowrap;}
+.cookie-table td:nth-child(2){color:var(--text);}
+.cookie-table td:nth-child(3){color:var(--text2);}
+.cookie-table td:last-child{color:var(--text3);}
+.table-wrap{background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:20px 0;}
+
+/* BADGE DE TIPO */
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.5px;text-transform:uppercase;}
+.badge-essencial{background:rgba(91,127,255,.15);color:var(--acc);}
+.badge-desempenho{background:rgba(34,197,94,.12);color:var(--green);}
+.badge-preferencia{background:rgba(255,149,0,.12);color:var(--acc3);}
+
+/* PAINEL DE PREFERÊNCIAS */
+.pref-panel{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:28px;margin:24px 0;}
+.pref-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);gap:20px;}
+.pref-row:last-child{border-bottom:none;padding-bottom:0;}
+.pref-info{flex:1;}
+.pref-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.pref-desc{font-size:13px;color:var(--text2);line-height:1.6;}
+/* Toggle switch */
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--surf3);border:1px solid var(--border);border-radius:99px;transition:.2s;}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--text3);border-radius:50%;transition:.2s;}
+.toggle input:checked + .toggle-slider{background:var(--acc);border-color:var(--acc);}
+.toggle input:checked + .toggle-slider::before{transform:translateX(20px);background:#fff;}
+.toggle input:disabled + .toggle-slider{opacity:.5;cursor:not-allowed;}
+.pref-save-btn{width:100%;margin-top:20px;padding:12px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:.15s;}
+.pref-save-btn:hover{background:var(--acc2);}
+
+/* CALLOUT */
+.callout{background:rgba(91,127,255,.07);border:1px solid rgba(91,127,255,.2);border-radius:12px;padding:18px 20px;margin:20px 0;font-size:14px;color:var(--text2);line-height:1.7;}
+.callout strong{color:var(--text);}
+
+/* FOOTER */
+footer{background:var(--surf);border-top:1px solid var(--border);padding:48px 24px 32px;}
+.footer-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:40px;}
+.footer-brand .brand{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--acc);margin-bottom:10px;display:block;}
+.footer-brand p{font-size:13px;color:var(--text2);line-height:1.6;}
+.footer-col h4{font-size:13px;font-weight:700;margin-bottom:14px;}
+.footer-col a{display:block;font-size:13px;color:var(--text2);text-decoration:none;margin-bottom:8px;transition:.15s;}
+.footer-col a:hover{color:var(--acc);}
+.footer-bottom{max-width:1100px;margin:40px auto 0;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text3);gap:16px;flex-wrap:wrap;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:600px){
+  nav{padding:12px 16px;}
+  .nav-links{display:none;}
+  .cookie-table{font-size:12px;}
+  .cookie-table th,.cookie-table td{padding:10px 12px;}
+  .footer-inner{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-icon">🎨</div>
+    <div class="nav-logo-text">Mestre<span>Pro</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="/#funcionalidades" class="nav-link">Funcionalidades</a>
+    <a href="/#precos" class="nav-link">Preços</a>
+    <a href="/blog.html" class="nav-link">Blog</a>
+    <a href="/pintopro-login.html" class="nav-link">Entrar</a>
+    <a href="/pintopro-login.html" class="nav-cta">Começar grátis →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="page-hero">
+  <div class="wrap" style="position:relative;z-index:1;">
+    <span class="section-label" style="animation:fadeUp .5s ease both">Legal</span>
+    <h1 style="animation:fadeUp .5s .1s ease both">Política de Cookies</h1>
+    <p style="font-size:16px;color:var(--text2);max-width:520px;animation:fadeUp .5s .2s ease both">Explicamos de forma clara quais cookies usamos, por que usamos e como você pode controlar cada um deles.</p>
+    <p class="hero-meta">Última atualização: 6 de maio de 2026 &nbsp;·&nbsp; Versão 1.0</p>
+  </div>
+</div>
+
+<div class="wrap">
+<div class="content">
+
+  <!-- ÍNDICE -->
+  <nav class="toc" aria-label="Índice">
+    <div class="toc-title">NESTA PÁGINA</div>
+    <ol>
+      <li><a href="#o-que-sao">O que são cookies</a></li>
+      <li><a href="#como-usamos">Como usamos cookies</a></li>
+      <li><a href="#tipos">Tipos de cookies que usamos</a></li>
+      <li><a href="#lista">Lista completa de cookies</a></li>
+      <li><a href="#preferencias">Gerenciar suas preferências</a></li>
+      <li><a href="#terceiros">Cookies de terceiros</a></li>
+      <li><a href="#controle">Como remover cookies do navegador</a></li>
+      <li><a href="#atualizacoes">Atualizações desta política</a></li>
+      <li><a href="#contato">Contato</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1 -->
+  <div class="section" id="o-que-sao">
+    <h2>1. O que são cookies</h2>
+    <p>Cookies são pequenos arquivos de texto que um site salva no seu dispositivo (computador, celular ou tablet) quando você o visita. Eles permitem que o site reconheça seu dispositivo em visitas futuras e lembre de certas informações, como sua sessão de login ou suas preferências.</p>
+    <p>Além de cookies, também podemos usar tecnologias similares como <strong>localStorage</strong> e <strong>sessionStorage</strong> do navegador — funcionam de forma parecida mas ficam armazenados localmente, sem serem enviados ao servidor a cada requisição.</p>
+    <div class="callout">
+      <strong>Resumo prático:</strong> sem cookies, você precisaria fazer login de novo a cada página que abrisse no MestrePro. Os cookies essenciais são os que mantêm você logado e o app funcionando.
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="section" id="como-usamos">
+    <h2>2. Como usamos cookies</h2>
+    <p>Usamos cookies estritamente para:</p>
+    <p><strong>Manter sua sessão ativa</strong> — quando você faz login, um token de sessão é salvo para que você não precise se autenticar a cada clique.</p>
+    <p><strong>Lembrar preferências do app</strong> — tema (claro/escuro), preferências de exibição e configurações que você ajustou.</p>
+    <p><strong>Modo demonstração</strong> — quando você usa o app sem conta, salvamos o estado da demonstração no <code>sessionStorage</code> para a sessão atual.</p>
+    <p><strong>Segurança</strong> — tokens anti-CSRF e identificadores de sessão para proteger sua conta.</p>
+    <div class="callout">
+      <strong>O que não fazemos:</strong> o MestrePro <strong>não usa</strong> cookies de rastreamento entre sites, cookies de publicidade, pixels de redes sociais nem compartilha dados de cookies com anunciantes. Nossa plataforma não exibe anúncios.
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="section" id="tipos">
+    <h2>3. Tipos de cookies que usamos</h2>
+
+    <h3><span class="badge badge-essencial">Essenciais</span></h3>
+    <p>Necessários para o funcionamento básico do sistema. Sem eles, você não consegue fazer login, criar orçamentos ou acessar os dados da sua conta. <strong>Não podem ser desativados</strong> — sem eles o app simplesmente não funciona.</p>
+
+    <h3><span class="badge badge-desempenho">Desempenho</span></h3>
+    <p>Ajudam a entender como o app está sendo usado para que possamos corrigir erros e melhorar a experiência. Todos os dados são anônimos — não identificamos qual usuário específico teve um problema, apenas que o problema aconteceu.</p>
+
+    <h3><span class="badge badge-preferencia">Preferências</span></h3>
+    <p>Lembram escolhas que você fez no app, como configurações de exibição e preferências de interface. Você pode desativá-los sem perder funcionalidade — apenas precisará reconfigurar suas preferências em cada visita.</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="section" id="lista">
+    <h2>4. Lista completa de cookies</h2>
+
+    <h3>Cookies de sessão e autenticação</h3>
+    <div class="table-wrap">
+      <table class="cookie-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Finalidade</th>
+            <th>Tipo</th>
+            <th>Duração</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>sb-&lt;projeto&gt;-auth-token</td>
+            <td>Token de autenticação da sua sessão no Supabase. Mantém você logado.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>7 dias</td>
+          </tr>
+          <tr>
+            <td>sb-&lt;projeto&gt;-auth-token-code-verifier</td>
+            <td>Código PKCE para autenticação segura OAuth.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>Sessão</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>localStorage (armazenamento local)</h3>
+    <div class="table-wrap">
+      <table class="cookie-table">
+        <thead>
+          <tr>
+            <th>Chave</th>
+            <th>Finalidade</th>
+            <th>Tipo</th>
+            <th>Duração</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>pp_contratos</td>
+            <td>Contratos salvos no modo demonstração (sem conta).</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>Até limpar dados</td>
+          </tr>
+          <tr>
+            <td>pp_orcamentos</td>
+            <td>Orçamentos salvos no modo demonstração.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>Até limpar dados</td>
+          </tr>
+          <tr>
+            <td>pp_recibos</td>
+            <td>Recibos salvos no modo demonstração.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>Até limpar dados</td>
+          </tr>
+          <tr>
+            <td>pp_laudos</td>
+            <td>Laudos salvos no modo demonstração.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>Até limpar dados</td>
+          </tr>
+          <tr>
+            <td>pp_agenda</td>
+            <td>Agenda de visitas no modo demonstração.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>Até limpar dados</td>
+          </tr>
+          <tr>
+            <td>pp_empresa</td>
+            <td>Dados da empresa configurados nas preferências do app.</td>
+            <td><span class="badge badge-preferencia">Preferência</span></td>
+            <td>Até limpar dados</td>
+          </tr>
+          <tr>
+            <td>mp_checkout_intencao</td>
+            <td>Intenção de checkout do Mercado Pago — garante que o plano seja ativado após o pagamento mesmo que o usuário feche a aba.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>24 horas</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>sessionStorage (sessão do navegador)</h3>
+    <div class="table-wrap">
+      <table class="cookie-table">
+        <thead>
+          <tr>
+            <th>Chave</th>
+            <th>Finalidade</th>
+            <th>Tipo</th>
+            <th>Duração</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>pp_demo</td>
+            <td>Estado da sessão de demonstração — apagado automaticamente ao fechar o navegador.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>Sessão</td>
+          </tr>
+          <tr>
+            <td>pp_user_id</td>
+            <td>ID do usuário logado, compartilhado entre as páginas do app na mesma sessão.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>Sessão</td>
+          </tr>
+          <tr>
+            <td>pp_user_plano</td>
+            <td>Plano atual do usuário, usado para controle de acesso às funcionalidades.</td>
+            <td><span class="badge badge-essencial">Essencial</span></td>
+            <td>Sessão</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="section" id="preferencias">
+    <h2>5. Gerenciar suas preferências</h2>
+    <p>Você pode escolher quais categorias de cookies não-essenciais aceita abaixo. Cookies essenciais não podem ser desativados pois são necessários para o funcionamento do app.</p>
+
+    <div class="pref-panel">
+      <div class="pref-row">
+        <div class="pref-info">
+          <div class="pref-name">
+            <span class="badge badge-essencial">Essenciais</span>
+            Cookies essenciais
+          </div>
+          <p class="pref-desc">Sessão, autenticação e dados do modo demonstração. Necessários para o app funcionar.</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" checked disabled>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="pref-row">
+        <div class="pref-info">
+          <div class="pref-name">
+            <span class="badge badge-desempenho">Desempenho</span>
+            Cookies de desempenho
+          </div>
+          <p class="pref-desc">Dados anônimos sobre erros e uso do app — nos ajudam a melhorar a experiência para todos.</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="pref-desempenho" checked onchange="salvarPref()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="pref-row">
+        <div class="pref-info">
+          <div class="pref-name">
+            <span class="badge badge-preferencia">Preferências</span>
+            Cookies de preferências
+          </div>
+          <p class="pref-desc">Lembram configurações de interface como tema e exibições. Desativar fará você reconfigurar a cada visita.</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="pref-preferencias" checked onchange="salvarPref()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <button class="pref-save-btn" onclick="salvarPreferencias()">Salvar preferências</button>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="section" id="terceiros">
+    <h2>6. Cookies de terceiros</h2>
+    <p>O MestrePro utiliza alguns serviços externos que podem definir seus próprios cookies:</p>
+
+    <h3>Supabase</h3>
+    <p>Nosso banco de dados e sistema de autenticação. O Supabase armazena tokens de sessão para manter seu login ativo. Veja a <a href="https://supabase.com/privacy" target="_blank" rel="noopener">política de privacidade do Supabase</a>.</p>
+
+    <h3>Mercado Pago</h3>
+    <p>Processador de pagamentos para assinatura dos planos. Ao clicar em "Assinar", você é redirecionado para o ambiente seguro do Mercado Pago, que possui seus próprios cookies de segurança antifraude. Veja a <a href="https://www.mercadopago.com.br/privacidade" target="_blank" rel="noopener">política de privacidade do Mercado Pago</a>.</p>
+
+    <h3>Google Fonts</h3>
+    <p>Usamos as fontes DM Sans e Syne hospedadas no Google Fonts. O Google pode registrar a requisição da fonte, mas não recebe dados sobre sua navegação no app. Veja a <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">política de privacidade do Google</a>.</p>
+
+    <div class="callout">
+      <strong>Importante:</strong> o MestrePro não usa Google Analytics, Meta Pixel, Hotjar nem qualquer outra ferramenta de rastreamento comportamental. Não vendemos dados e não exibimos anúncios.
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="section" id="controle">
+    <h2>7. Como remover cookies do navegador</h2>
+    <p>Além do painel acima, você pode apagar cookies diretamente pelo seu navegador. Veja as instruções para os principais:</p>
+
+    <h3>Google Chrome</h3>
+    <p>Configurações → Privacidade e segurança → Limpar dados de navegação → marque "Cookies e outros dados do site" → Limpar dados.</p>
+
+    <h3>Mozilla Firefox</h3>
+    <p>Configurações → Privacidade e Segurança → Cookies e dados do site → Limpar dados.</p>
+
+    <h3>Safari (iPhone/iPad)</h3>
+    <p>Ajustes → Safari → Limpar histórico e dados de sites.</p>
+
+    <h3>Samsung Internet</h3>
+    <p>Menu (três linhas) → Configurações → Privacidade e segurança → Excluir dados de navegação → Cookies e dados do site.</p>
+
+    <div class="callout">
+      <strong>Atenção:</strong> ao apagar os cookies do MestrePro você será desconectado automaticamente e precisará fazer login novamente. Dados salvos no modo demonstração (sem conta) serão perdidos permanentemente.
+    </div>
+  </div>
+
+  <!-- 8 -->
+  <div class="section" id="atualizacoes">
+    <h2>8. Atualizações desta política</h2>
+    <p>Podemos atualizar esta Política de Cookies quando adicionarmos novos serviços ou funcionalidades que envolvam novos tipos de armazenamento. Quando isso acontecer:</p>
+    <p>• A data de "última atualização" no topo da página será alterada.<br>
+    • Se a mudança for significativa, notificaremos você por e-mail ou com um aviso no app.<br>
+    • Versões anteriores ficam disponíveis mediante solicitação.</p>
+    <p>Recomendamos visitar esta página periodicamente. O uso continuado do MestrePro após uma atualização significa que você aceita os termos revisados.</p>
+  </div>
+
+  <!-- 9 -->
+  <div class="section" id="contato">
+    <h2>9. Contato</h2>
+    <p>Dúvidas sobre esta política ou sobre como seus dados são tratados? Fale com a gente:</p>
+    <p>
+      📧 <strong>E-mail:</strong> <a href="mailto:privacidade@mestrepro.com.br">privacidade@mestrepro.com.br</a><br>
+      💬 <strong>Suporte:</strong> <a href="mailto:suporte@mestrepro.com.br">suporte@mestrepro.com.br</a>
+    </p>
+    <p>Respondemos em até 2 dias úteis. Para solicitações relacionadas à LGPD (Lei Geral de Proteção de Dados), nos informe explicitamente e priorizaremos o atendimento.</p>
+    <p style="margin-top:24px;">
+      <a href="/termos.html" style="color:var(--acc);text-decoration:none;font-weight:500;">← Ler também: Termos de Uso e Privacidade</a>
+    </p>
+  </div>
+
+</div>
+</div><!-- /wrap -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="brand">MestrePro</span>
+      <p>Plataforma de gestão e vendas para prestadores de serviço autônomos no Brasil.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Produto</h4>
+      <a href="/#funcionalidades">Funcionalidades</a>
+      <a href="/#precos">Planos e preços</a>
+      <a href="/pintopro-login.html">Entrar</a>
+      <a href="/pintopro-login.html">Criar conta</a>
+    </div>
+    <div class="footer-col">
+      <h4>Empresa</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/blog.html">Blog</a>
+      <a href="/pintopro-login.html?plano=afiliado">Afiliados</a>
+      <a href="mailto:suporte@mestrepro.com.br">Contato</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/termos.html">Privacidade</a>
+      <a href="/cookies.html" style="color:var(--text)">Cookies</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 MestrePro. Todos os direitos reservados.</span>
+    <span>Feito com ❤️ no Brasil</span>
+  </div>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{
+  document.querySelector('nav').style.background = window.scrollY>50 ? 'rgba(10,10,9,0.95)' : 'rgba(10,10,9,0.8)';
+});
+
+// Carregar preferências salvas
+(function(){
+  const prefs = JSON.parse(localStorage.getItem('pp_cookie_prefs')||'{}');
+  if(prefs.desempenho === false) document.getElementById('pref-desempenho').checked = false;
+  if(prefs.preferencias === false) document.getElementById('pref-preferencias').checked = false;
+})();
+
+function salvarPreferencias(){
+  const prefs = {
+    desempenho:  document.getElementById('pref-desempenho').checked,
+    preferencias:document.getElementById('pref-preferencias').checked,
+    salvoEm:     new Date().toISOString()
+  };
+  localStorage.setItem('pp_cookie_prefs', JSON.stringify(prefs));
+  const btn = document.querySelector('.pref-save-btn');
+  btn.textContent = '✅ Preferências salvas!';
+  btn.style.background = 'var(--green)';
+  setTimeout(()=>{ btn.textContent='Salvar preferências'; btn.style.background=''; },2500);
+}
+function salvarPref(){ /* chamado no onchange para feedback visual imediato */ }
+</script>
+</body>
+</html>

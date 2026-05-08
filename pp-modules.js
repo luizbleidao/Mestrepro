@@ -1,3 +1,56 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// valorExtenso — converte número para texto em PT-BR (até R$ 999.999.999,99)
+// Extraída como utilitária global para evitar duplicação.
+// ─────────────────────────────────────────────────────────────────────────────
+function valorExtenso(n) {
+  const v      = Math.round(n * 100);
+  const reais  = Math.floor(v / 100);
+  const cts    = v % 100;
+  const nums   = ['zero','um','dois','três','quatro','cinco','seis','sete','oito','nove',
+    'dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+  const dezenas  = ['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+  // centenas[1] = 'cento' para compostos (101-199); 'cem' exato é tratado separadamente
+  const centenas = ['','cento','duzentos','trezentos','quatrocentos','quinhentos',
+                    'seiscentos','setecentos','oitocentos','novecentos'];
+
+  function ext(n) {
+    if (n === 0)   return '';
+    if (n < 20)    return nums[n];
+    if (n < 100)   { const d=Math.floor(n/10); const u=n%10; return dezenas[d]+(u?' e '+nums[u]:''); }
+    if (n < 1000)  {
+      if (n === 100) return 'cem';
+      const c=Math.floor(n/100); const r=n%100;
+      return centenas[c]+(r?' e '+ext(r):'');
+    }
+    if (n < 1000000) {
+      const m=Math.floor(n/1000); const r=n%1000;
+      const sep = r ? (r < 100 ? ' e ' : ' ') : '';
+      return ext(m)+' mil'+sep+(r?ext(r):'');
+    }
+    if (n < 1000000000) {
+      const m=Math.floor(n/1000000); const r=n%1000000;
+      const palavra = m === 1 ? ' milhão' : ' milhões';
+      // 'de' antes de reais quando é múltiplo exato de milhão (ex: "dois milhões de reais")
+      // tratado na linha abaixo via flag; aqui só monta o extenso numérico
+      const sep = r ? ' e ' : '';  // sempre 'e' entre milhões e o restante (PT-BR)
+      return ext(m)+palavra+sep+(r?ext(r):'');
+    }
+    return n.toLocaleString('pt-BR') + ' (extenso indisponível)';
+  }
+
+  // Casos especiais de concordância em PT-BR
+  let sufixoReais;
+  if (reais === 0)                        sufixoReais = ' reais';
+  else if (reais === 1)                   sufixoReais = ' real';
+  else if (reais % 1000000 === 0)         sufixoReais = ' de reais';   // "dois milhões de reais"
+  else                                    sufixoReais = ' reais';
+
+  let s = ext(reais) + sufixoReais;
+  if (s.startsWith(' ')) s = 'Zero' + s;  // caso reais === 0
+  if (cts > 0) s += ' e ' + ext(cts) + (cts === 1 ? ' centavo' : ' centavos');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 // ═══════════════════════════════════════════════════════════════
 // MestrePro — Módulos: Contratos, Recibos, Agenda
 // ═══════════════════════════════════════════════════════════════
@@ -228,17 +281,18 @@ async function salvarContrato(existingId) {
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
     await sb.from('contratos').upsert({ ...obj, user_id: uid }, { onConflict: 'id' });
-  } else {
-    const idx = _contratos.findIndex(c => c.id === id);
-    if (idx >= 0) _contratos[idx] = obj; else _contratos.unshift(obj);
-    localStorage.setItem('pp_contratos', JSON.stringify(_contratos));
   }
 
+  // Sempre atualiza o array em memória (necessário para renderização em ambos os modos)
   if (existingId) {
     const idx = _contratos.findIndex(c => c.id === id);
     if (idx >= 0) _contratos[idx] = obj;
   } else {
     _contratos.unshift(obj);
+  }
+  // Persiste no localStorage apenas no modo demo
+  if (!uid || uid === 'demo') {
+    localStorage.setItem('pp_contratos', JSON.stringify(_contratos));
   }
 
   closeModuleModal();
@@ -263,14 +317,53 @@ async function gerarLinkContratoAssinatura(contratoId) {
   if (!token) {
     token = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2,'0')).join('');
     ct.sig_token = token;
+    // Expiração de 30 dias a partir da geração do link
+    const expires = new Date(Date.now() + 30*24*60*60*1000).toISOString();
+    ct.sig_token_expires_at = expires;
     const uid = USER?.id;
-    if (uid && uid !== 'demo') await sb.from('contratos').update({ sig_token: token }).eq('id', contratoId);
-    else localStorage.setItem('pp_contratos', JSON.stringify(_contratos));
+    if (uid && uid !== 'demo') {
+      await sb.from('contratos').update({ sig_token: token, sig_token_expires_at: expires }).eq('id', contratoId);
+    } else {
+      localStorage.setItem('pp_contratos', JSON.stringify(_contratos));
+    }
   }
-  const url = `${window.PP.appUrl}/pintopro-assinar.html?token=${token}&tipo=contrato`;
-  const wppMsg = encodeURIComponent(`Olá ${ct.cliente}! Segue o link para assinar o Contrato de Serviço #${ct.numero} digitalmente:\n${url}`);
+  const url     = `${window.PP.appUrl}/pintopro-assinar.html?token=${token}&tipo=contrato`;
+  const wppMsg  = encodeURIComponent(`Olá ${ct.cliente}! Segue o link para assinar o Contrato de Serviço #${ct.numero} digitalmente:\n${url}`);
+  const wppLink = `https://wa.me/?text=${wppMsg}`;
+
   notif('🔗 Link gerado!');
-  alert(`Link de assinatura:\n${url}\n\nEnvie ao cliente pelo WhatsApp ou copie o link.`);
+
+  // Modal com opções: copiar link ou abrir WhatsApp
+  const modal = document.createElement('div');
+  modal.id = 'sig-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);';
+  modal.innerHTML = `
+    <div style="background:var(--surf,#1a1a18);border:1px solid var(--border,#2a2a26);border-radius:14px;padding:28px 24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;">🔗 Link de assinatura gerado</div>
+      <div style="font-size:12px;color:var(--text2,#a09080);margin-bottom:16px;">
+        Envie ao cliente para assinar digitalmente o Contrato #${ct.numero}<br>
+        <span style="color:#f59e0b;">⏱ Válido por 30 dias · Expira em ${new Date(expires).toLocaleDateString('pt-BR')}</span>
+      </div>
+      <input id="sig-url-input" value="${url}" readonly
+        style="width:100%;background:var(--surf2,#131311);border:1px solid var(--border,#2a2a26);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text,#f2ede6);margin-bottom:14px;outline:none;" />
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button onclick="navigator.clipboard.writeText('${url}').then(()=>notif('✅ Link copiado!'))" 
+          style="flex:1;padding:11px;background:var(--surf2,#131311);border:1px solid var(--border,#2a2a26);border-radius:9px;color:var(--text,#f2ede6);font-size:13px;font-weight:600;cursor:pointer;">
+          📋 Copiar link
+        </button>
+        <a href="${wppLink}" target="_blank" rel="noopener"
+          style="flex:1;padding:11px;background:#25d366;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </a>
+      </div>
+      <button onclick="document.getElementById('sig-modal')?.remove()" 
+        style="width:100%;margin-top:12px;padding:9px;background:transparent;border:1px solid var(--border,#2a2a26);border-radius:9px;color:var(--text2,#a09080);font-size:12px;cursor:pointer;">
+        Fechar
+      </button>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
 }
 
 async function gerarPDFContrato(contratoId) {
@@ -291,27 +384,7 @@ async function gerarPDFContrato(contratoId) {
   const t2Nome = ct.dados?.t2_nome || '';
   const t2Cpf = ct.dados?.t2_cpf || '';
 
-  // Valor por extenso (simplificado)
-  function valorExtenso(n) {
-    const v = Math.round(n * 100);
-    const reais = Math.floor(v / 100);
-    const cts = v % 100;
-    const nums = ['zero','um','dois','três','quatro','cinco','seis','sete','oito','nove',
-      'dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
-    const dezenas = ['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
-    const centenas = ['','cem','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
-    function ext(n) {
-      if (n < 20) return nums[n] || String(n);
-      if (n < 100) { const d=Math.floor(n/10); const u=n%10; return dezenas[d]+(u?' e '+nums[u]:''); }
-      if (n < 1000) { const c=Math.floor(n/100); const r=n%100; if(n===100)return'cem'; return centenas[c]+(r?' e '+ext(r):''); }
-      if (n < 1000000) { const m=Math.floor(n/1000); const r=n%1000; return ext(m)+' mil'+(r?' e '+ext(r):''); }
-      return String(n);
-    }
-    let s = ext(reais) + (reais === 1 ? ' real' : ' reais');
-    if (cts > 0) s += ' e ' + ext(cts) + (cts === 1 ? ' centavo' : ' centavos');
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
-
+  // valorExtenso agora é função global (ver topo do arquivo)
   const valorFmt = 'R$ ' + Number(ct.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
   const valorExt = valorExtenso(Number(ct.valor||0));
 
@@ -641,12 +714,19 @@ async function salvarRecibo(existingId, contratoId) {
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
     await sb.from('recibos').upsert({ ...obj, user_id: uid, orc_id: null, data: new Date().toISOString().split('T')[0] }, { onConflict: 'id' });
-  } else {
+  }
+
+  // Sempre atualiza o array em memória (necessário para renderização em ambos os modos)
+  if (existingId) {
     const idx = _recibos.findIndex(r => r.id === id);
-    if (idx >= 0) _recibos[idx] = obj; else _recibos.unshift(obj);
+    if (idx >= 0) _recibos[idx] = obj;
+  } else {
+    _recibos.unshift(obj);
+  }
+  // Persiste no localStorage apenas no modo demo
+  if (!uid || uid === 'demo') {
     localStorage.setItem('pp_recibos', JSON.stringify(_recibos));
   }
-  if (!existingId) _recibos.unshift(obj);
 
   closeModuleModal();
   if (document.getElementById('s-recibos')) renderRecibos();
@@ -672,27 +752,7 @@ function gerarPDFRecibo(reciboId) {
   const fmtPgto = { pix:'PIX', dinheiro:'Dinheiro em espécie', transferencia:'Transferência bancária', cartao:'Cartão de crédito/débito', cheque:'Cheque' };
   const cliDoc = r.cli_doc || '';
 
-  // Valor por extenso
-  function valorExtenso(n) {
-    const v = Math.round(n * 100);
-    const reais = Math.floor(v / 100);
-    const cts = v % 100;
-    const nums = ['zero','um','dois','três','quatro','cinco','seis','sete','oito','nove',
-      'dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
-    const dezenas = ['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
-    const centenas = ['','cem','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
-    function ext(n) {
-      if (n < 20) return nums[n] || String(n);
-      if (n < 100) { const d=Math.floor(n/10); const u=n%10; return dezenas[d]+(u?' e '+nums[u]:''); }
-      if (n < 1000) { const c=Math.floor(n/100); const r=n%100; if(n===100)return'cem'; return centenas[c]+(r?' e '+ext(r):''); }
-      if (n < 1000000) { const m=Math.floor(n/1000); const r=n%1000; return ext(m)+' mil'+(r?' e '+ext(r):''); }
-      return String(n);
-    }
-    let s = ext(reais) + (reais === 1 ? ' real' : ' reais');
-    if (cts > 0) s += ' e ' + ext(cts) + (cts === 1 ? ' centavo' : ' centavos');
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
-
+  // valorExtenso agora é função global (ver topo do arquivo)
   const valorFmt = 'R$ ' + Number(r.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
   const valorExt = valorExtenso(Number(r.valor||0));
   const reciboCodigo = 'PP-RB-' + r.numero + '-' + String(r.id || '').slice(-6).toUpperCase();
@@ -1000,13 +1060,19 @@ async function salvarEvento(existingId) {
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
     await sb.from('agenda').upsert({ ...obj, user_id: uid }, { onConflict: 'id' });
-  } else {
+  }
+
+  // Sempre atualiza o array em memória (necessário para renderização em ambos os modos)
+  if (existingId) {
     const idx = _eventos.findIndex(e => e.id === id);
-    if (idx >= 0) _eventos[idx] = obj; else _eventos.push(obj);
+    if (idx >= 0) _eventos[idx] = obj;
+  } else {
+    _eventos.push(obj);
+  }
+  // Persiste no localStorage apenas no modo demo
+  if (!uid || uid === 'demo') {
     localStorage.setItem('pp_agenda', JSON.stringify(_eventos));
   }
-  if (!existingId) _eventos.push(obj);
-  else { const idx = _eventos.findIndex(e => e.id === id); if (idx >= 0) _eventos[idx] = obj; }
 
   closeModuleModal();
   renderAgenda();

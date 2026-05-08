@@ -664,7 +664,21 @@ const CONSULTOR = new Proxy({}, {
 });
 
 // ═══════════════ SUPABASE SYNC ═══════════════
-const _lpSb=supabase.createClient(window.PP.supabaseUrl,window.PP.supabaseKey);
+// Criação segura do cliente Supabase — não quebra se credenciais estiverem vazias
+let _lpSb = null;
+(function(){
+  try {
+    const url = window.PP?.supabaseUrl;
+    const key = window.PP?.supabaseKey;
+    if (url && key && url.startsWith('https://')) {
+      _lpSb = supabase.createClient(url, key);
+    } else {
+      console.info('[Laudos] Credenciais Supabase não configuradas — modo local ativado.');
+    }
+  } catch(e) {
+    console.warn('[Laudos] Falha ao iniciar Supabase:', e.message);
+  }
+})();
 
 function _lpGetUserId(){ return sessionStorage.getItem('pp_user_id')||null; }
 
@@ -675,7 +689,7 @@ function _laudosKey(){ return LAUDOS_KEY + '_' + (_lpGetUserId()||'anon'); }
 function _lpNotifyParent(){ try{ window.parent.postMessage({type:'pp_ldo_updated'},'*'); }catch(e){} }
 
 async function _syncLaudoSupabase(snap){
-  const userId=_lpGetUserId(); if(!userId)return;
+  const userId=_lpGetUserId(); if(!userId || !_lpSb)return;
   try{
     await _lpSb.from('laudos').upsert({
       id:String(snap.id),
@@ -732,7 +746,32 @@ function getSubstCheck(s){
 }
 
 // ═══════════════ STORAGE ═══════════════
-function loadLaudos(){ try{LAUDOS=JSON.parse(localStorage.getItem(_laudosKey())||'[]');}catch{LAUDOS=[];} }
+function loadLaudos(){
+  try{ LAUDOS = JSON.parse(localStorage.getItem(_laudosKey()) || '[]'); }
+  catch{ LAUDOS = []; }
+
+  // ── Migração automática de laudos em chaves antigas ─────────────────────
+  // Situação: laudos salvos antes do versionamento por userId ficam em:
+  //   1) LAUDOS_KEY puro ('st_laudos_v3')  → versão muito antiga
+  //   2) LAUDOS_KEY + '_anon'              → criados antes de fazer login
+  // Se o usuário está logado e a lista está vazia, tenta importar dessas chaves.
+  if (LAUDOS.length === 0 && _lpGetUserId()) {
+    const legacyKeys = [LAUDOS_KEY, LAUDOS_KEY + '_anon'];
+    for (const legacyKey of legacyKeys) {
+      if (legacyKey === _laudosKey()) continue; // evitar loop na mesma chave
+      try {
+        const legacyData = JSON.parse(localStorage.getItem(legacyKey) || '[]');
+        if (legacyData.length > 0) {
+          LAUDOS = legacyData;
+          saveLaudos(); // salva na chave correta (com userId)
+          localStorage.removeItem(legacyKey); // limpa a chave antiga
+          console.info(`[Laudos] ${legacyData.length} laudo(s) migrado(s) de "${legacyKey}" para "${_laudosKey()}"`);
+          break;
+        }
+      } catch(e) { /* ignora erros de parse */ }
+    }
+  }
+}
 function saveLaudos(){ localStorage.setItem(_laudosKey(),JSON.stringify(LAUDOS)); }
 function saveCurrent(){
  if(!D.id)return;
@@ -966,12 +1005,14 @@ async function gerarLinkAssinaturaLaudo(laudoId){
   if(!token){
     token = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
     laudo.sigToken = token;
-    // Save to local
-    localStorage.setItem(LAUDOS_KEY, JSON.stringify(LAUDOS));
-    // Persist token to Supabase
-    try{
-      await _lpSb.from('laudos').update({sig_token: token}).eq('id', laudoId).eq('user_id', uid);
-    }catch(e){ console.warn('Falha ao salvar sig_token no laudo:', e); }
+    // Salvar com chave correta (inclui userId para não colidir entre usuários)
+    saveLaudos();
+    // Persistir token no Supabase se disponível
+    if (_lpSb) {
+      try{
+        await _lpSb.from('laudos').update({sig_token: token}).eq('id', laudoId).eq('user_id', uid);
+      }catch(e){ console.warn('Falha ao salvar sig_token no laudo:', e); }
+    }
   }
 
   const url = `${window.PP.appUrl}${window.PP.assinarPath}?token=${token}`;
@@ -994,7 +1035,7 @@ async function gerarLinkAssinaturaLaudo(laudoId){
 // Merge sig fields from Supabase into local laudos
 async function _syncSigTokens(){
   const uid=sessionStorage.getItem('pp_user_id');
-  if(!uid)return;
+  if(!uid || !_lpSb)return;
   try{
     const{data}=await _lpSb.from('laudos')
       .select('id,sig_token,sig_cliente,sig_cliente_at,sig_cliente_nome')
@@ -1013,7 +1054,7 @@ async function _syncSigTokens(){
           }
         }
       });
-      if(changed)localStorage.setItem(LAUDOS_KEY,JSON.stringify(LAUDOS));
+      if(changed) saveLaudos(); // usa _laudosKey() para manter consistência
     }
   }catch(e){}
 }

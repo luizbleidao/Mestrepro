@@ -387,13 +387,11 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────
-// ALTERE AQUI para o seu e-mail
-const ADMIN_EMAIL = 'luizbleidao@gmail.com';
-
-const SUPA_URL = 'https://ufdrxucvyukgzvenfuhj.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZHJ4dWN2eXVrZ3p2ZW5mdWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDQ2NjksImV4cCI6MjA5MDYyMDY2OX0.AmnG0ECoAuSZg0a_kz2hOB98vbY5w6z8ziXBukP57dM';
+// As credenciais vêm de pp-config.js (sem hardcode aqui).
+// A autorização de admin é verificada no banco (perfil = 'admin'),
+// não por e-mail hardcoded no código-fonte.
 const { createClient } = supabase;
-const sb = createClient(SUPA_URL, SUPA_KEY);
+const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
 
 const PLANO_LABEL = { gratuito:'Gratuito', basico:'Básico', pro:'Pro', equipe:'Equipe', 'ia-pro':'IA Pro', trial:'Trial', 'pintor-std':'Pintor Standard', 'pintor-pro':'Pintor Pro', lojista:'Lojista' };
 const PLANO_VALOR = { basico:49, pro:99, equipe:179, 'ia-pro':249, 'pintor-std':69, 'pintor-pro':99, lojista:99 };
@@ -413,18 +411,23 @@ async function adminLogin(){
   const err   = document.getElementById('auth-err');
   err.classList.remove('show');
 
-  // Verificar se é o admin
-  if(email !== ADMIN_EMAIL.toLowerCase()){
-    err.textContent = 'Acesso negado. Este e-mail não tem permissão de administrador.';
-    err.classList.add('show'); return;
-  }
-
   document.getElementById('btn-adm-login').innerHTML = '<div class="spin"></div> Entrando...';
   document.getElementById('btn-adm-login').disabled = true;
 
   const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
   if(error){
-    err.textContent = error.message === 'Invalid login credentials' ? 'Senha incorreta.' : error.message;
+    err.textContent = error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message;
+    err.classList.add('show');
+    document.getElementById('btn-adm-login').innerHTML = 'Entrar no painel';
+    document.getElementById('btn-adm-login').disabled = false;
+    return;
+  }
+
+  // Verificar perfil no banco — nunca confiar em e-mail hardcoded
+  const { data: profile } = await sb.from('profiles').select('perfil').eq('id', data.user.id).single();
+  if(!profile || profile.perfil !== 'admin'){
+    await sb.auth.signOut();
+    err.textContent = 'Acesso negado. Conta sem permissão de administrador.';
     err.classList.add('show');
     document.getElementById('btn-adm-login').innerHTML = 'Entrar no painel';
     document.getElementById('btn-adm-login').disabled = false;
@@ -450,9 +453,8 @@ async function loadAll(){
 
 // ── Usuários ──────────────────────────────────────────────
 async function loadUsers(){
-  const { data, error } = await sb.from('profiles')
-    .select('id, nome, perfil, plano, tel, cidade, email, ativo, criado_em, atualizado_em, trial_fim, obs_admin')
-    .order('criado_em', { ascending: false });
+  // Usa a função RPC segura (só retorna dados para perfil = 'admin')
+  const { data, error } = await sb.rpc('get_usuarios_completos');
 
   if(error){
     console.error('loadUsers error:', error);
@@ -836,14 +838,18 @@ function notif(msg){ const n=document.getElementById('notif-el'); n.textContent=
 applyTheme();
 (async()=>{
   const { data:{ session } } = await sb.auth.getSession();
-  if(session && session.user.email === ADMIN_EMAIL){
+  if(!session){ document.getElementById('auth-screen').style.display='flex'; return; }
+
+  // Verificar perfil no banco (não confiar em dados do lado do cliente)
+  const { data: profile } = await sb.from('profiles').select('perfil').eq('id', session.user.id).single();
+  if(profile && profile.perfil === 'admin'){
     adminUser = session.user;
     document.getElementById('adm-nome-top').textContent = session.user.email;
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app-screen').style.display='block';
     loadAll();
-  } else if(session && session.user.email !== ADMIN_EMAIL){
-    // Usuário logado mas não é admin — redirecionar silenciosamente
+  } else {
+    // Sessão válida mas sem permissão de admin — encerrar silenciosamente
     await sb.auth.signOut();
     document.getElementById('auth-screen').style.display='flex';
   }

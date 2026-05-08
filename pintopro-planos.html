@@ -72,6 +72,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 @media(max-width:820px){.plans{grid-template-columns:1fr 1fr;}}
 @media(max-width:500px){.plans{grid-template-columns:1fr;}}
+.plan-aviso{font-size:11px;color:#f59e0b;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:8px 10px;margin-bottom:14px;line-height:1.5;}
 </style>
 </head>
 <body>
@@ -103,14 +104,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="notif" id="notif"></div>
 
 <script>
+// Links e preços vêm de pp-config.js — fonte única de verdade
+const _PP = window.PP;
 const PLANOS = [
   {
     id: 'basico',
     nome: 'Básico',
     desc: 'Para quem está começando',
-    mensal: 49, anual: 41, totalAnual: 490,
-    mpMensal: 'https://mpago.la/19VUY91',
-    mpAnual:  'https://mpago.la/2mBWE1i',
+    mensal: _PP.precos.basico.mensal, anual: _PP.precos.basico.eq, totalAnual: _PP.precos.basico.anual,
+    mpMensal: _PP.mpBasico,
+    mpAnual:  _PP.mpBasicoAnual,
     pop: false,
     feats: [
       'Orçamentos ilimitados',
@@ -126,9 +129,9 @@ const PLANOS = [
     id: 'pro',
     nome: 'Pro',
     desc: 'Para quem quer crescer',
-    mensal: 97, anual: 81, totalAnual: 970,
-    mpMensal: 'https://mpago.la/1ieWwdr',
-    mpAnual:  'https://mpago.la/2YpEhnF',
+    mensal: _PP.precos.pro.mensal, anual: _PP.precos.pro.eq, totalAnual: _PP.precos.pro.anual,
+    mpMensal: _PP.mpPro,
+    mpAnual:  _PP.mpProAnual,
     pop: true,
     feats: [
       'Tudo do Básico',
@@ -141,38 +144,44 @@ const PLANOS = [
     ]
   },
   {
+    // ⚠️  Plano Equipe: funcionalidades multi-usuário ainda em desenvolvimento.
+    // Assinar este plano garante acesso antecipado quando forem lançadas.
     id: 'equipe',
     nome: 'Equipe',
-    desc: 'Para times de 2-5 pessoas',
-    mensal: 197, anual: 164, totalAnual: 1970,
-    mpMensal: 'https://mpago.la/1YuzDuc',
-    mpAnual:  'https://mpago.la/15PqKDb',
+    desc: 'Multi-usuário — funcionalidades em desenvolvimento',
+    mensal: _PP.precos.equipe.mensal, anual: _PP.precos.equipe.eq, totalAnual: _PP.precos.equipe.anual,
+    mpMensal: _PP.mpEquipe,
+    mpAnual:  _PP.mpEquipeAnual,
     pop: false,
+    aviso: '⚠️ Funcionalidades multi-usuário em desenvolvimento. Você terá acesso ao plano Pro completo até o lançamento.',
     feats: [
-      'Tudo do Pro',
+      'Tudo do Pro (disponível agora)',
       'Suporte prioritário',
-      {t:'Até 5 usuários (em breve)', off:true},
-      {t:'Painéis por técnico (em breve)', off:true},
-      {t:'Relatórios por equipe (em breve)', off:true},
-      {t:'IA gerador de conteúdo (em breve)', off:true},
+      {t:'Até 5 usuários — em desenvolvimento', off:true},
+      {t:'Painéis por técnico — em desenvolvimento', off:true},
+      {t:'Relatórios por equipe — em desenvolvimento', off:true},
+      {t:'IA gerador de conteúdo — em desenvolvimento', off:true},
     ]
   },
   {
+    // ⚠️  Plano IA Pro: todos os recursos de IA ainda em desenvolvimento.
+    // É um plano de acesso antecipado — garante o menor preço no lançamento.
     id: 'ia-pro',
     nome: 'IA Pro',
-    desc: 'Acesso antecipado — recursos de IA em desenvolvimento',
-    mensal: 297, anual: 247, totalAnual: 2970,
-    mpMensal: 'https://mpago.la/1iWJVWP',
-    mpAnual:  'https://mpago.la/119g9kC',
+    desc: 'Acesso antecipado — preço travado no lançamento da IA',
+    mensal: _PP.precos['ia-pro'].mensal, anual: _PP.precos['ia-pro'].eq, totalAnual: _PP.precos['ia-pro'].anual,
+    mpMensal: _PP.mpIaPro,
+    mpAnual:  _PP.mpIaProAnual,
     pop: false,
+    aviso: '⚠️ Este é um plano de acesso antecipado (early access). Todos os recursos de IA estão em desenvolvimento. Ao assinar, você trava o preço atual e tem acesso ao plano Equipe até o lançamento completo.',
     feats: [
-      'Tudo do Equipe',
-      '🔒 Acesso garantido a todos os recursos de IA',
-      {t:'IA gera orçamentos (em breve)', off:true},
-      {t:'IA analisa foto de patologia (em breve)', off:true},
-      {t:'IA responde clientes via WhatsApp (em breve)', off:true},
-      {t:'Painel de afiliados 30% (em breve)', off:true},
-      {t:'Gerador de posts/anúncios (em breve)', off:true},
+      'Tudo do Equipe (disponível agora)',
+      '🔒 Preço travado — sem reajuste no lançamento',
+      {t:'IA gera orçamentos — em desenvolvimento', off:true},
+      {t:'IA analisa foto de patologia — em desenvolvimento', off:true},
+      {t:'IA responde clientes via WhatsApp — em desenvolvimento', off:true},
+      {t:'Painel de afiliados 30% — em desenvolvimento', off:true},
+      {t:'Gerador de posts/anúncios — em desenvolvimento', off:true},
     ]
   },
 ];
@@ -207,13 +216,53 @@ carregarUserId();
  * O webhook espera exatamente esse formato para ativar o plano correto.
  */
 function buildMpLink(baseLink, planoId, isAnual) {
-  if (!baseLink || !userId) return baseLink;
+  if (!baseLink) return '#';
+  // Se ainda não temos o userId, o checkout é bloqueado no clique (ver onclick abaixo)
+  // Não retornamos o link sem external_reference — sem ele o webhook não ativa o plano
+  if (!userId) return '#';
   // ia-pro → iapro  (sem hífen, conforme PLANO_MAP da edge function)
   const idNormalizado = planoId.replace('-', '');
   const periodo       = isAnual ? 'anual' : 'mensal';
   const planoKey      = `mestrepro_${idNormalizado}_${periodo}`;
   const extRef        = encodeURIComponent(`${userId}:${planoKey}`);
   return `${baseLink}?external_reference=${extRef}`;
+}
+
+// Intercepta cliques em links de checkout quando userId ainda não carregou
+function handleCheckoutClick(evt, planoId, isAnual) {
+  if (!userId) {
+    evt.preventDefault();
+    notifPlanos('⏳ Aguarde — identificando sua conta...');
+    // Aguardar até 3s por carregarUserId() e tentar de novo
+    let tentativas = 0;
+    const espera = setInterval(() => {
+      tentativas++;
+      if (userId) {
+        clearInterval(espera);
+        const link = buildMpLink(isAnual ? PLANOS.find(p=>p.id===planoId)?.mpAnual : PLANOS.find(p=>p.id===planoId)?.mpMensal, planoId, isAnual);
+        if (link && link !== '#') window.open(link, '_blank');
+      } else if (tentativas >= 6) {
+        clearInterval(espera);
+        notifPlanos('❌ Não foi possível identificar sua conta. Faça login novamente.');
+      }
+    }, 500);
+    return;
+  }
+  // userId disponível — deixa o link href funcionar normalmente
+}
+
+function notifPlanos(msg) {
+  let n = document.getElementById('notif-planos');
+  if (!n) {
+    n = document.createElement('div');
+    n.id = 'notif-planos';
+    n.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a18;border:1px solid #2a2a26;padding:10px 20px;border-radius:99px;font-size:13px;color:#f2ede6;z-index:9999;transition:.3s;';
+    document.body.appendChild(n);
+  }
+  n.textContent = msg;
+  n.style.opacity = '1';
+  clearTimeout(n._t);
+  n._t = setTimeout(() => { n.style.opacity = '0'; }, 3000);
 }
 
 function renderPlans() {
@@ -242,6 +291,7 @@ function renderPlans() {
     <div class="plan${p.pop?' pop':''}">
       ${p.pop ? '<div class="pop-tag">⭐ Mais popular</div>' : ''}
       ${isAtual ? '<div class="curr-badge">✓ Seu plano atual</div>' : ''}
+      ${p.aviso ? `<div class="plan-aviso">${p.aviso}</div>` : ''}
       <div class="p-name">${p.nome}</div>
       <div class="p-desc">${p.desc}</div>
       <div class="p-price">
@@ -252,7 +302,9 @@ function renderPlans() {
       <ul class="p-feats">${feats}</ul>
       <a href="${isAtual ? '#' : link}"
          class="p-btn ${p.pop?'solid':'ghost'}"
-         ${isAtual ? 'onclick="notif(\'Você já está neste plano ✓\');return false;"' : 'target="_blank" rel="noopener"'}
+         ${isAtual
+           ? 'onclick="notif(\'Você já está neste plano ✓\');return false;"'
+           : `onclick="handleCheckoutClick(event,'${p.id}',${anual})" target="_blank" rel="noopener"`}
       >${btnLabel}</a>
     </div>`;
   }).join('');
