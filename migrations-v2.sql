@@ -153,6 +153,14 @@ ALTER TABLE afiliados ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comissoes ENABLE ROW LEVEL SECURITY;
 
 -- Usuário vê apenas seus próprios dados
+-- DROP antes de recriar — evita erro se policy já existir de deploy anterior
+DROP POLICY IF EXISTS "user_own_subscription"     ON subscriptions;
+DROP POLICY IF EXISTS "user_own_pagamentos"        ON pagamentos;
+DROP POLICY IF EXISTS "user_own_afiliados"         ON afiliados;
+DROP POLICY IF EXISTS "user_own_comissoes"         ON comissoes;
+DROP POLICY IF EXISTS "admin_all_subscriptions"    ON subscriptions;
+DROP POLICY IF EXISTS "admin_all_pagamentos"       ON pagamentos;
+
 CREATE POLICY "user_own_subscription" ON subscriptions FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "user_own_pagamentos"   ON pagamentos   FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "user_own_afiliados"    ON afiliados    FOR ALL USING (auth.uid() = user_id);
@@ -228,7 +236,7 @@ CREATE OR REPLACE VIEW v_usuarios_completos AS
 SELECT
   p.id,
   p.nome,
-  p.email,
+  u.email,          -- email vem de auth.users (não está em profiles)
   p.plano,
   p.perfil,
   p.tel,
@@ -240,6 +248,7 @@ SELECT
   (SELECT COUNT(*) FROM pagamentos pg WHERE pg.user_id = p.id AND pg.status = 'aprovado') AS total_pagamentos,
   (SELECT COALESCE(SUM(valor),0) FROM pagamentos pg WHERE pg.user_id = p.id AND pg.status = 'aprovado') AS receita_total
 FROM profiles p
+LEFT JOIN auth.users u ON u.id = p.id
 LEFT JOIN subscriptions s ON s.user_id = p.id;
 
 -- Somente admins podem ver essa view

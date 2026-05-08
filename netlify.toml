@@ -1,4 +1,5 @@
 [build]
+  command = "node inject-env.js"
   publish = "."
 
 # ── Rotas limpas ──────────────────────────────────────────────────────────
