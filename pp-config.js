@@ -5,28 +5,11 @@
 window.PP = {
 
   // ─── Supabase ──────────────────────────────────────────────────────
-  //
-  // ⚠️  SEGURANÇA: NÃO commite credenciais reais se o repositório
-  //     for público. Siga um destes dois caminhos:
-  //
-  //  OPÇÃO A — Netlify (recomendado para produção):
-  //    1. No painel Netlify → Site settings → Environment variables
-  //    2. Crie: SUPABASE_URL  e  SUPABASE_ANON_KEY
-  //    3. Use um script de build (ou netlify-plugin-inline-env) para
-  //       substituir os placeholders abaixo antes do deploy.
-  //
-  //  OPÇÃO B — Desenvolvimento local:
-  //    1. Crie o arquivo `pp-config.local.js` (listado no .gitignore)
-  //    2. Coloque as credenciais reais lá e carregue-o antes deste
-  //       arquivo via <script src="pp-config.local.js">
-  //    3. Este arquivo permanece sem credenciais no repositório.
-  //
-  supabaseUrl: window.__SUPABASE_URL__  || '',
-  supabaseKey: window.__SUPABASE_ANON__ || '',
+  supabaseUrl: 'https://ufdrxucvyukgzvenfuhj.supabase.co',
+  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZHJ4dWN2eXVrZ3p2ZW5mdWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDQ2NjksImV4cCI6MjA5MDYyMDY2OX0.AmnG0ECoAuSZg0a_kz2hOB98vbY5w6z8ziXBukP57dM',
 
   // ─── URLs do app ───────────────────────────────────────────────────
-  // Em produção, ajuste para sua URL do Netlify:
-  appUrl:      window.location.origin,
+  appUrl:      'https://mestrepro.space',
   assinarPath: '/pintopro-assinar.html',
   planosPath:  '/pintopro-planos.html',
 
