@@ -2605,6 +2605,10 @@ document.addEventListener('drop',e=>{
 
 // ─── INIT ────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
+ // Sinaliza ao pai que o iframe está pronto — pai responde com syncUser
+ if(window.self !== window.top){
+   window.parent.postMessage({ type: 'pp_iframe_ready', src: 'laudos' }, '*');
+ }
  loadLaudos(); render();
  // Load prof sig from unified storage (safe — no DOM needed)
  const _unified=localStorage.getItem('pp_sig_profissional');
@@ -2618,6 +2622,11 @@ document.addEventListener('DOMContentLoaded',()=>{
    if(!e.data || e.data.type !== 'pp_cmd') return;
    const cmd = e.data.cmd;
    if(cmd === 'startNewLaudo'){ startNewLaudo(); }
+   if(cmd === 'syncUser'){
+     // Recebe userId e plano do app pai — sessionStorage é isolado por iframe
+     if(e.data.userId) sessionStorage.setItem('pp_user_id',    e.data.userId);
+     if(e.data.plano)  sessionStorage.setItem('pp_user_plano', e.data.plano);
+   }
    if(cmd === 'syncTheme'){
      // laudos tem tema próprio mas podemos adaptar o fundo
      const isDark = e.data.theme === 'dark';

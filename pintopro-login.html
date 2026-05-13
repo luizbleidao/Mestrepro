@@ -423,6 +423,14 @@ async function cadastrar(){
   const{data:signUpData, error}=await sb.auth.signUp({email,password:senha,options:{data:{nome,tel,cidade,perfil}}});
   if(error){showMsg('ec',error.message,'err');setBtn('btn-cad','Criar conta e escolher plano',false);return;}
 
+  // Supabase retorna user sem session quando o e-mail já existe (anti-enumeração)
+  // Detectar esse caso e mostrar mensagem clara ao usuário
+  if(signUpData?.user && !signUpData?.session){
+    showMsg('ec','Este e-mail já está cadastrado. Faça login ou recupere sua senha abaixo.','err');
+    setBtn('btn-cad','Criar conta e escolher plano',false);
+    return;
+  }
+
   // Criar perfil com plano 'trial' imediatamente após o cadastro
   // Garante que o trial de 7 dias começa mesmo que o usuário feche sem escolher um plano pago
   // O trigger trg_set_trial_fim no banco define trial_fim = agora + 7 dias automaticamente

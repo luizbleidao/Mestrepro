@@ -115,3 +115,6 @@
   [headers.values]
     X-Frame-Options  = "ALLOWALL"
     Cache-Control    = "no-cache, must-revalidate"
+    # Override do CSP global: permite embedding em qualquer origem para assinatura externa
+    # frame-ancestors * sobrescreve o 'self' definido no header global
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; img-src 'self' data: blob:; frame-ancestors *; object-src 'none';"

@@ -792,7 +792,7 @@ async function init(){
 // Envia dados do usuário autenticado para todos os iframes via postMessage
 // Necessário porque sessionStorage NAO e compartilhado entre parent e iframes
 function _broadcastUser(){
-  const ids=['orc-fr','ldo-fr','pst-fr'];
+  const ids=['orc-fr','ldo-fr','posts-fr'];
   ids.forEach(id=>{
     const fr=document.getElementById(id);
     if(fr&&fr.contentWindow){
@@ -820,6 +820,10 @@ function setup(){
   window.addEventListener('message', e => {
     if(e.data?.type==='pp_orc_updated' || e.data?.type==='pp_ldo_updated'){
       loadDashboard();
+    }
+    // Iframe sinalizou que carregou — reenviar plano/userId (garante sync mesmo se iframe carregar após auth)
+    if(e.data?.type==='pp_iframe_ready' && USER && PLANO){
+      _broadcastUser();
     }
   });
 }

@@ -471,6 +471,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
   // ── Detectar se está rodando dentro de iframe no app principal
   const _inIframe = window.self !== window.top;
   if(_inIframe){
+    // Sinaliza ao pai que o iframe está pronto — pai responde com syncUser
+    window.parent.postMessage({ type: 'pp_iframe_ready', src: 'orcamentos' }, '*');
     // Oculta topbar e dashboard header — o app pai já tem esses elementos
     const style = document.createElement('style');
     style.textContent = `

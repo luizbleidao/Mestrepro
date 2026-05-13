@@ -424,8 +424,8 @@ async function adminLogin(){
   }
 
   // Verificar perfil no banco — nunca confiar em e-mail hardcoded
-  const { data: profile } = await sb.from('profiles').select('perfil').eq('id', data.user.id).single();
-  if(!profile || profile.perfil !== 'admin'){
+  const { data: profile } = await sb.from('profiles').select('perfil, is_admin').eq('id', data.user.id).single();
+  if(!profile || (profile.perfil !== 'admin' && !profile.is_admin)){
     await sb.auth.signOut();
     err.textContent = 'Acesso negado. Conta sem permissão de administrador.';
     err.classList.add('show');
@@ -841,8 +841,8 @@ applyTheme();
   if(!session){ document.getElementById('auth-screen').style.display='flex'; return; }
 
   // Verificar perfil no banco (não confiar em dados do lado do cliente)
-  const { data: profile } = await sb.from('profiles').select('perfil').eq('id', session.user.id).single();
-  if(profile && profile.perfil === 'admin'){
+  const { data: profile } = await sb.from('profiles').select('perfil, is_admin').eq('id', session.user.id).single();
+  if(profile && (profile.perfil === 'admin' || profile.is_admin)){
     adminUser = session.user;
     document.getElementById('adm-nome-top').textContent = session.user.email;
     document.getElementById('auth-screen').style.display='none';
