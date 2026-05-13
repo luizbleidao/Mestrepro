@@ -777,7 +777,7 @@ async function init(){
   USER=session.user;
   // Verifica e expira o trial se necessário (chama função no banco)
   // Seguro: a função SECURITY DEFINER só afeta o próprio usuário
-  await sb.rpc('verificar_expiracao_trial', { p_user_id: USER.id }).catch(()=>{});
+  try { await sb.rpc('verificar_expiracao_trial', { p_user_id: USER.id }); } catch(e) {}
   const {data:profile}=await sb.from('profiles').select('*').eq('id',USER.id).single();
   PROFILE=profile||{nome:USER.user_metadata?.nome||USER.email,perfil:'pintor',plano:'gratuito',criado_em:USER.created_at,trial_fim:null};
   PLANO=_resolverPlano(PROFILE.plano||'gratuito');
