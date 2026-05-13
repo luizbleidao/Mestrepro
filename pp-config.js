@@ -3,8 +3,8 @@
 // Altere aqui para atualizar todas as páginas de uma vez.
 // ═══════════════════════════════════════════════════════════════════
 window.PP = {
-  supabaseUrl: 'https://ufdrxucvyukgzvenfuhj.supabase.co',
-  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZHJ4dWN2eXVrZ3p2ZW5mdWhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDQ2NjksImV4cCI6MjA5MDYyMDY2OX0.AmnG0ECoAuSZg0a_kz2hOB98vbY5w6z8ziXBukP57dM',
+  supabaseUrl: window.__SUPABASE_URL__  || '',
+  supabaseKey: window.__SUPABASE_ANON__ || '',
 
   // ─── URLs do app ───────────────────────────────────────────────────
   appUrl:      'https://mestrepro.space',
