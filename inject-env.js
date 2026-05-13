@@ -4,11 +4,12 @@
 
 const fs = require('fs');
 
-const SUPABASE_URL     = process.env.SUPABASE_URL     || '';
-const SUPABASE_ANON    = process.env.SUPABASE_ANON_KEY || '';
+const SUPABASE_URL  = process.env.SUPABASE_URL      || '';
+const SUPABASE_ANON = process.env.SUPABASE_ANON_KEY  || '';
 
 if (!SUPABASE_URL || !SUPABASE_ANON) {
-  console.warn('[inject-env] ⚠️  SUPABASE_URL ou SUPABASE_ANON_KEY não definidas — app rodará em modo local.');
+  console.error('[inject-env] ❌ SUPABASE_URL ou SUPABASE_ANON_KEY não definidas.');
+  process.exit(1);
 }
 
 let config = fs.readFileSync('pp-config.js', 'utf8');
