@@ -382,6 +382,18 @@ function limparHistorico() {
 // Sync tema com app pai
 window.addEventListener('message', e => {
   if (!e.data || e.data.type !== 'pp_cmd') return;
+  if (e.data.cmd === 'syncUser') {
+    // Recebe userId e plano do app pai — necessário pois sessionStorage é isolado por iframe
+    if (e.data.userId) sessionStorage.setItem('pp_user_id',    e.data.userId);
+    if (e.data.plano)  sessionStorage.setItem('pp_user_plano', e.data.plano);
+    // Atualiza estado do botão de gerar post com IA
+    const btn = document.getElementById('btnGerar');
+    if (btn) {
+      const temIA = _getUserPlano() === 'ia-pro';
+      btn.disabled    = !temIA;
+      btn.textContent = temIA ? '✨ Gerar Post com IA' : '🔒 Disponível apenas no plano IA Pro';
+    }
+  }
   if (e.data.cmd === 'syncTheme') {
     const d = e.data.theme === 'dark';
     document.documentElement.style.setProperty('--bg',     d ? '#0a0a09' : '#f8fafc');
