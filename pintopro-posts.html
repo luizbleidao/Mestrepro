@@ -226,6 +226,11 @@ function _getUserPlano(){ return sessionStorage.getItem('pp_user_plano') || 'gra
 
 // ─── Init ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  // Sinaliza ao pai que o iframe está pronto — pai responde com syncUser
+  if (window.self !== window.top) {
+    window.parent.postMessage({ type: 'pp_iframe_ready', src: 'posts' }, '*');
+  }
+
   // Pré-preencher cidade e empresa dos dados salvos
   try {
     const emp = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
