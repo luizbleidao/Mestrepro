@@ -785,6 +785,24 @@ async function init(){
   sessionStorage.setItem('pp_user_id', USER.id);
   sessionStorage.setItem('pp_user_plano', PLANO);
   setup();
+  // Propaga plano e userId para todos os iframes (sessionStorage é isolado por frame)
+  _broadcastUser();
+}
+
+// Envia dados do usuário autenticado para todos os iframes via postMessage
+// Necessário porque sessionStorage NAO e compartilhado entre parent e iframes
+function _broadcastUser(){
+  const ids=['orc-fr','ldo-fr','pst-fr'];
+  ids.forEach(id=>{
+    const fr=document.getElementById(id);
+    if(fr&&fr.contentWindow){
+      fr.contentWindow.postMessage({
+        type:'pp_cmd', cmd:'syncUser',
+        userId: USER?.id||'',
+        plano:  PLANO||'gratuito'
+      },'*');
+    }
+  });
 }
 
 function setup(){
@@ -920,10 +938,18 @@ function iframeReady(ifrId, loaderId){
   const ld = document.getElementById(loaderId);
   if(fr){ fr.classList.add('loaded'); }
   if(ld){ ld.classList.add('hidden'); setTimeout(()=>{ ld.style.display='none'; }, 350); }
-  // Sincroniza tema após carregamento
   if(fr && fr.contentWindow){
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    // Sincroniza tema após carregamento
     fr.contentWindow.postMessage({type:'pp_cmd', cmd:'syncTheme', theme}, '*');
+    // Sincroniza usuario/plano — sessionStorage nao e compartilhado entre frames
+    if(USER && PLANO){
+      fr.contentWindow.postMessage({
+        type:'pp_cmd', cmd:'syncUser',
+        userId: USER.id||'',
+        plano:  PLANO||'gratuito'
+      }, '*');
+    }
   }
 }
 

@@ -1386,6 +1386,13 @@ window.addEventListener('message', e => {
   if(!e.data || e.data.type !== 'pp_cmd') return;
   const cmd = e.data.cmd;
   if(cmd === 'novoOrcamento'){ novoOrcamento(); }
+  if(cmd === 'syncUser'){
+    // Recebe userId e plano do app pai — necessário pois sessionStorage é isolado por iframe
+    if(e.data.userId) sessionStorage.setItem('pp_user_id',   e.data.userId);
+    if(e.data.plano)  sessionStorage.setItem('pp_user_plano', e.data.plano);
+    // Re-renderiza botões de IA com o plano correto
+    _refreshIAState();
+  }
   if(cmd === 'syncTheme'){
     const isDark = e.data.theme === 'dark';
     // Adaptar cores para o tema do app pai
@@ -1399,6 +1406,28 @@ window.addEventListener('message', e => {
     document.body.style.background = isDark ? '#0a0a09' : '#f8fafc';
   }
 });
+
+// Atualiza estado dos botões de IA após receber o plano via postMessage
+function _refreshIAState(){
+  const plano = _getUserPlano();
+  const temIA  = plano === 'ia-pro';
+  // Botão principal de IA de orçamentos
+  const btnIA = document.querySelector('.ia-btn');
+  if(btnIA){
+    btnIA.style.opacity     = temIA ? '1' : '0.45';
+    btnIA.style.cursor      = temIA ? 'pointer' : 'not-allowed';
+    btnIA.title             = temIA ? '' : 'Disponível no plano IA Pro';
+    btnIA.innerHTML         = temIA
+      ? '✨ Gerar ambientes com IA'
+      : 'IA indisponível no seu plano — upgrade para IA Pro';
+  }
+  // Botões de análise de foto por patologia
+  document.querySelectorAll('.ia-pat-btn').forEach((btn, i) => {
+    btn.disabled = !temIA;
+    btn.title    = temIA ? '' : 'Disponível no plano IA Pro';
+    btn.innerHTML= temIA ? 'Analisar com IA' : 'IA Pro necessário';
+  });
+}
 </script>
 <div class="pdf-overlay" id="pdf-overlay">
   <div class="spin-lg"></div>

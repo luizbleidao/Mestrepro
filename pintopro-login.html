@@ -426,14 +426,16 @@ async function cadastrar(){
   // Criar perfil com plano 'trial' imediatamente após o cadastro
   // Garante que o trial de 7 dias começa mesmo que o usuário feche sem escolher um plano pago
   // O trigger trg_set_trial_fim no banco define trial_fim = agora + 7 dias automaticamente
+  // NOTA: 'email' não é coluna de profiles — fica em auth.users. Removido do upsert.
   if(signUpData?.user?.id){
-    await sb.from('profiles').upsert({
+    const{error:profErr}=await sb.from('profiles').upsert({
       id:        signUpData.user.id,
-      nome, tel, cidade, email, perfil,
+      nome, tel, cidade, perfil,
       plano:     'trial',
       ativo:     true,
       criado_em: new Date().toISOString(),
-    }, { onConflict: 'id' }).catch(()=>{});
+    }, { onConflict: 'id' });
+    if(profErr) console.warn('[MestrePro] upsert profiles:', profErr.message);
     // Armazena userId para a tela de planos poder montar o external_reference
     sessionStorage.setItem('pp_user_id', signUpData.user.id);
   }
