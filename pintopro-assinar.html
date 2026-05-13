@@ -299,18 +299,23 @@ async function assinar() {
 
   // Capture signature as PNG
   const sigBase64 = canvas.toDataURL('image/png');
-  const now = new Date().toISOString();
-  const table = docRecord.docType === 'orcamento' ? 'orcamentos' : docRecord.docType === 'contrato' ? 'contratos' : 'laudos';
 
-  let updateData = {};
-  if (docRecord.docType === 'orcamento') {
-    updateData = { sig_cliente: sigBase64, sig_cliente_at: now, sig_cliente_nome: nome, sig_cliente_ip: clientIP, status: 'aprovado' };
-  } else if (docRecord.docType === 'laudo') {
-    updateData = { sig_cliente: sigBase64, sig_cliente_at: now, sig_cliente_nome: nome, sig_cliente_ip: clientIP };
-  } else if (docRecord.docType === 'contrato') {
-    updateData = { assinado_cli: sigBase64, sig_cli_at: now, sig_cli_nome: nome, sig_cli_ip: clientIP, status: 'ativo' };
-  }
-  const { error } = await sb.from(table).update(updateData).eq('sig_token', TOKEN);
+  // Usa RPC SECURITY DEFINER — atualiza SOMENTE os campos de assinatura.
+  // Isso corrige dois problemas simultâneos:
+  //   1) Bug contrato: assinado_cli (bool) ← sigBase64 (string) → rejeitado pelo banco.
+  //      A função escreve corretamente em sig_cli_base64 + assinado_cli = true.
+  //   2) Segurança: UPDATE público via policy permitia alterar qualquer coluna do doc.
+  //      A função aceita apenas os parâmetros de assinatura e ignora o resto.
+  const { data: rpcResult, error: rpcError } = await sb.rpc('registrar_assinatura_cliente', {
+    p_token:   TOKEN,
+    p_tipo:    docRecord.docType,
+    p_nome:    nome,
+    p_ip:      clientIP,
+    p_sig_b64: sigBase64
+  });
+  const error = rpcError || (rpcResult && !rpcResult.ok
+    ? { message: rpcResult.error || 'Erro ao registrar assinatura' }
+    : null);
 
   if (error) {
     showErr('Erro ao registrar assinatura: ' + error.message);
