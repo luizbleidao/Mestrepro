@@ -1,6 +1,10 @@
 # ── Credenciais locais (NUNCA commitar) ──────────────────────────
 pp-config.local.js
 
+# ── Gerado em build-time pelo inject-env.js (não commitar) ────────
+# O source of truth é pp-config.template.js
+pp-config.js
+
 # ── Dependências ──────────────────────────────────────────────────
 node_modules/
 .env
