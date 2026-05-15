@@ -1,8 +1,26 @@
+# ═══════════════════════════════════════════════════════════════════
+# netlify.toml — Configuração de Deploy do MestrePro
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Build principal (produção e branch deploys) ───────────────────
 [build]
   command = "node inject-env.js"
   publish = "."
 
-# ── Rotas limpas ──────────────────────────────────────────────────────────
+# ── Contexto: produção ────────────────────────────────────────────
+[context.production]
+  command = "node inject-env.js"
+
+# ── Contexto: preview (Pull Requests) ────────────────────────────
+# Em preview, o build roda normalmente mas com variáveis próprias
+[context.deploy-preview]
+  command = "node inject-env.js"
+
+# ── Contexto: branch deploys ──────────────────────────────────────
+[context.branch-deploy]
+  command = "node inject-env.js"
+
+# ── Rotas limpas ─────────────────────────────────────────────────
 [[redirects]]
   from   = "/"
   to     = "/index.html"
@@ -48,7 +66,13 @@
   to     = "/cookies.html"
   status = 200
 
-# ── Headers de segurança (todas as páginas) ───────────────────────────────
+# ── 404 personalizado ────────────────────────────────────────────
+[[redirects]]
+  from   = "/*"
+  to     = "/404.html"
+  status = 404
+
+# ── Headers de segurança (todas as páginas) ──────────────────────
 [[headers]]
   for = "/*"
   [headers.values]
@@ -56,18 +80,10 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy        = "strict-origin-when-cross-origin"
     Permissions-Policy     = "camera=(), microphone=(), geolocation=()"
-    # Content-Security-Policy:
-    #  - default-src 'self'          → bloqueia qualquer recurso não listado
-    #  - script-src + cdn permitidos → Supabase, fonts, libs CDN usadas
-    #  - connect-src                 → APIs externas que o app chama
-    #  - img-src data: blob:         → para previews de assinatura canvas e logos
-    #  - frame-ancestors 'self'      → bloqueia embedding exceto mesmo domínio
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.mercadopago.com https://api.ipify.org; img-src 'self' data: blob:; frame-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self';"
-    # Cache para páginas HTML: sem cache (sempre versão mais recente)
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://connect.facebook.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.mercadopago.com https://api.ipify.org https://graph.facebook.com https://www.google-analytics.com; img-src 'self' data: blob: https://www.facebook.com; frame-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self';"
     Cache-Control = "no-cache, must-revalidate"
 
-# ── Cache agressivo para assets estáticos imutáveis ──────────────────────
-# Fontes e libs CDN não mudam — cache de 1 ano (365 dias)
+# ── Cache de assets estáticos ────────────────────────────────────
 [[headers]]
   for = "/*.woff2"
   [headers.values]
@@ -78,20 +94,23 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# JS de configuração: sem cache (atualiza junto com deploys)
+# ── Cache de configs: sem cache ──────────────────────────────────
 [[headers]]
   for = "/pp-config.js"
   [headers.values]
     Cache-Control = "no-cache, must-revalidate"
 
-# JS de módulos: sem cache (atualiza junto com deploys)
 [[headers]]
   for = "/pp-modules.js"
   [headers.values]
     Cache-Control = "no-cache, must-revalidate"
 
-# ── Headers específicos por página ────────────────────────────────────────
-# iframes de orçamentos e laudos: permitir embedding no próprio domínio
+[[headers]]
+  for = "/build-manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# ── Headers específicos por página ───────────────────────────────
 [[headers]]
   for = "/pintopro-orcamentos.html"
   [headers.values]
@@ -102,19 +121,15 @@
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
 
-# Admin: nunca indexar
 [[headers]]
   for = "/pintopro-admin.html"
   [headers.values]
-    X-Robots-Tag = "noindex, nofollow"
+    X-Robots-Tag  = "noindex, nofollow"
     Cache-Control = "no-store"
 
-# Assinar: pode ser embeddado em qualquer origem (link externo ao cliente)
 [[headers]]
   for = "/pintopro-assinar.html"
   [headers.values]
     X-Frame-Options  = "ALLOWALL"
     Cache-Control    = "no-cache, must-revalidate"
-    # Override do CSP global: permite embedding em qualquer origem para assinatura externa
-    # frame-ancestors * sobrescreve o 'self' definido no header global
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; img-src 'self' data: blob:; frame-ancestors *; object-src 'none';"
