@@ -1,0 +1,15 @@
+{
+  "name": "mestrepro",
+  "version": "1.1.0",
+  "description": "MestrePro — Plataforma do Profissional de Pintura",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build":         "node inject-env.js",
+    "secrets:check": "node inject-env.js --check-only",
+    "dev":           "node inject-env.js --local"
+  },
+  "license": "UNLICENSED"
+}

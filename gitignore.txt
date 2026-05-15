@@ -1,0 +1,24 @@
+# ── Credenciais locais (NUNCA commitar) ──────────────────────────
+pp-config.local.js
+.env
+.env.local
+.env.production
+.env.*.local
+
+# ── Gerado em build-time pelo inject-env.js (não commitar) ────────
+# O source of truth é pp-config.template.js
+pp-config.js
+build-manifest.json
+
+# ── Dependências ──────────────────────────────────────────────────
+node_modules/
+
+# ── Build / cache Netlify ─────────────────────────────────────────
+.netlify/
+dist/
+.cache/
+
+# ── IDEs e SO ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/settings.json
