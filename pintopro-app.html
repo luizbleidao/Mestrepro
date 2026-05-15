@@ -400,6 +400,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
           <button class="cfg-tab active" onclick="setCfgTab('conta',this)">👤 Minha Conta</button>
           <button class="cfg-tab" onclick="setCfgTab('empresa',this)">🏢 Empresa / PDF</button>
           <button class="cfg-tab" onclick="setCfgTab('preferencias',this)">🎛️ Preferências</button>
+          <button class="cfg-tab" id="tab-equipe" onclick="setCfgTab('equipe',this);loadEquipeTab()" style="display:none">👥 Minha Equipe</button>
         </div>
 
         <!-- ABA CONTA -->
@@ -611,8 +612,75 @@ tbody td:first-child{color:var(--text);font-weight:500;}
             </div>
           </div>
         </div>
+
+        <!-- ABA EQUIPE -->
+        <div class="cfg-section" id="cfg-equipe">
+          <!-- Card: Dono da equipe -->
+          <div id="equipe-dono-card" class="card" style="max-width:640px;margin-bottom:12px;display:none">
+            <div class="ch">
+              <div class="ct">👥 Gerenciar Equipe</div>
+              <div class="cs" id="equipe-slot-label" style="font-size:11px;color:var(--text3)"></div>
+            </div>
+            <div class="cfg-msg" id="equipe-msg"></div>
+
+            <!-- Link de convite -->
+            <div style="background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);padding:16px;margin-bottom:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🔗 Link de Convite</div>
+              <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">
+                Compartilhe este link com seus pintores. Ao acessá-lo, eles entram automaticamente na sua equipe com acesso ao plano.
+              </p>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input id="equipe-link-input" readonly
+                  style="flex:1;min-width:0;background:var(--surf);border:1px solid var(--border);border-radius:var(--rs);color:var(--text2);padding:9px 12px;font-size:12px;font-family:monospace;outline:none"
+                  placeholder="Gere um link abaixo...">
+                <button class="tbtn tbtn-a" onclick="copiarLinkEquipe()" id="btn-copiar-link" style="display:none;white-space:nowrap">📋 Copiar</button>
+                <button class="tbtn" onclick="compartilharWpp()" id="btn-wpp-link" style="display:none;background:#25D366;color:#fff;border-color:#25D366;white-space:nowrap">💬 WhatsApp</button>
+              </div>
+              <div style="margin-top:10px;display:flex;gap:8px">
+                <button class="tbtn tbtn-a" onclick="gerarConvite()" id="btn-gerar-convite">🔄 Gerar novo link</button>
+                <button class="tbtn" onclick="revogarConvite()" id="btn-revogar-convite" style="display:none;background:transparent;border:1px solid var(--red);color:var(--red)">🗑 Revogar link</button>
+              </div>
+              <p style="font-size:11px;color:var(--text3);margin-top:8px">Ao gerar novo link, o anterior é desativado automaticamente.</p>
+            </div>
+
+            <!-- Lista de membros -->
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Membros da Equipe</div>
+              <div id="equipe-membros-lista">
+                <div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">
+                  <div class="spin" style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;display:inline-block;margin-bottom:8px"></div>
+                  <div>Carregando membros...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card: Membro de equipe -->
+          <div id="equipe-membro-card" class="card" style="max-width:640px;margin-bottom:12px;display:none">
+            <div class="ch"><div class="ct">👥 Minha Equipe</div></div>
+            <div id="equipe-membro-info" style="padding:4px 0 16px">
+              <div style="font-size:13px;color:var(--text2)">Carregando...</div>
+            </div>
+            <button class="tbtn" onclick="sairEquipe()" style="background:transparent;border:1px solid var(--red);color:var(--red);font-size:12px">
+              🚪 Sair da equipe
+            </button>
+            <p style="font-size:11px;color:var(--text3);margin-top:8px">Ao sair, seu plano volta ao nível anterior.</p>
+          </div>
+
+          <!-- Card: sem equipe (gratuito/basico/pro) -->
+          <div id="equipe-none-card" class="card" style="max-width:640px;display:none">
+            <div class="ch"><div class="ct">👥 Equipe</div></div>
+            <div style="text-align:center;padding:20px 0">
+              <div style="font-size:40px;margin-bottom:12px">👥</div>
+              <div style="font-size:16px;font-weight:700;margin-bottom:8px">Adicione sua equipe de pintores</div>
+              <p style="font-size:13px;color:var(--text2);max-width:380px;margin:0 auto 20px;line-height:1.6">
+                Com o plano Equipe você convida até 5 pintores. Cada um acessa o app com o próprio login, e você vê os dados de todos.
+              </p>
+              <button class="tbtn tbtn-a" onclick="irPlanos()">↑ Fazer upgrade para Equipe — R$197/mês</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <!-- ORÇAMENTOS iframe -->
       <div class="screen fr" id="s-orcamentos">
         <div class="iframe-wrap">
           <div class="iframe-loader" id="orc-loader">
@@ -1384,8 +1452,14 @@ function loadSettings() {
   if (pref.obsPadrao) document.getElementById('cfg-obs-padrao').value = pref.obsPadrao;
 
   // Sync theme button in preferences tab
-  const thm = document.getElementById('thm-btn-cfg');
-  if (thm) thm.textContent = dark ? '🌙 Escuro' : '☀️ Claro';
+  const thm = document.getElementById('thm-btn-cfg');\n  if (thm) thm.textContent = dark ? '🌙 Escuro' : '☀️ Claro';
+
+  // Mostrar aba Equipe só para planos com multiUser
+  const tabEquipe = document.getElementById('tab-equipe');
+  if (tabEquipe) {
+    const cfg_atual = PLANO_CFG || {};
+    tabEquipe.style.display = (cfg_atual.multiUser) ? '' : 'none';
+  }
 }
 
 async function saveAccountData() {
@@ -1455,6 +1529,236 @@ function saveAllSettings() {
   saveCompanyData();
   savePreferences();
 }
+
+// ══════════════════════════════════════════════════════════════
+// SISTEMA DE EQUIPE
+// ══════════════════════════════════════════════════════════════
+
+let _equipeInfo = null; // cache da info de equipe
+
+async function loadEquipeTab() {
+  if (USER?.id === 'demo') {
+    _mostrarEquipeDemo();
+    return;
+  }
+  const cards = ['equipe-dono-card','equipe-membro-card','equipe-none-card'];
+  cards.forEach(c => { const el=document.getElementById(c); if(el) el.style.display='none'; });
+
+  try {
+    const { data, error } = await sb.rpc('get_minha_equipe_info');
+    if (error) throw error;
+    _equipeInfo = data;
+
+    if (data.role === 'dono') {
+      _renderEquipeDono(data);
+    } else if (data.role === 'membro') {
+      _renderEquipeMembro(data);
+    } else {
+      document.getElementById('equipe-none-card').style.display = '';
+    }
+  } catch(e) {
+    console.error('[Equipe] loadEquipeTab:', e);
+    document.getElementById('equipe-none-card').style.display = '';
+  }
+}
+
+function _mostrarEquipeDemo() {
+  _renderEquipeDono({ role:'dono', codigo:'DEMO12345A', count:2 });
+}
+
+async function _renderEquipeDono(info) {
+  const card = document.getElementById('equipe-dono-card');
+  card.style.display = '';
+
+  // Mostra link existente se houver
+  if (info.codigo) {
+    _setEquipeLink(info.codigo);
+    document.getElementById('btn-revogar-convite').style.display = '';
+  }
+
+  // Limite de slots
+  const cfg_atual = PLANO_CFG || {};
+  const lim = cfg_atual.multiUserLim || 5;
+  document.getElementById('equipe-slot-label').textContent = `${info.count||0} / ${lim === 9999 ? '∞' : lim} membros`;
+
+  // Carrega lista de membros
+  await _carregarMembros();
+}
+
+async function _carregarMembros() {
+  const lista = document.getElementById('equipe-membros-lista');
+  if (!lista) return;
+
+  if (USER?.id === 'demo') {
+    lista.innerHTML = _renderMembrosHTML([
+      {nome:'João Ferreira',email:'joao@email.com',criado_em:new Date().toISOString(),membro_id:'demo-1'},
+      {nome:'Marcos Lima',email:'marcos@email.com',criado_em:new Date().toISOString(),membro_id:'demo-2'}
+    ]);
+    return;
+  }
+
+  try {
+    const { data, error } = await sb.rpc('listar_membros_equipe');
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      lista.innerHTML = `<div style="text-align:center;color:var(--text3);font-size:13px;padding:24px">
+        <div style="font-size:28px;margin-bottom:8px">👤</div>
+        <div>Nenhum membro ainda.</div>
+        <div style="font-size:11px;margin-top:4px">Gere um link e compartilhe com sua equipe.</div>
+      </div>`;
+      return;
+    }
+    lista.innerHTML = _renderMembrosHTML(data);
+  } catch(e) {
+    lista.innerHTML = `<div style="color:var(--red);font-size:12px;padding:12px">Erro ao carregar membros: ${e.message}</div>`;
+  }
+}
+
+function _renderMembrosHTML(membros) {
+  return membros.map(m => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(91,127,255,.15);border:1px solid rgba(91,127,255,.2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">
+        👤
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${_esc(m.nome||'—')}</div>
+        <div style="font-size:11px;color:var(--text3)">${_esc(m.email||'')}</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);white-space:nowrap">${_fmtData(m.criado_em)}</div>
+      <button onclick="removerMembro('${m.membro_id}','${_esc(m.nome||'')}')"
+        style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-size:11px;padding:4px 8px;cursor:pointer;transition:.15s"
+        onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">
+        Remover
+      </button>
+    </div>
+  `).join('');
+}
+
+function _renderEquipeMembro(info) {
+  const card = document.getElementById('equipe-membro-card');
+  card.style.display = '';
+  const info_el = document.getElementById('equipe-membro-info');
+  info_el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+      <div style="width:42px;height:42px;border-radius:50%;background:rgba(91,127,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px">👑</div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:2px">Dono da equipe</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">${_esc(info.dono_nome||'—')}</div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:8px">
+      Você faz parte desta equipe e tem acesso aos recursos do plano ativo.
+    </p>
+  `;
+}
+
+function _setEquipeLink(codigo) {
+  const base = window.location.origin + '/pintopro-login.html';
+  const link = `${base}?convite=${codigo}`;
+  const inp = document.getElementById('equipe-link-input');
+  if (inp) { inp.value = link; inp.dataset.link = link; }
+  document.getElementById('btn-copiar-link').style.display = '';
+  document.getElementById('btn-wpp-link').style.display = '';
+}
+
+async function gerarConvite() {
+  if (USER?.id === 'demo') {
+    _setEquipeLink('DEMO12345A');
+    document.getElementById('btn-revogar-convite').style.display = '';
+    notif('🔗 Link de demonstração gerado!');
+    return;
+  }
+  const btn = document.getElementById('btn-gerar-convite');
+  btn.textContent = '⏳ Gerando...'; btn.disabled = true;
+  try {
+    const { data, error } = await sb.rpc('criar_convite_equipe');
+    if (error) throw error;
+    _setEquipeLink(data);
+    document.getElementById('btn-revogar-convite').style.display = '';
+    if (_equipeInfo) _equipeInfo.codigo = data;
+    showCfgMsg('equipe-msg', '✅ Novo link gerado! Compartilhe com seus pintores.', 'ok');
+  } catch(e) {
+    showCfgMsg('equipe-msg', '❌ ' + e.message, 'err');
+  } finally {
+    btn.textContent = '🔄 Gerar novo link'; btn.disabled = false;
+  }
+}
+
+async function revogarConvite() {
+  if (!confirm('Revogar o link? Quem não entrou ainda não conseguirá mais usar.')) return;
+  if (USER?.id === 'demo') { notif('Demo: link revogado!'); return; }
+  try {
+    await sb.from('equipe_convites').update({ativo:false}).eq('dono_id', USER.id);
+    document.getElementById('equipe-link-input').value = '';
+    document.getElementById('btn-copiar-link').style.display = 'none';
+    document.getElementById('btn-wpp-link').style.display = 'none';
+    document.getElementById('btn-revogar-convite').style.display = 'none';
+    showCfgMsg('equipe-msg', '🗑 Link revogado com sucesso.', 'ok');
+  } catch(e) {
+    showCfgMsg('equipe-msg', '❌ ' + e.message, 'err');
+  }
+}
+
+function copiarLinkEquipe() {
+  const link = document.getElementById('equipe-link-input')?.dataset?.link || document.getElementById('equipe-link-input')?.value;
+  if (!link) return;
+  navigator.clipboard?.writeText(link).then(() => notif('📋 Link copiado!')).catch(() => {
+    document.getElementById('equipe-link-input').select();
+    document.execCommand('copy');
+    notif('📋 Link copiado!');
+  });
+}
+
+function compartilharWpp() {
+  const link = document.getElementById('equipe-link-input')?.dataset?.link || document.getElementById('equipe-link-input')?.value;
+  if (!link) return;
+  const msg = `Olá! Você foi convidado para entrar na minha equipe no MestrePro. Clique para acessar: ${link}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+async function removerMembro(membroId, nome) {
+  if (!confirm(`Remover ${nome} da equipe? O plano dela volta ao nível anterior.`)) return;
+  if (USER?.id === 'demo') { notif('Demo: membro removido!'); await _carregarMembros(); return; }
+  try {
+    const { data, error } = await sb.rpc('remover_membro_equipe', { p_membro_id: membroId });
+    if (error) throw error;
+    const r = data;
+    if (!r.ok) throw new Error(r.erro);
+    notif(`✅ ${nome} removido da equipe.`);
+    const cfg_atual = PLANO_CFG || {};
+    const lim = cfg_atual.multiUserLim || 5;
+    if (_equipeInfo) _equipeInfo.count = Math.max(0, (_equipeInfo.count||1)-1);
+    document.getElementById('equipe-slot-label').textContent = `${_equipeInfo.count||0} / ${lim===9999?'∞':lim} membros`;
+    await _carregarMembros();
+  } catch(e) {
+    showCfgMsg('equipe-msg', '❌ ' + e.message, 'err');
+  }
+}
+
+async function sairEquipe() {
+  if (!confirm('Sair da equipe? Seu plano voltará ao nível anterior.')) return;
+  if (USER?.id === 'demo') { notif('Demo: saiu da equipe!'); return; }
+  try {
+    const { data, error } = await sb.rpc('sair_equipe');
+    if (error) throw error;
+    const r = data;
+    if (!r.ok) throw new Error(r.erro);
+    notif('✅ Você saiu da equipe.');
+    // Recarrega plano do usuário
+    const { data: pdata } = await sb.from('profiles').select('plano').eq('id', USER.id).single();
+    if (pdata) { PROFILE.plano = pdata.plano; PLANO_CFG = _resolverPlano(pdata.plano); setup(); }
+    loadEquipeTab();
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+// Helpers
+function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _fmtData(iso){ if(!iso)return''; try{ return new Date(iso).toLocaleDateString('pt-BR'); }catch{return''; } }
+
+// ══════════════════════════════════════════════════════════════
 
 init();
 </script>
