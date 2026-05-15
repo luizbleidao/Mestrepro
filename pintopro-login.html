@@ -328,6 +328,35 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 </div>
 
+<!-- ═══════════ TELA: CONVITE EQUIPE ═══════════ -->
+<div class="scr" id="scr-convite">
+  <div class="rec-card" style="max-width:420px">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:42px;margin-bottom:8px">👥</div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--acc);margin-bottom:4px">Convite de Equipe</div>
+      <div id="conv-subtitulo" style="font-size:13px;color:var(--text2);line-height:1.5">Verificando convite...</div>
+    </div>
+    <div class="msg err" id="conv-err"></div>
+    <div class="msg ok" id="conv-ok"></div>
+    <div id="conv-acoes" style="display:none">
+      <div style="background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);padding:14px;margin-bottom:16px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Você foi convidado por</div>
+        <div id="conv-dono-nome" style="font-size:18px;font-weight:700;color:var(--text)">—</div>
+      </div>
+      <p style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:16px;line-height:1.6">
+        Faça login ou crie sua conta para entrar na equipe.<br>
+        Você terá acesso ao plano do dono automaticamente.
+      </p>
+      <button class="btn btn-acc" id="btn-conv-login" onclick="showConvLogin()">🔑 Já tenho conta — Entrar</button>
+      <button class="btn btn-out" style="margin-top:8px" onclick="showConvCad()">📝 Criar conta e entrar na equipe</button>
+    </div>
+    <div id="conv-loading" style="text-align:center;padding:12px">
+      <div style="width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;display:inline-block;margin-bottom:8px"></div>
+      <div style="font-size:12px;color:var(--text3)">Verificando...</div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ TELA: RECUPERAR SENHA ═══════════ -->
 <div class="scr" id="scr-rec">
   <div class="rec-card">
@@ -411,6 +440,7 @@ async function login(){
     setBtn('btn-login','Entrar na plataforma',false);
     return;
   }
+  await _processarConvitePendente();
   window.location.href='pintopro-app.html';
 }
 
@@ -446,6 +476,14 @@ async function cadastrar(){
     if(profErr) console.warn('[MestrePro] upsert profiles:', profErr.message);
     // Armazena userId para a tela de planos poder montar o external_reference
     sessionStorage.setItem('pp_user_id', signUpData.user.id);
+  }
+
+  // Se há convite pendente, processa e vai direto ao app
+  if (sessionStorage.getItem('pp_convite_pendente')) {
+    setBtn('btn-cad','⏳ Entrando na equipe...',true);
+    await _processarConvitePendente();
+    window.location.href='pintopro-app.html';
+    return;
   }
 
   document.getElementById('psub').textContent=`Bem-vindo, ${nome.split(' ')[0]}! Escolha seu plano abaixo.`;
@@ -484,8 +522,101 @@ function demo(){
   window.location.href='pintopro-app.html';
 }
 
+// ══════════════════════════════════════════════════════════════
+// SISTEMA DE CONVITE DE EQUIPE
+// ══════════════════════════════════════════════════════════════
+
+let _conviteCodigo = null;
+
+async function validarConvite(codigo) {
+  _conviteCodigo = codigo.toUpperCase();
+  const loading = document.getElementById('conv-loading');
+  const acoes   = document.getElementById('conv-acoes');
+  const errEl   = document.getElementById('conv-err');
+  const subEl   = document.getElementById('conv-subtitulo');
+
+  try {
+    const { data, error } = await sb.rpc('validar_convite_equipe', { p_codigo: _conviteCodigo });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+
+    if (!row || !row.valido) {
+      loading.style.display = 'none';
+      subEl.textContent = 'Este convite é inválido ou já expirou.';
+      errEl.textContent = 'Link de convite inválido ou revogado. Peça um novo link ao dono da equipe.';
+      errEl.classList.add('show');
+      return;
+    }
+
+    document.getElementById('conv-dono-nome').textContent = row.dono_nome || '—';
+    subEl.textContent = 'Convite válido! Entre ou crie sua conta para aceitar.';
+    loading.style.display = 'none';
+    acoes.style.display = '';
+  } catch(e) {
+    loading.style.display = 'none';
+    subEl.textContent = 'Erro ao verificar o convite.';
+    errEl.textContent = 'Erro: ' + e.message;
+    errEl.classList.add('show');
+  }
+}
+
+function showConvLogin() {
+  // Vai para tela de login, convite pendente em sessionStorage
+  sessionStorage.setItem('pp_convite_pendente', _conviteCodigo);
+  setTab('l');
+  showS('scr-auth');
+}
+
+function showConvCad() {
+  sessionStorage.setItem('pp_convite_pendente', _conviteCodigo);
+  setTab('c');
+  showS('scr-auth');
+}
+
+async function _processarConvitePendente() {
+  const codigo = sessionStorage.getItem('pp_convite_pendente');
+  if (!codigo) return false;
+  sessionStorage.removeItem('pp_convite_pendente');
+  try {
+    const { data, error } = await sb.rpc('entrar_equipe', { p_codigo: codigo });
+    if (error) throw error;
+    const r = data;
+    if (r.ok) {
+      // Mostra mensagem de sucesso antes de redirecionar
+      console.log('[Convite] Entrou na equipe com sucesso:', r);
+    } else {
+      console.warn('[Convite] Falha ao entrar:', r.erro);
+    }
+  } catch(e) {
+    console.error('[Convite] Erro ao processar convite:', e);
+  }
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════════
+
 (async()=>{
   const params=new URLSearchParams(window.location.search);
+
+  // Detecta link de convite de equipe
+  const convite = params.get('convite');
+  if (convite) {
+    showS('scr-convite');
+    // Se já logado, processa direto
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      document.getElementById('conv-loading').style.display = '';
+      document.getElementById('conv-acoes').style.display = 'none';
+      _conviteCodigo = convite.toUpperCase();
+      sessionStorage.setItem('pp_convite_pendente', _conviteCodigo);
+      await _processarConvitePendente();
+      window.location.href = 'pintopro-app.html';
+      return;
+    }
+    await validarConvite(convite);
+    return;
+  }
+
   if(params.get('tab')==='c') setTab('c');
   const isUpgrade=params.get('upgrade')==='1';
   const{data:{session}}=await sb.auth.getSession();
