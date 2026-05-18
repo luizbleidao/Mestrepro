@@ -329,6 +329,17 @@ tbody td:first-child{color:var(--text);font-weight:500;}
           </div>
         </div>
       </div>
+
+      <!-- Tabela completa de produção por usuário -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <div class="card-title">Produção por usuário — todos</div>
+        </div>
+        <div class="card-body" style="padding:16px" id="tbl-producao-wrap">
+          <div class="loading-full"><div class="spin"></div></div>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -733,64 +744,86 @@ function updateStats(){
 
 // ── Métricas ──────────────────────────────────────────────
 async function loadMetricas(){
-  // Laudos do banco
-  const { data: laudos } = await sb.from('laudos').select('user_id, id');
-  const totalLaudos = laudos?.length || 0;
+  // ── Totais via count exato ────────────────────────────────
+  const { count: totalOrcs   } = await sb.from('orcamentos').select('*', {count:'exact', head:true});
+  const { count: totalLaudos } = await sb.from('laudos').select('*', {count:'exact', head:true});
 
-  // Orçamentos do banco (tabela orcamentos, se existir)
-  let totalOrcs = '—';
-  try{
-    const { data: orcsData, error: orcsErr } = await sb.from('orcamentos').select('id', {count:'exact',head:true});
-    if(!orcsErr) totalOrcs = orcsData?.length ?? (orcsData === null ? 0 : '—');
-    // Para count exato:
-    const { count } = await sb.from('orcamentos').select('*',{count:'exact',head:true});
-    if(count!=null) totalOrcs=count;
-  }catch(e){ totalOrcs='—'; }
+  document.getElementById('mt-orcs').textContent   = totalOrcs   ?? '—';
+  document.getElementById('mt-laudos').textContent = totalLaudos ?? '—';
+  document.getElementById('mt-ativos').textContent = allUsers.filter(u =>
+    u.atualizado_em && new Date(u.atualizado_em) > new Date(Date.now() - 30*86400000)
+  ).length;
 
-  document.getElementById('mt-orcs').textContent   = totalOrcs;
-  document.getElementById('mt-laudos').textContent = totalLaudos;
-  document.getElementById('mt-ativos').textContent = allUsers.filter(u=>u.atualizado_em && new Date(u.atualizado_em)>new Date(Date.now()-30*86400000)).length;
+  const total = allUsers.length;
+  const pagos = allUsers.filter(u =>
+    ['basico','pro','equipe','ia-pro','pintor-std','pintor-pro','lojista'].includes(u.plano)
+  ).length;
+  document.getElementById('mt-conv').textContent = total > 0 ? Math.round(pagos/total*100)+'%' : '—';
 
-  const total  = allUsers.length;
-  const pagos  = allUsers.filter(u=>['basico','pro','equipe','ia-pro','pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
-  document.getElementById('mt-conv').textContent = total>0 ? Math.round(pagos/total*100)+'%' : '—';
-
-  // Chart planos
+  // ── Distribuição de planos e perfis ───────────────────────
   const planoCounts = {};
   allUsers.forEach(u=>{ const p=u.plano||'gratuito'; planoCounts[p]=(planoCounts[p]||0)+1; });
   renderBarChart('chart-planos', Object.entries(planoCounts).map(([k,v])=>({label:PLANO_LABEL[k]||k, val:v})), allUsers.length);
 
-  // Chart perfis
   const perfilCounts = {};
   allUsers.forEach(u=>{ const p=u.perfil||'pintor'; perfilCounts[p]=(perfilCounts[p]||0)+1; });
   renderBarChart('chart-perfis', Object.entries(perfilCounts).map(([k,v])=>({label:k,val:v})), allUsers.length);
 
-  // Top usuários por laudo
-  if(laudos?.length){
-    const byUser = {};
-    laudos.forEach(l=>{ byUser[l.user_id]=(byUser[l.user_id]||0)+1; });
-    const topLaudos = Object.entries(byUser).sort((a,b)=>b[1]-a[1]).slice(0,5)
-      .map(([uid,cnt])=>({ label: allUsers.find(u=>u.id===uid)?.nome||uid.slice(0,8), val:cnt }));
-    renderBarChart('chart-top-laudos', topLaudos, Math.max(...topLaudos.map(x=>x.val)));
-  } else {
-    document.getElementById('chart-top-laudos').innerHTML='<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Nenhum laudo ainda</div>';
+  // ── Produção por usuário via RPC seguro ───────────────────
+  const { data: producao, error: errProd } = await sb.rpc('get_producao_por_usuario');
+
+  if(errProd || !producao?.length){
+    const msg = '<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Sem dados ainda</div>';
+    document.getElementById('chart-top-orcs').innerHTML   = msg;
+    document.getElementById('chart-top-laudos').innerHTML = msg;
+    document.getElementById('tbl-producao-wrap').innerHTML = msg;
+    return;
   }
 
-  // Top usuários por orçamento (via Supabase se disponível)
-  try{
-    const { data: orcsAll } = await sb.from('orcamentos').select('user_id');
-    if(orcsAll?.length){
-      const byUserOrc={};
-      orcsAll.forEach(o=>{ byUserOrc[o.user_id]=(byUserOrc[o.user_id]||0)+1; });
-      const topOrcs=Object.entries(byUserOrc).sort((a,b)=>b[1]-a[1]).slice(0,5)
-        .map(([uid,cnt])=>({label:allUsers.find(u=>u.id===uid)?.nome||uid.slice(0,8),val:cnt}));
-      renderBarChart('chart-top-orcs',topOrcs,Math.max(...topOrcs.map(x=>x.val)));
-    } else {
-      document.getElementById('chart-top-orcs').innerHTML='<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Nenhum orçamento sincronizado ainda</div>';
-    }
-  }catch(e){
-    document.getElementById('chart-top-orcs').innerHTML='<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Orçamentos não sincronizados</div>';
-  }
+  // Bar charts — Top 5 orçamentos
+  const topOrcs = [...producao]
+    .sort((a,b) => b.total_orcamentos - a.total_orcamentos).slice(0,5)
+    .map(r => ({ label: r.nome||r.email?.split('@')[0]||r.user_id.slice(0,8), val: Number(r.total_orcamentos) }));
+  renderBarChart('chart-top-orcs', topOrcs, Math.max(...topOrcs.map(x=>x.val), 1));
+
+  // Bar charts — Top 5 laudos
+  const topLaudos = [...producao]
+    .sort((a,b) => b.total_laudos - a.total_laudos).slice(0,5)
+    .map(r => ({ label: r.nome||r.email?.split('@')[0]||r.user_id.slice(0,8), val: Number(r.total_laudos) }));
+  renderBarChart('chart-top-laudos', topLaudos, Math.max(...topLaudos.map(x=>x.val), 1));
+
+  // ── Tabela completa de produção por usuário ───────────────
+  const fmtD = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+  const rows = producao.map(r => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:9px 10px">${r.nome||'—'}</td>
+      <td style="padding:9px 10px;font-size:12px;color:var(--text3)">${r.email||'—'}</td>
+      <td style="padding:9px 10px"><span class="badge b-blue">${r.plano||'gratuito'}</span></td>
+      <td style="padding:9px 10px;text-align:center;font-weight:700;color:var(--acc)">${r.total_orcamentos}</td>
+      <td style="padding:9px 10px;text-align:center;font-weight:700;color:var(--green)">${r.total_laudos}</td>
+      <td style="padding:9px 10px;text-align:center;font-weight:600">${Number(r.total_orcamentos)+Number(r.total_laudos)}</td>
+      <td style="padding:9px 10px;font-size:12px">${fmtD(r.ultimo_orcamento)}</td>
+      <td style="padding:9px 10px;font-size:12px">${fmtD(r.ultimo_laudo)}</td>
+    </tr>`).join('');
+
+  document.getElementById('tbl-producao-wrap').innerHTML = `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:.4px">
+            <th style="padding:8px 10px;text-align:left">Usuário</th>
+            <th style="padding:8px 10px;text-align:left">E-mail</th>
+            <th style="padding:8px 10px;text-align:left">Plano</th>
+            <th style="padding:8px 10px;text-align:center">Orçamentos</th>
+            <th style="padding:8px 10px;text-align:center">Laudos</th>
+            <th style="padding:8px 10px;text-align:center">Total</th>
+            <th style="padding:8px 10px;text-align:left">Últ. orçamento</th>
+            <th style="padding:8px 10px;text-align:left">Últ. laudo</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 function renderBarChart(elId, items, maxVal){
