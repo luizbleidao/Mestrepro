@@ -245,6 +245,17 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
   <div style="max-width:960px;margin:0 auto;padding:0 16px">
     <button class="new-btn" onclick="novoOrcamento()">＋ Novo Orçamento</button>
+    <button id="dash-ia-btn" onclick="abrirIADash()"
+      style="display:flex;align-items:center;justify-content:center;gap:10px;
+             width:100%;padding:12px 28px;margin:0 auto 16px;border-radius:var(--r);
+             background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(91,127,255,.12));
+             border:1.5px solid rgba(139,92,246,.45);color:#c4b5fd;
+             font-family:'DM Sans',sans-serif;font-weight:600;font-size:.95rem;
+             cursor:pointer;transition:.2s"
+      onmouseover="this.style.background='linear-gradient(135deg,rgba(139,92,246,.28),rgba(91,127,255,.22))';this.style.transform='translateY(-1px)'"
+      onmouseout="this.style.background='linear-gradient(135deg,rgba(139,92,246,.15),rgba(91,127,255,.12))';this.style.transform=''">
+      ✨ Gerar orçamento com IA
+    </button>
   </div>
   <div class="orca-list" id="orcaList">
     <div class="empty-state"><div style="font-size:2.8rem;margin-bottom:10px">🖌️</div><div style="font-weight:600;margin-bottom:5px">Nenhum orçamento ainda</div><div style="font-size:.83rem">Clique em + Novo Orçamento para começar</div></div>
@@ -568,7 +579,22 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 // ══════════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════════
+// Abre o modal de IA direto do dashboard
+function abrirIADash(){
+  const plano = _getUserPlano();
+  if(plano !== 'ia-pro'){
+    alert('O recurso de geração por IA está disponível apenas no plano IA Pro.\n\nFaça upgrade em Configurações → Planos.');
+    return;
+  }
+  window._iaFromDash = true;
+  abrirIAModal();
+}
+
 function renderDash(){
+  // Mostra o botão IA só para usuários ia-pro
+  const dashIaBtn = document.getElementById('dash-ia-btn');
+  if(dashIaBtn) dashIaBtn.style.display = _getUserPlano()==='ia-pro' ? 'flex' : 'none';
+
   const orcas=_orcas;
   document.getElementById('statTotal').textContent=orcas.length;
   const aprov=orcas.filter(o=>o.status==='aprovado').reduce((s,o)=>s+(o.total||0),0);
@@ -1625,6 +1651,20 @@ function aplicarIASugestao(){
   }
 
   document.getElementById('ia-modal-bg').classList.remove('open');
+
+  // Se veio do dashboard, cria um novo orçamento e vai direto para a etapa de serviços
+  if(window._iaFromDash){
+    window._iaFromDash = false;
+    novoOrcamento();            // prepara o estado
+    goStep(3);                  // pula para etapa de serviços
+    renderStep3();
+    setTimeout(()=>{
+      const wrap = document.getElementById('step3content');
+      if(wrap){ wrap.style.animation='iaIn .4s ease'; setTimeout(()=>wrap.style.animation='',500); }
+    }, 50);
+    return;
+  }
+
   renderStep3();
 
   // Feedback visual
