@@ -434,14 +434,15 @@ async function login(){
   hideMsg('el');
   if(!email||!senha){showMsg('el','Preencha e-mail e senha.','err');return;}
   setBtn('btn-login','<div class="spin"></div> Entrando...',true);
-  const{error}=await sb.auth.signInWithPassword({email,password:senha});
-  if(error){
-    showMsg('el',error.message==='Invalid login credentials'?'E-mail ou senha incorretos.':error.message,'err');
+  try{
+    const{error}=await sb.auth.signInWithPassword({email,password:senha});
+    if(error) throw error;
+    await _processarConvitePendente();
+    window.location.href='pintopro-app.html';
+  }catch(err){
+    showMsg('el',err.message==='Invalid login credentials'?'E-mail ou senha incorretos.':err.message,'err');
     setBtn('btn-login','Entrar na plataforma',false);
-    return;
   }
-  await _processarConvitePendente();
-  window.location.href='pintopro-app.html';
 }
 
 async function cadastrar(){
@@ -450,44 +451,42 @@ async function cadastrar(){
   hideMsg('ec');
   if(!nome||!email||!senha||senha.length<6){showMsg('ec','Preencha todos os campos (senha mín. 6 caracteres).','err');return;}
   setBtn('btn-cad','<div class="spin"></div> Criando conta...',true);
-  const{data:signUpData, error}=await sb.auth.signUp({email,password:senha,options:{data:{nome,tel,cidade,perfil}}});
-  if(error){showMsg('ec',error.message,'err');setBtn('btn-cad','Criar conta e escolher plano',false);return;}
+  try{
+    const{data:signUpData, error}=await sb.auth.signUp({email,password:senha,options:{data:{nome,tel,cidade,perfil}}});
+    if(error) throw error;
 
-  // Supabase retorna user sem session quando o e-mail já existe (anti-enumeração)
-  // Detectar esse caso e mostrar mensagem clara ao usuário
-  if(signUpData?.user && !signUpData?.session){
-    showMsg('ec','Este e-mail já está cadastrado. Faça login ou recupere sua senha abaixo.','err');
+    // Supabase retorna user sem session quando o e-mail já existe (anti-enumeração)
+    if(signUpData?.user && !signUpData?.session){
+      showMsg('ec','Este e-mail já está cadastrado. Faça login ou recupere sua senha abaixo.','err');
+      setBtn('btn-cad','Criar conta e escolher plano',false);
+      return;
+    }
+
+    if(signUpData?.user?.id){
+      const{error:profErr}=await sb.from('profiles').upsert({
+        id:        signUpData.user.id,
+        nome, tel, cidade, perfil,
+        plano:     'trial',
+        ativo:     true,
+        criado_em: new Date().toISOString(),
+      }, { onConflict: 'id' });
+      if(profErr) console.warn('[MestrePro] upsert profiles:', profErr.message);
+      sessionStorage.setItem('pp_user_id', signUpData.user.id);
+    }
+
+    if(sessionStorage.getItem('pp_convite_pendente')){
+      setBtn('btn-cad','⏳ Entrando na equipe...',true);
+      await _processarConvitePendente();
+      window.location.href='pintopro-app.html';
+      return;
+    }
+
+    document.getElementById('psub').textContent=`Bem-vindo, ${nome.split(' ')[0]}! Escolha seu plano abaixo.`;
+    showS('scr-planos');
+  }catch(err){
+    showMsg('ec',err.message,'err');
     setBtn('btn-cad','Criar conta e escolher plano',false);
-    return;
   }
-
-  // Criar perfil com plano 'trial' imediatamente após o cadastro
-  // Garante que o trial de 7 dias começa mesmo que o usuário feche sem escolher um plano pago
-  // O trigger trg_set_trial_fim no banco define trial_fim = agora + 7 dias automaticamente
-  // NOTA: 'email' não é coluna de profiles — fica em auth.users. Removido do upsert.
-  if(signUpData?.user?.id){
-    const{error:profErr}=await sb.from('profiles').upsert({
-      id:        signUpData.user.id,
-      nome, tel, cidade, perfil,
-      plano:     'trial',
-      ativo:     true,
-      criado_em: new Date().toISOString(),
-    }, { onConflict: 'id' });
-    if(profErr) console.warn('[MestrePro] upsert profiles:', profErr.message);
-    // Armazena userId para a tela de planos poder montar o external_reference
-    sessionStorage.setItem('pp_user_id', signUpData.user.id);
-  }
-
-  // Se há convite pendente, processa e vai direto ao app
-  if (sessionStorage.getItem('pp_convite_pendente')) {
-    setBtn('btn-cad','⏳ Entrando na equipe...',true);
-    await _processarConvitePendente();
-    window.location.href='pintopro-app.html';
-    return;
-  }
-
-  document.getElementById('psub').textContent=`Bem-vindo, ${nome.split(' ')[0]}! Escolha seu plano abaixo.`;
-  showS('scr-planos');
 }
 
 function irRecuperar(){
@@ -503,18 +502,19 @@ async function enviarRecuperacao(){
   const email=document.getElementById('rec-email').value.trim();
   if(!email){document.getElementById('rec-err').textContent='Digite seu e-mail.';document.getElementById('rec-err').classList.add('show');return;}
   setBtn('btn-rec','<div class="spin"></div> Enviando...',true);
-  const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
-  if(error){
+  try{
+    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+    if(error) throw error;
+    document.getElementById('rec-ok').textContent='Link enviado! Verifique sua caixa de entrada (e o spam).';
+    document.getElementById('rec-ok').classList.add('show');
+    document.getElementById('rec-field').style.display='none';
+    setBtn('btn-rec','',false);
+    document.getElementById('btn-rec').style.display='none';
+  }catch(err){
     document.getElementById('rec-err').textContent='Erro ao enviar. Verifique o e-mail e tente novamente.';
     document.getElementById('rec-err').classList.add('show');
     setBtn('btn-rec','Enviar link de recuperação',false);
-    return;
   }
-  document.getElementById('rec-ok').textContent='Link enviado! Verifique sua caixa de entrada (e o spam).';
-  document.getElementById('rec-ok').classList.add('show');
-  document.getElementById('rec-field').style.display='none';
-  setBtn('btn-rec','',false);
-  document.getElementById('btn-rec').style.display='none';
 }
 
 function demo(){
