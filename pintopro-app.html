@@ -270,6 +270,13 @@ tbody td:first-child{color:var(--text);font-weight:500;}
   <div class="brand">MestrePro</div>
   <div class="spin"></div>
 </div>
+<script>
+/* Stub early — garante que iframeReady existe antes do script principal */
+window.iframeReady=function(ifrId,loaderId){
+  setTimeout(function(){if(typeof window._iframeReadyFull==='function')window._iframeReadyFull(ifrId,loaderId);},200);
+};
+window._IFRAME_LOADED={};
+</script>
 
 <div class="app" style="display:none" id="app-wrap">
   <div class="ov" id="ov" onclick="closeSB()"></div>
@@ -670,7 +677,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
               <span>Carregando orçamentos...</span>
             </div>
           </div>
-          <iframe id="orc-fr" src="pintopro-orcamentos.html" title="Orçamentos"
+          <iframe id="orc-fr" data-src="pintopro-orcamentos.html" title="Orçamentos"
             onload="iframeReady('orc-fr','orc-loader')"></iframe>
         </div>
       </div>
@@ -682,7 +689,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
               <span>Carregando laudos...</span>
             </div>
           </div>
-          <iframe id="ldo-fr" src="pintopro-laudos.html" title="Laudos Técnicos"
+          <iframe id="ldo-fr" data-src="pintopro-laudos.html" title="Laudos Técnicos"
             onload="iframeReady('ldo-fr','ldo-loader')"></iframe>
         </div>
       </div>
@@ -694,8 +701,20 @@ tbody td:first-child{color:var(--text);font-weight:500;}
               <span>Carregando gerador de posts...</span>
             </div>
           </div>
-          <iframe id="posts-fr" src="pintopro-posts.html" title="Gerador de Posts IA"
+          <iframe id="posts-fr" data-src="pintopro-posts.html" title="Gerador de Posts IA"
             onload="iframeReady('posts-fr','posts-loader')"></iframe>
+        </div>
+      </div>
+      <div class="screen fr" id="s-ia_pro">
+        <div class="iframe-wrap">
+          <div class="iframe-loader" id="ia-loader">
+            <div class="iframe-loader-inner">
+              <div class="spin-lg"></div>
+              <span>Carregando IA Pro...</span>
+            </div>
+          </div>
+          <iframe id="ia-fr" data-src="pintopro-ia.html" title="IA Pro"
+            onload="iframeReady('ia-fr','ia-loader')"></iframe>
         </div>
       </div>
     </div>
@@ -760,9 +779,9 @@ const CFG = {
   },
   'ia-pro': {
     label:'🤖 IA Pro',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','posts','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','posts','ia_pro','configuracoes'],
     orcLim:9999, laudoLim:9999, pdfMarca:false, multiUser:true, multiUserLim:9999, ia:true,
-    _alias:[],
+    _alias:['ia_pro','ia-pro'],
   },
 };
 
@@ -782,10 +801,11 @@ const NAV = [
   {id:'recibos',       ic:'🧾', lb:'Recibos'},
   {id:'agenda',        ic:'📅', lb:'Agenda'},
   {id:'posts',         ic:'✨', lb:'Gerador de Posts IA'},
+  {id:'ia_pro',        ic:'🤖', lb:'IA Pro', plano:'ia-pro'},
   {id:'configuracoes', ic:'⚙️', lb:'Configurações'},
 ];
-const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',contratos:'Contratos',recibos:'Recibos',agenda:'Agenda',configuracoes:'Configurações'};
-const BTNS   = {dashboard:'+ Nova ação',orcamentos:'+ Novo orçamento',laudos:'+ Novo laudo',contratos:'+ Novo contrato',recibos:'+ Novo recibo',agenda:'+ Agendar',configuracoes:'Salvar'};
+const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',contratos:'Contratos',recibos:'Recibos',agenda:'Agenda',ia_pro:'IA Pro',configuracoes:'Configurações'};
+const BTNS   = {dashboard:'+ Nova ação',orcamentos:'+ Novo orçamento',laudos:'+ Novo laudo',contratos:'+ Novo contrato',recibos:'+ Novo recibo',agenda:'+ Agendar',ia_pro:'Explorar IA',configuracoes:'Salvar'};
 
 let USER=null, PROFILE=null, PLANO='gratuito', cfg=CFG.gratuito;
 
@@ -821,7 +841,7 @@ function _broadcastUser(){
         type:'pp_cmd', cmd:'syncUser',
         userId: USER?.id||'',
         plano:  PLANO||'gratuito'
-      },'*');
+      }, window.location.origin);
     }
   });
 }
@@ -836,7 +856,9 @@ function setup(){
   document.getElementById('loading').style.display='none';
   document.getElementById('app-wrap').style.display='flex';
   ir('dashboard');
+  /* Fix #03 — validar origin antes de processar mensagens cross-frame */
   window.addEventListener('message', e => {
+    if(e.origin !== window.location.origin) return;
     if(e.data?.type==='pp_orc_updated' || e.data?.type==='pp_ldo_updated'){
       loadDashboard();
     }
@@ -906,12 +928,18 @@ async function loadDashboard(){
   document.getElementById('d-orc').textContent=_limOrc?`${orcCount}/${cfg.orcLim}`:(orcCount||'—');
   document.getElementById('d-orc-s').textContent=_limOrc?`${Math.max(0,cfg.orcLim-orcCount)} restante${cfg.orcLim-orcCount!==1?'s':''}`:'Total criados';
 
-  const {data:laudos}=await sb.from('laudos').select('id,cliente,criticidade,data').eq('user_id',USER.id).order('data',{ascending:false}).limit(5);
-  const laudoCount=laudos?.length||0;
+  /* Fix #08 Trecho B — try/catch no query de laudos para evitar spinner infinito */
+  let laudos = [];
+  try{
+    const {data:laudosDb,error:laudosErr}=await sb.from('laudos').select('id,cliente,criticidade,data').eq('user_id',USER.id).order('data',{ascending:false}).limit(5);
+    if(laudosErr) throw laudosErr;
+    laudos = laudosDb || [];
+  }catch(e){ console.error('[loadDashboard] laudos:', e?.message||e); }
+  const laudoCount=laudos.length;
   const _limLdo=cfg.laudoLim<9999;
 
   let laudoMes=laudoCount;
-  if(_limLdo && laudos?.length){
+  if(_limLdo && laudos.length){
     const agora=new Date();
     laudoMes=laudos.filter(l=>{
       if(!l.data) return false;
@@ -922,7 +950,7 @@ async function loadDashboard(){
   document.getElementById('d-ldo').textContent=_limLdo?`${laudoMes}/${cfg.laudoLim}`:laudoCount;
   document.getElementById('d-ldo-s').textContent=_limLdo?`${Math.max(0,cfg.laudoLim-laudoMes)} restante${(cfg.laudoLim-laudoMes)!==1?'s':''} este mês`:'laudos emitidos';
 
-  renderDashLaudos(laudos||[]);
+  renderDashLaudos(laudos);
   renderDashOrcs(orcs.slice(0,3));
 
   if(typeof _contratos!=='undefined') renderOnboarding();
@@ -955,15 +983,24 @@ function iframeReady(ifrId, loaderId){
   if(ld){ ld.classList.add('hidden'); setTimeout(()=>{ ld.style.display='none'; }, 350); }
   if(fr && fr.contentWindow){
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    fr.contentWindow.postMessage({type:'pp_cmd', cmd:'syncTheme', theme}, '*');
+    fr.contentWindow.postMessage({type:'pp_cmd', cmd:'syncTheme', theme}, window.location.origin);
     if(USER && PLANO){
       fr.contentWindow.postMessage({
         type:'pp_cmd', cmd:'syncUser',
         userId: USER.id||'',
         plano:  PLANO||'gratuito'
-      }, '*');
+      }, window.location.origin);
     }
   }
+}
+
+/* Fix #14 — lazy-load de iframes: carrega src apenas quando a tela é aberta pela primeira vez */
+const _IFR_MAP = {orcamentos:'orc-fr', laudos:'ldo-fr', posts:'posts-fr', ia_pro:'ia-fr'};
+function _carregarIframe(ifrId){
+  const fr = document.getElementById(ifrId);
+  if(!fr || fr.dataset.loaded) return;
+  const src = fr.getAttribute('data-src');
+  if(src){ fr.src = src; fr.dataset.loaded = '1'; }
 }
 
 let _irAtivo = null;
@@ -994,6 +1031,9 @@ function ir(id){
     const ni = document.getElementById('ni-'+id);
     if(ni) ni.classList.add('active');
 
+    /* Fix #14 — dispara o carregamento do iframe na primeira visita */
+    if(_IFR_MAP[id]) _carregarIframe(_IFR_MAP[id]);
+
     document.getElementById('pg-title').textContent = TITLES[id]||id;
     if(id==='configuracoes'){loadSettings();setTimeout(initProfSigPad,50);}
     if(id==='contratos')loadContratos();
@@ -1005,14 +1045,14 @@ function ir(id){
       const fr=document.getElementById('orc-fr');
       if(fr && fr.contentWindow){
         const theme=document.documentElement.getAttribute('data-theme')||'dark';
-        fr.contentWindow.postMessage({type:'pp_cmd',cmd:'syncTheme',theme},'*');
+        fr.contentWindow.postMessage({type:'pp_cmd',cmd:'syncTheme',theme}, window.location.origin);
       }
     }
     if(id==='laudos'){
       const fr=document.getElementById('ldo-fr');
       if(fr && fr.contentWindow){
         const theme=document.documentElement.getAttribute('data-theme')||'dark';
-        fr.contentWindow.postMessage({type:'pp_cmd',cmd:'syncTheme',theme},'*');
+        fr.contentWindow.postMessage({type:'pp_cmd',cmd:'syncTheme',theme}, window.location.origin);
       }
     }
   }, cur ? 140 : 0);
@@ -1024,12 +1064,12 @@ function topAction(){
   const t=document.getElementById('pg-title').textContent;
   if(t==='Orçamentos'){
     const fr=document.getElementById('orc-fr');
-    if(fr&&fr.contentWindow){fr.contentWindow.postMessage({type:'pp_cmd',cmd:'novoOrcamento'},'*');}
+    if(fr&&fr.contentWindow){fr.contentWindow.postMessage({type:'pp_cmd',cmd:'novoOrcamento'}, window.location.origin);}
     else{notif('📋 Aguardando carregamento...');}
   }
   else if(t==='Laudos Técnicos'){
     const fr=document.getElementById('ldo-fr');
-    if(fr&&fr.contentWindow){fr.contentWindow.postMessage({type:'pp_cmd',cmd:'startNewLaudo'},'*');}
+    if(fr&&fr.contentWindow){fr.contentWindow.postMessage({type:'pp_cmd',cmd:'startNewLaudo'}, window.location.origin);}
     else{notif('🔬 Aguardando carregamento...');}
   }
   else if(t==='Configurações')saveAllSettings();
@@ -1054,7 +1094,7 @@ function toggleTheme(){
   const theme=dark?'dark':'light';
   ['orc-fr','ldo-fr'].forEach(id=>{
     const fr=document.getElementById(id);
-    if(fr&&fr.contentWindow)fr.contentWindow.postMessage({type:'pp_cmd',cmd:'syncTheme',theme},'*');
+    if(fr&&fr.contentWindow)fr.contentWindow.postMessage({type:'pp_cmd',cmd:'syncTheme',theme}, window.location.origin);
   });
 }
 
@@ -1638,7 +1678,27 @@ async function sairEquipe() {
 function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function _fmtData(iso){ if(!iso)return''; try{ return new Date(iso).toLocaleDateString('pt-BR'); }catch{return''; } }
 
-init();
+/* Fix #08 Trecho C — bootstrap com tratamento de erro para evitar spinner infinito */
+window._iframeReadyFull = iframeReady;
+
+function _mostrarErroCritico(msg){
+  const el=document.getElementById('loading');
+  if(el)el.innerHTML=`<div class="brand" style="font-size:22px;font-weight:700;">MestrePro</div>`
+    +`<p style="color:#f87171;margin-top:16px;font-size:14px;max-width:280px;text-align:center;">${msg}</p>`
+    +`<button onclick="window.location.href='pintopro-login.html'" `
+    +`style="margin-top:12px;padding:8px 20px;background:#5b7fff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Voltar ao login</button>`;
+}
+
+async function _iniciarApp(){
+  try{
+    await init();
+  }catch(e){
+    console.error('[MestrePro] Erro crítico na inicialização:', e?.message||e);
+    _mostrarErroCritico('Ocorreu um erro ao carregar a aplicação.<br>Tente recarregar a página.');
+  }
+}
+
+_iniciarApp();
 </script>
 </body>
 </html>

@@ -2623,9 +2623,11 @@ document.addEventListener('DOMContentLoaded',()=>{
    const cmd = e.data.cmd;
    if(cmd === 'startNewLaudo'){ startNewLaudo(); }
    if(cmd === 'syncUser'){
-     // Recebe userId e plano do app pai — sessionStorage é isolado por iframe
+     const hadUser = !!_lpGetUserId();
      if(e.data.userId) sessionStorage.setItem('pp_user_id',    e.data.userId);
      if(e.data.plano)  sessionStorage.setItem('pp_user_plano', e.data.plano);
+     // Se o userId chegou agora (iframe carregou antes da auth), recarrega com a chave correta
+     if(!hadUser && e.data.userId){ loadLaudos(); render(); _lpNotifyParent(); }
    }
    if(cmd === 'syncTheme'){
      // laudos tem tema próprio mas podemos adaptar o fundo

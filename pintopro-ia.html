@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MestrePro — IA Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="pp-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0b0f1a;--bg2:#111827;--bg3:#1c2537;--border:#2a3550;
+  --acc:#5b7fff;--acc2:#7b9fff;--acc-dim:rgba(91,127,255,.12);--acc-glow:rgba(91,127,255,.25);
+  --text:#e8ecf4;--text2:#94a3b8;--text3:#64748b;
+  --green:#10b981;--red:#ef4444;--purple:#8b5cf6;--gold:#f59e0b;
+  --r:10px;--r2:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;letter-spacing:-.03em}.logo span{color:var(--acc)}
+.ia-badge{background:linear-gradient(135deg,#7c3aed,#5b7fff);color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;margin-left:8px}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,rgba(91,127,255,.08),rgba(139,92,246,.06));border-bottom:1px solid var(--border);padding:36px 24px;text-align:center;max-width:900px;margin:0 auto}
+.hero-title{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-.04em;line-height:1.1;margin-bottom:10px}
+.hero-title span{background:linear-gradient(135deg,#5b7fff,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{color:var(--text2);font-size:.95rem;max-width:520px;margin:0 auto}
+
+/* TABS */
+.tabs{display:flex;gap:4px;padding:20px 24px 0;max-width:900px;margin:0 auto;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px 8px 0 0;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--text2);border:1px solid var(--border);border-bottom:none;background:var(--bg2);white-space:nowrap;transition:.15s}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--bg3);color:var(--acc);border-color:var(--acc)}
+.tab .ic{font-size:1rem}
+
+/* CONTEÚDO */
+.content-wrap{max-width:900px;margin:0 auto;padding:0 24px 60px}
+.panel{display:none;padding:24px 0}
+.panel.active{display:block}
+
+/* CARDS DE INPUT */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:24px;margin-bottom:16px}
+.card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.field-group{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:600px){.field-group{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.75rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select,.field textarea{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;transition:.15s;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-dim)}
+.field textarea{resize:vertical;min-height:80px}
+.field select option{background:var(--bg3)}
+
+/* BOTÃO */
+.btn-ia{width:100%;background:linear-gradient(135deg,#5b7fff,#7c3aed);color:#fff;border:none;border-radius:var(--r);padding:14px;font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:.2s;margin-top:8px}
+.btn-ia:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(91,127,255,.3)}
+.btn-ia:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-ia .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* RESULTADO */
+.resultado{background:var(--bg3);border:1px solid var(--acc-dim);border-radius:var(--r2);padding:20px;margin-top:16px;display:none}
+.resultado.show{display:block}
+.res-header{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;color:var(--acc);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.preco-destaque{font-family:'DM Mono',monospace;font-size:2rem;font-weight:500;color:var(--green);margin:8px 0}
+.preco-range{font-size:.8rem;color:var(--text2);margin-bottom:16px}
+.itens-table{width:100%;border-collapse:collapse;font-size:.82rem;margin:12px 0}
+.itens-table th{text-align:left;padding:7px 10px;color:var(--text2);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)}
+.itens-table td{padding:8px 10px;border-bottom:1px solid rgba(42,53,80,.5)}
+.justif{font-size:.85rem;color:var(--text2);line-height:1.6;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.mensagem-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;font-size:.9rem;line-height:1.7;white-space:pre-wrap;margin:8px 0}
+.copy-btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s}
+.copy-btn:hover{border-color:var(--acc);color:var(--acc)}
+.insight-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(42,53,80,.5);font-size:.88rem}
+.insight-item:last-child{border-bottom:none}
+.insight-ic{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.badge-saude{display:inline-block;padding:4px 12px;border-radius:99px;font-weight:700;font-size:.8rem}
+.saude-otima{background:rgba(16,185,129,.15);color:#10b981}
+.saude-boa{background:rgba(91,127,255,.15);color:#5b7fff}
+.saude-regular{background:rgba(245,158,11,.15);color:#f59e0b}
+.saude-ruim{background:rgba(239,68,68,.15);color:#ef4444}
+
+/* EMPTY/LOCK */
+.lock-state{text-align:center;padding:60px 20px;color:var(--text2)}
+.lock-state .lock-ic{font-size:2.5rem;margin-bottom:12px}
+.lock-state h3{font-family:'Syne',sans-serif;font-weight:700;color:var(--text);margin-bottom:8px}
+.lock-btn{display:inline-block;background:linear-gradient(135deg,#5b7fff,#7c3aed);color:#fff;padding:12px 24px;border-radius:var(--r);font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;text-decoration:none;margin-top:16px;cursor:pointer;border:none}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:500px){.stats-row{grid-template-columns:1fr}}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px}
+.stat-val{font-family:'DM Mono',monospace;font-size:1.5rem;color:var(--acc)}
+.stat-lbl{font-size:.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+
+/* ALERTAS */
+.alerta{display:flex;gap:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--r);padding:12px 14px;font-size:.85rem;color:var(--gold);margin-top:10px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Mestre<span>Pro</span><span class="ia-badge">IA Pro</span></div>
+  <div style="font-size:.8rem;color:var(--text2)" id="user-plano"></div>
+</div>
+
+<div style="max-width:900px;margin:0 auto">
+  <div class="hero">
+    <div class="hero-title">Inteligência <span>Artificial</span> para seu Negócio</div>
+    <div class="hero-sub">Ferramentas de IA que economizam tempo e aumentam seus resultados como pintor profissional.</div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-tab="orcamento"><span class="ic">🧮</span> Assistente de Orçamento</div>
+  <div class="tab" data-tab="mensagem"><span class="ic">💬</span> Mensagem WhatsApp</div>
+  <div class="tab" data-tab="diagnostico"><span class="ic">📊</span> Diagnóstico do Negócio</div>
+  <div class="tab" data-tab="preco"><span class="ic">💰</span> Sugestão de Preço</div>
+  <div class="tab" data-tab="laudo"><span class="ic">📋</span> Laudo Técnico</div>
+  <div class="tab" data-tab="cliente"><span class="ic">👤</span> Resumo do Cliente</div>
+  <div class="tab" data-tab="followup"><span class="ic">🔔</span> Follow-up Auto</div>
+</div>
+
+<div class="content-wrap">
+
+  <!-- ORÇAMENTO -->
+  <div class="panel active" id="panel-orcamento">
+    <div class="card">
+      <div class="card-title">🧮 Assistente de Orçamento com IA</div>
+      <div class="field-group">
+        <div class="field">
+          <label>Tipo de Serviço</label>
+          <select id="orc-tipo">
+            <option value="pintura_interna">Pintura Interna</option>
+            <option value="pintura_externa">Pintura Externa / Fachada</option>
+            <option value="textura">Textura / Grafiato</option>
+            <option value="epoxi">Piso Epóxi</option>
+            <option value="verniz_madeira">Verniz / Madeira</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Área Total (m²)</label>
+          <input type="number" id="orc-area" placeholder="Ex: 85" min="1">
+        </div>
+        <div class="field">
+          <label>Estado da Superfície</label>
+          <select id="orc-estado">
+            <option value="novo">Novo (sem pintura anterior)</option>
+            <option value="regular">Regular (pintura antiga em bom estado)</option>
+            <option value="ruim">Ruim (trincas, descascando)</option>
+            <option value="pessimo">Péssimo (umidade, mofo, reboco danificado)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tipo de Tinta</label>
+          <select id="orc-tinta">
+            <option value="">A definir</option>
+            <option value="latex_standard">Látex Standard</option>
+            <option value="latex_premium">Látex Premium (Suvinil/Coral)</option>
+            <option value="acrilica">Acrílica</option>
+            <option value="textura">Textura</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Cidade</label>
+          <input type="text" id="orc-cidade" placeholder="Ex: São Paulo, SP">
+        </div>
+      </div>
+      <div class="field">
+        <label>Observações (opcional)</label>
+        <textarea id="orc-obs" placeholder="Ex: teto alto 3m, móveis precisam ser cobertos, trabalho em final de semana..."></textarea>
+      </div>
+      <button class="btn-ia" id="btn-orc">
+        <span>✨</span> <span id="btn-orc-txt">Gerar Orçamento com IA</span>
+      </button>
+    </div>
+    <div class="resultado" id="res-orc"></div>
+  </div>
+
+  <!-- MENSAGEM WHATSAPP -->
+  <div class="panel" id="panel-mensagem">
+    <div class="card">
+      <div class="card-title">💬 Gerador de Mensagem WhatsApp</div>
+      <div class="field-group">
+        <div class="field">
+          <label>Tipo de Mensagem</label>
+          <select id="msg-tipo">
+            <option value="envio_orcamento">Envio de Orçamento</option>
+            <option value="followup_orcamento">Follow-up (sem resposta)</option>
+            <option value="confirmacao_servico">Confirmação de Contrato</option>
+            <option value="cobranca_amigavel">Cobrança Amigável</option>
+            <option value="cobranca_urgente">Cobrança Urgente</option>
+            <option value="encerramento_obra">Encerramento de Obra</option>
+            <option value="pedido_avaliacao">Pedir Avaliação/Indicação</option>
+            <option value="reativacao_cliente">Reativar Cliente Antigo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nome do Cliente</label>
+          <input type="text" id="msg-cliente" placeholder="Ex: João Silva">
+        </div>
+        <div class="field">
+          <label>Valor (R$) — opcional</label>
+          <input type="number" id="msg-valor" placeholder="Ex: 2500">
+        </div>
+        <div class="field">
+          <label>Serviço — opcional</label>
+          <input type="text" id="msg-servico" placeholder="Ex: pintura sala e quartos">
+        </div>
+        <div class="field">
+          <label>Dias sem resposta — opcional</label>
+          <input type="number" id="msg-dias" placeholder="Ex: 3">
+        </div>
+      </div>
+      <div class="field">
+        <label>Observações extras</label>
+        <textarea id="msg-obs" placeholder="Algo específico que quer mencionar..."></textarea>
+      </div>
+      <button class="btn-ia" id="btn-msg">
+        <span>💬</span> <span id="btn-msg-txt">Gerar Mensagem</span>
+      </button>
+    </div>
+    <div class="resultado" id="res-msg"></div>
+  </div>
+
+  <!-- DIAGNÓSTICO -->
+  <div class="panel" id="panel-diagnostico">
+    <div class="card">
+      <div class="card-title">📊 Diagnóstico do Negócio</div>
+      <div class="field-group">
+        <div class="field">
+          <label>Período de Análise</label>
+          <select id="diag-periodo">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-ia" id="btn-diag">
+        <span>📊</span> <span id="btn-diag-txt">Analisar Meu Negócio</span>
+      </button>
+    </div>
+    <div class="resultado" id="res-diag"></div>
+  </div>
+
+  <!-- PREÇO -->
+  <div class="panel" id="panel-preco">
+    <div class="card">
+      <div class="card-title">💰 Sugestão de Preço por m²</div>
+      <div class="field-group">
+        <div class="field">
+          <label>Tipo de Serviço</label>
+          <select id="preco-tipo">
+            <option value="pintura_interna">Pintura Interna</option>
+            <option value="pintura_externa">Pintura Externa</option>
+            <option value="textura">Textura</option>
+            <option value="epoxi">Piso Epóxi</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Área (m²)</label>
+          <input type="number" id="preco-area" placeholder="Ex: 60">
+        </div>
+        <div class="field">
+          <label>Cidade</label>
+          <input type="text" id="preco-cidade" placeholder="Ex: Campinas, SP">
+        </div>
+        <div class="field">
+          <label>Tipo de Cliente</label>
+          <select id="preco-cliente">
+            <option value="residencial">Residencial</option>
+            <option value="comercial">Comercial</option>
+            <option value="industrial">Industrial</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-ia" id="btn-preco">
+        <span>💰</span> <span id="btn-preco-txt">Sugerir Preço</span>
+      </button>
+    </div>
+    <div class="resultado" id="res-preco"></div>
+  </div>
+
+  <!-- LAUDO -->
+  <div class="panel" id="panel-laudo">
+    <div class="card">
+      <div class="card-title">📋 Assistente de Laudo Técnico</div>
+      <div class="field-group">
+        <div class="field">
+          <label>Tipo de Superfície</label>
+          <select id="laudo-tipo">
+            <option value="parede_interna">Parede Interna</option>
+            <option value="fachada">Fachada / Parede Externa</option>
+            <option value="teto">Teto / Laje</option>
+            <option value="piso">Piso</option>
+            <option value="madeira">Madeira (porta, janela, deck)</option>
+            <option value="metal">Metal / Ferro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Local</label>
+          <input type="text" id="laudo-local" placeholder="Ex: quarto principal, fachada norte">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label>Condição Atual (descreva o que vê)</label>
+        <textarea id="laudo-condicao" placeholder="Ex: tinta descascando em 40% da área, umidade no rodapé, trincas superficiais..."></textarea>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label>Problemas Identificados (separe por vírgula)</label>
+        <input type="text" id="laudo-problemas" placeholder="Ex: umidade, mofo, tinta_soltando, trinca">
+      </div>
+      <div class="field-group">
+        <div class="field">
+          <label>Serviço Recomendado</label>
+          <input type="text" id="laudo-servico" placeholder="Ex: selagem, massa corrida, 2 demãos látex premium">
+        </div>
+        <div class="field">
+          <label>Produto Recomendado</label>
+          <input type="text" id="laudo-produto" placeholder="Ex: Suvinil Látex Premium Branco Gelo">
+        </div>
+      </div>
+      <button class="btn-ia" id="btn-laudo">
+        <span>📋</span> <span id="btn-laudo-txt">Gerar Texto do Laudo</span>
+      </button>
+    </div>
+    <div class="resultado" id="res-laudo"></div>
+  </div>
+
+  <!-- RESUMO CLIENTE -->
+  <div class="panel" id="panel-cliente">
+    <div class="card">
+      <div class="card-title">👤 Resumo Inteligente de Cliente</div>
+      <div class="field">
+        <label>Nome do Cliente</label>
+        <input type="text" id="cli-nome" placeholder="Ex: Maria Santos">
+      </div>
+      <button class="btn-ia" id="btn-cli" style="margin-top:12px">
+        <span>👤</span> <span id="btn-cli-txt">Analisar Cliente</span>
+      </button>
+    </div>
+    <div class="resultado" id="res-cli"></div>
+  </div>
+
+  <!-- FOLLOW-UP -->
+  <div class="panel" id="panel-followup">
+    <div class="card">
+      <div class="card-title">🔔 Agendar Follow-up Automático</div>
+      <div class="field-group">
+        <div class="field">
+          <label>Nome do Cliente</label>
+          <input type="text" id="fu-cliente" placeholder="Ex: Carlos Oliveira">
+        </div>
+        <div class="field">
+          <label>Valor do Orçamento (R$)</label>
+          <input type="number" id="fu-valor" placeholder="Ex: 3200">
+        </div>
+        <div class="field">
+          <label>Enviar Follow-up em</label>
+          <select id="fu-dias">
+            <option value="2">2 dias (tom gentil)</option>
+            <option value="5">5 dias (tom solícito)</option>
+            <option value="10">10 dias (tom firme)</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-ia" id="btn-fu">
+        <span>🔔</span> <span id="btn-fu-txt">Agendar Follow-up</span>
+      </button>
+    </div>
+    <div class="resultado" id="res-fu"></div>
+  </div>
+
+</div><!-- /content-wrap -->
+
+<script>
+// ── Inicialização ─────────────────────────────────────────────────────────
+let supabase, USER, SESSION;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  supabase = window.supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    window.top.location.href = window.PP.appUrl + '/pintopro-login.html';
+    return;
+  }
+  SESSION = session;
+  USER = session.user;
+
+  // Verificar plano ia-pro
+  const { data: perfil } = await supabase
+    .from('profiles')
+    .select('nome_completo, plano')
+    .eq('id', USER.id)
+    .single();
+
+  if (perfil?.plano !== 'ia-pro') {
+    mostrarLock(perfil?.plano);
+    return;
+  }
+
+  document.getElementById('user-plano').textContent = '✨ Plano IA Pro';
+  inicializarEventos();
+});
+
+function mostrarLock(planoAtual) {
+  document.querySelector('.content-wrap').innerHTML = `
+    <div class="lock-state">
+      <div class="lock-ic">🔒</div>
+      <h3>Recurso exclusivo do Plano IA Pro</h3>
+      <p>Seu plano atual: <strong>${planoAtual || 'gratuito'}</strong></p>
+      <p style="margin-top:8px;font-size:.85rem">Faça upgrade para acessar o Assistente de Orçamento, Diagnóstico do Negócio, Mensagens WhatsApp automáticas e muito mais.</p>
+      <button class="lock-btn" onclick="window.top.location.href='${window.PP?.planosPath||'/pintopro-planos.html'}'">
+        Ver Planos → Upgrade para IA Pro
+      </button>
+    </div>
+  `;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+function inicializarEventos() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Botões de IA
+  document.getElementById('btn-orc').addEventListener('click', executarOrcamento);
+  document.getElementById('btn-msg').addEventListener('click', executarMensagem);
+  document.getElementById('btn-diag').addEventListener('click', executarDiagnostico);
+  document.getElementById('btn-preco').addEventListener('click', executarPreco);
+  document.getElementById('btn-laudo').addEventListener('click', executarLaudo);
+  document.getElementById('btn-cli').addEventListener('click', executarResumoCliente);
+  document.getElementById('btn-fu').addEventListener('click', executarFollowup);
+}
+
+// ── Utilitários ───────────────────────────────────────────────────────────
+const EDGE_BASE = `${window.PP.supabaseUrl}/functions/v1`;
+
+async function chamarIA(endpoint, body, btnId) {
+  const btn = document.getElementById(btnId);
+  const txtEl = document.getElementById(btnId + '-txt');
+  const txtOrig = txtEl.textContent;
+
+  btn.disabled = true;
+  txtEl.innerHTML = '<span class="spin"></span> Processando...';
+
+  try {
+    const res = await fetch(`${EDGE_BASE}/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SESSION.access_token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.erro || `Erro ${res.status}`);
+    }
+
+    return data;
+  } catch (err) {
+    notif('❌ ' + err.message);
+    return null;
+  } finally {
+    btn.disabled = false;
+    txtEl.textContent = txtOrig;
+  }
+}
+
+function mostrarResultado(id, html) {
+  const el = document.getElementById(id);
+  el.innerHTML = html;
+  el.classList.add('show');
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function fmt(v) { return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
+
+function copiar(texto) {
+  navigator.clipboard.writeText(texto).then(() => notif('✅ Copiado!'));
+}
+
+function notif(msg) {
+  const n = document.createElement('div');
+  n.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1c2537;border:1px solid #2a3550;border-radius:8px;padding:10px 16px;font-size:.85rem;z-index:9999;color:#e8ecf4;max-width:300px';
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(() => n.remove(), 3000);
+}
+
+// ── ORÇAMENTO ─────────────────────────────────────────────────────────────
+async function executarOrcamento() {
+  const area = parseFloat(document.getElementById('orc-area').value);
+  if (!area || area <= 0) { notif('⚠️ Informe a área em m²'); return; }
+
+  const data = await chamarIA('ia-orcamento', {
+    area_m2: area,
+    tipo_servico: document.getElementById('orc-tipo').value,
+    tipo_tinta: document.getElementById('orc-tinta').value,
+    estado_superficie: document.getElementById('orc-estado').value,
+    cidade: document.getElementById('orc-cidade').value,
+    observacoes: document.getElementById('orc-obs').value,
+  }, 'btn-orc');
+
+  if (!data) return;
+
+  const itensHtml = (data.itens_orcamento || []).map(item => `
+    <tr>
+      <td>${item.descricao}</td>
+      <td style="text-align:right">${item.quantidade} ${item.unidade}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--green)">R$ ${fmt(item.valor_unitario)}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace">R$ ${fmt(item.quantidade * item.valor_unitario)}</td>
+    </tr>`).join('');
+
+  const alertasHtml = (data.alertas || []).map(a => `<div class="alerta">⚠️ ${a}</div>`).join('');
+
+  mostrarResultado('res-orc', `
+    <div class="res-header">✨ Orçamento Sugerido pela IA</div>
+    <div class="preco-range">Faixa: R$ ${fmt(data.preco_minimo)} — R$ ${fmt(data.preco_maximo)}</div>
+    <div class="preco-destaque">R$ ${fmt(data.preco_sugerido)}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;font-size:.82rem;color:var(--text2)">
+      <div>🔨 Mão de obra: <strong style="color:var(--text)">R$ ${fmt(data.mao_de_obra)}</strong></div>
+      <div>🪣 Materiais: <strong style="color:var(--text)">R$ ${fmt(data.materiais_estimados)}</strong></div>
+      <div>📅 Prazo: <strong style="color:var(--text)">${data.prazo_dias} dias</strong></div>
+      <div>📐 Área: <strong style="color:var(--text)">${data.area_total}m²</strong></div>
+    </div>
+    <table class="itens-table">
+      <thead><tr><th>Item</th><th style="text-align:right">Qtd</th><th style="text-align:right">Unit.</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>${itensHtml}</tbody>
+    </table>
+    <div class="justif">💡 ${data.justificativa}</div>
+    ${alertasHtml}
+  `);
+}
+
+// ── MENSAGEM WHATSAPP ─────────────────────────────────────────────────────
+async function executarMensagem() {
+  const cliente = document.getElementById('msg-cliente').value.trim();
+  if (!cliente) { notif('⚠️ Informe o nome do cliente'); return; }
+
+  const data = await chamarIA('ia-mensagem', {
+    tipo: document.getElementById('msg-tipo').value,
+    nome_cliente: cliente,
+    valor: parseFloat(document.getElementById('msg-valor').value) || undefined,
+    servico: document.getElementById('msg-servico').value || undefined,
+    dias_sem_resposta: parseInt(document.getElementById('msg-dias').value) || undefined,
+    observacoes: document.getElementById('msg-obs').value || undefined,
+  }, 'btn-msg');
+
+  if (!data) return;
+
+  const msgPrincipal = data.mensagem_principal || '';
+
+  mostrarResultado('res-msg', `
+    <div class="res-header">💬 Mensagem Gerada</div>
+    <div class="mensagem-box">${msgPrincipal.replace(/</g, '&lt;')}</div>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="copy-btn" onclick="copiar(${JSON.stringify(msgPrincipal)})">📋 Copiar Mensagem</button>
+    </div>
+    ${data.mensagem_curta ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)"><div style="font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Versão Resumida</div><div class="mensagem-box" style="font-size:.85rem">${data.mensagem_curta}</div><button class="copy-btn" onclick="copiar(${JSON.stringify(data.mensagem_curta)})">📋 Copiar Resumida</button></div>` : ''}
+    ${data.dica ? `<div class="alerta" style="margin-top:10px">💡 ${data.dica}</div>` : ''}
+  `);
+}
+
+// ── DIAGNÓSTICO ───────────────────────────────────────────────────────────
+async function executarDiagnostico() {
+  const data = await chamarIA('ia-diagnostico', {
+    periodo_dias: parseInt(document.getElementById('diag-periodo').value),
+  }, 'btn-diag');
+
+  if (!data) return;
+
+  const { metricas, insights } = data;
+  const saudeClass = { 'ótima': 'saude-otima', 'boa': 'saude-boa', 'regular': 'saude-regular', 'ruim': 'saude-ruim' };
+  const positivos = (insights.pontos_positivos || []).map(p => `<div class="insight-item"><span class="insight-ic">✅</span><span>${p}</span></div>`).join('');
+  const atencao = (insights.pontos_atencao || []).map(p => `<div class="insight-item"><span class="insight-ic">⚠️</span><span>${p}</span></div>`).join('');
+  const acoes = (insights.acoes_prioritarias || []).map(a => `<div class="insight-item"><span class="insight-ic">${a.impacto === 'alto' ? '🔴' : a.impacto === 'medio' ? '🟡' : '🔵'}</span><div><strong>${a.acao}</strong><div style="font-size:.75rem;color:var(--text2);margin-top:2px">Prazo: ${a.prazo}</div></div></div>`).join('');
+
+  mostrarResultado('res-diag', `
+    <div class="res-header">📊 Diagnóstico do Negócio — Últimos ${metricas.periodo_dias} dias
+      <span class="badge-saude ${saudeClass[insights.saude_geral] || 'saude-regular'}">${insights.saude_geral || 'regular'}</span>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val">${metricas.total_orcamentos}</div><div class="stat-lbl">Orçamentos</div></div>
+      <div class="stat-card"><div class="stat-val">${metricas.taxa_conversao?.toFixed(0)}%</div><div class="stat-lbl">Conversão</div></div>
+      <div class="stat-card"><div class="stat-val">R$ ${fmt(metricas.ticket_medio)}</div><div class="stat-lbl">Ticket Médio</div></div>
+    </div>
+    <div style="margin-bottom:6px;font-size:.8rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Pontos Positivos</div>
+    ${positivos || '<div style="color:var(--text2);font-size:.85rem;padding:8px 0">Nenhum ponto positivo identificado no período</div>'}
+    <div style="margin:14px 0 6px;font-size:.8rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Atenção</div>
+    ${atencao || '<div style="color:var(--text2);font-size:.85rem;padding:8px 0">Nenhum ponto crítico identificado</div>'}
+    <div style="margin:14px 0 6px;font-size:.8rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Ações Prioritárias</div>
+    ${acoes}
+    ${insights.frase_motivacional ? `<div style="margin-top:20px;padding:14px;background:var(--acc-dim);border-radius:var(--r);font-style:italic;font-size:.88rem;color:var(--acc2)">✨ ${insights.frase_motivacional}</div>` : ''}
+  `);
+}
+
+// ── PREÇO ─────────────────────────────────────────────────────────────────
+async function executarPreco() {
+  const area = parseFloat(document.getElementById('preco-area').value);
+  if (!area || area <= 0) { notif('⚠️ Informe a área em m²'); return; }
+
+  const data = await chamarIA('ia-preco', {
+    tipo_servico: document.getElementById('preco-tipo').value,
+    area_m2: area,
+    cidade: document.getElementById('preco-cidade').value,
+    tipo_cliente: document.getElementById('preco-cliente').value,
+  }, 'btn-preco');
+
+  if (!data) return;
+
+  mostrarResultado('res-preco', `
+    <div class="res-header">💰 Faixa de Preço Sugerida</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0">
+      <div class="stat-card"><div class="stat-val" style="font-size:1.2rem;color:var(--text2)">R$ ${fmt(data.preco_total_minimo)}</div><div class="stat-lbl">Mínimo</div></div>
+      <div class="stat-card" style="border-color:var(--acc)"><div class="stat-val" style="font-size:1.2rem">R$ ${fmt(data.preco_total_recomendado)}</div><div class="stat-lbl" style="color:var(--acc)">Recomendado</div></div>
+      <div class="stat-card"><div class="stat-val" style="font-size:1.2rem;color:var(--green)">R$ ${fmt(data.preco_total_maximo)}</div><div class="stat-lbl">Máximo</div></div>
+    </div>
+    <div style="font-size:.82rem;color:var(--text2);margin-bottom:8px">Por m²: R$ ${fmt(data.preco_minimo_m2)} — R$ ${fmt(data.preco_recomendado_m2)} — R$ ${fmt(data.preco_maximo_m2)}</div>
+    <div class="justif">💡 ${data.base_calculo}</div>
+    ${(data.fatores_ajuste || []).map(f => `<div class="alerta" style="margin-top:6px">↗️ ${f}</div>`).join('')}
+    ${data.alerta ? `<div class="alerta" style="margin-top:8px">⚠️ ${data.alerta}</div>` : ''}
+  `);
+}
+
+// ── LAUDO ─────────────────────────────────────────────────────────────────
+async function executarLaudo() {
+  const condicao = document.getElementById('laudo-condicao').value.trim();
+  const servico = document.getElementById('laudo-servico').value.trim();
+  if (!condicao || !servico) { notif('⚠️ Preencha condição atual e serviço recomendado'); return; }
+
+  const data = await chamarIA('ia-laudo', {
+    tipo_superficie: document.getElementById('laudo-tipo').value,
+    local: document.getElementById('laudo-local').value,
+    condicao_atual: condicao,
+    problemas: document.getElementById('laudo-problemas').value.split(',').map(p => p.trim()).filter(Boolean),
+    servico_recomendado: servico,
+    produto_recomendado: document.getElementById('laudo-produto').value,
+  }, 'btn-laudo');
+
+  if (!data) return;
+
+  const secoes = [
+    { titulo: 'Descrição Técnica', chave: 'descricao_tecnica' },
+    { titulo: 'Diagnóstico', chave: 'diagnostico' },
+    { titulo: 'Recomendação Técnica', chave: 'recomendacao_tecnica' },
+    { titulo: 'Especificação do Produto', chave: 'especificacao_produto' },
+    { titulo: 'Observações Adicionais', chave: 'observacoes_adicionais' },
+  ];
+
+  const textoCompleto = secoes.filter(s => data[s.chave]).map(s => `${s.titulo}:\n${data[s.chave]}`).join('\n\n');
+
+  mostrarResultado('res-laudo', `
+    <div class="res-header">📋 Texto do Laudo Técnico Gerado</div>
+    ${secoes.filter(s => data[s.chave]).map(s => `
+      <div style="margin-bottom:14px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">${s.titulo}</div>
+        <div style="font-size:.88rem;line-height:1.7;color:var(--text2)">${data[s.chave]}</div>
+      </div>
+    `).join('<div style="height:1px;background:var(--border);margin:10px 0"></div>')}
+    <button class="copy-btn" style="margin-top:12px" onclick="copiar(${JSON.stringify(textoCompleto)})">📋 Copiar Texto Completo</button>
+  `);
+}
+
+// ── RESUMO CLIENTE ────────────────────────────────────────────────────────
+async function executarResumoCliente() {
+  const nome = document.getElementById('cli-nome').value.trim();
+  if (!nome) { notif('⚠️ Informe o nome do cliente'); return; }
+
+  const data = await chamarIA('ia-resumo-cliente', { cliente_nome: nome }, 'btn-cli');
+  if (!data) return;
+
+  if (!data.resumo) {
+    mostrarResultado('res-cli', `<div style="color:var(--text2);padding:16px;text-align:center">Nenhum orçamento encontrado para "${nome}"</div>`);
+    return;
+  }
+
+  const perfilCor = { fiel: 'var(--green)', esporadico: 'var(--acc)', perdido: 'var(--red)', novo: 'var(--purple)' };
+
+  mostrarResultado('res-cli', `
+    <div class="res-header">👤 ${nome}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:.82rem">
+      <div>Perfil: <strong style="color:${perfilCor[data.perfil_cliente] || 'var(--acc)'}">${data.perfil_cliente}</strong></div>
+      <div>Valor: <strong>${data.valor_cliente}</strong></div>
+      <div>Orçamentos: <strong>${data.historico?.total_orcamentos ?? 0}</strong> (${data.historico?.aprovados ?? 0} aprovados)</div>
+      <div>Receita: <strong style="color:var(--green)">R$ ${fmt(data.historico?.receita_total ?? 0)}</strong></div>
+      <div>Sem contato: <strong>${data.historico?.dias_sem_contato ?? 0} dias</strong></div>
+    </div>
+    <div class="justif" style="margin-bottom:12px">💡 ${data.resumo}</div>
+    <div style="background:var(--acc-dim);border-radius:var(--r);padding:12px;margin-bottom:10px">
+      <div style="font-size:.75rem;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Próxima Ação</div>
+      <div style="font-size:.88rem">${data.proxima_acao}</div>
+    </div>
+    ${data.mensagem_sugerida ? `<div style="font-size:.75rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Mensagem Sugerida</div><div class="mensagem-box" style="font-size:.85rem">${data.mensagem_sugerida}</div><button class="copy-btn" onclick="copiar(${JSON.stringify(data.mensagem_sugerida)})">📋 Copiar</button>` : ''}
+    ${data.alerta ? `<div class="alerta" style="margin-top:10px">⚠️ ${data.alerta}</div>` : ''}
+  `);
+}
+
+// ── FOLLOW-UP ─────────────────────────────────────────────────────────────
+async function executarFollowup() {
+  const cliente = document.getElementById('fu-cliente').value.trim();
+  if (!cliente) { notif('⚠️ Informe o nome do cliente'); return; }
+
+  const data = await chamarIA('ia-followup', {
+    modo: 'manual',
+    nome_cliente: cliente,
+    valor: parseFloat(document.getElementById('fu-valor').value) || undefined,
+    dias_espera: parseInt(document.getElementById('fu-dias').value),
+    orcamento_id: 'manual-' + Date.now(),
+  }, 'btn-fu');
+
+  if (!data) return;
+
+  const dataEnvio = new Date(data.data_envio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  mostrarResultado('res-fu', `
+    <div class="res-header">🔔 Follow-up Agendado</div>
+    <div style="font-size:.85rem;color:var(--text2);margin-bottom:12px">📅 Será enviado em: <strong style="color:var(--text)">${dataEnvio}</strong></div>
+    <div style="font-size:.75rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Mensagem que será enviada</div>
+    <div class="mensagem-box">${(data.mensagem_gerada || '').replace(/</g, '&lt;')}</div>
+    <button class="copy-btn" style="margin-top:8px" onclick="copiar(${JSON.stringify(data.mensagem_gerada || '')})">📋 Copiar Mensagem</button>
+  `);
+}
+</script>
+</body>
+</html>

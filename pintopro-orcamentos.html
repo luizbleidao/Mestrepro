@@ -478,6 +478,41 @@ function validarStep2(){
   goStep(3);
 }
 
+async function _carregarOrcamentos(){
+  const uid=_getUserId();
+  if(uid){
+    try{
+      const{data:orcs,error}=await _sb.from('orcamentos')
+        .select('id,data_completa,numero,cliente,endereco,status,total,mode,data,sig_token,sig_cliente,sig_cliente_at,sig_cliente_nome,atualizado_em')
+        .eq('user_id',uid)
+        .order('criado_em',{ascending:false});
+      if(!error && orcs){
+        _orcas = orcs.map(o=>{
+          const full = o.data_completa || {};
+          return {
+            ...full,
+            id: o.id, numero: o.numero, cliente: o.cliente,
+            endereco: o.endereco, status: o.status, total: o.total,
+            mode: o.mode, data: o.data,
+            sigToken: o.sig_token, sigCliente: o.sig_cliente,
+            sigClienteAt: o.sig_cliente_at, sigClienteNome: o.sig_cliente_nome,
+          };
+        });
+        const serverIds = new Set(_orcas.map(o=>o.id));
+        const local = JSON.parse(localStorage.getItem(_orcKey())||'[]');
+        local.forEach(l=>{ if(!serverIds.has(l.id)){ _orcas.push(l); _syncOrcSupabase(l); }});
+        _saveLocalCache();
+      }
+    }catch(e){
+      console.warn('Supabase indisponível — carregando cache local:', e.message);
+    }
+  }
+  if(!_orcas.length){
+    _orcas = JSON.parse(localStorage.getItem(_orcKey())||'[]');
+  }
+  renderDash();
+}
+
 document.addEventListener("DOMContentLoaded",async()=>{
   // ── Detectar se está rodando dentro de iframe no app principal
   const _inIframe = window.self !== window.top;
@@ -498,42 +533,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     document.head.appendChild(style);
   }
 
-  // Carregar orçamentos — Supabase é fonte da verdade, localStorage é fallback
-  const uid=_getUserId();
-  if(uid){
-    try{
-      const{data:orcs,error}=await _sb.from('orcamentos')
-        .select('id,data_completa,numero,cliente,endereco,status,total,mode,data,sig_token,sig_cliente,sig_cliente_at,sig_cliente_nome,atualizado_em')
-        .eq('user_id',uid)
-        .order('criado_em',{ascending:false});
-      if(!error && orcs){
-        // Supabase retornou dados — popula _orcas com o objeto completo
-        _orcas = orcs.map(o=>{
-          const full = o.data_completa || {};
-          return {
-            ...full,
-            id: o.id, numero: o.numero, cliente: o.cliente,
-            endereco: o.endereco, status: o.status, total: o.total,
-            mode: o.mode, data: o.data,
-            sigToken: o.sig_token, sigCliente: o.sig_cliente,
-            sigClienteAt: o.sig_cliente_at, sigClienteNome: o.sig_cliente_nome,
-          };
-        });
-        // Mescla entradas locais que ainda não foram sincronizadas
-        const serverIds = new Set(_orcas.map(o=>o.id));
-        const local = JSON.parse(localStorage.getItem(_orcKey())||'[]');
-        local.forEach(l=>{ if(!serverIds.has(l.id)){ _orcas.push(l); _syncOrcSupabase(l); }});
-        _saveLocalCache();
-      }
-    }catch(e){
-      console.warn('Supabase indisponível — carregando cache local:', e.message);
-    }
-  }
-  // Fallback: se _orcas ainda vazio, usa localStorage
-  if(!_orcas.length){
-    _orcas = JSON.parse(localStorage.getItem(_orcKey())||'[]');
-  }
-  renderDash();
+  await _carregarOrcamentos();
   document.getElementById('orcData').value=today();
   document.getElementById('orcNum').value=gerarNumero();
   // Load default preferences
@@ -1415,11 +1415,12 @@ window.addEventListener('message', e => {
   const cmd = e.data.cmd;
   if(cmd === 'novoOrcamento'){ novoOrcamento(); }
   if(cmd === 'syncUser'){
-    // Recebe userId e plano do app pai — necessário pois sessionStorage é isolado por iframe
+    const hadUser = !!_getUserId();
     if(e.data.userId) sessionStorage.setItem('pp_user_id',   e.data.userId);
     if(e.data.plano)  sessionStorage.setItem('pp_user_plano', e.data.plano);
-    // Re-renderiza botões de IA com o plano correto
     _refreshIAState();
+    // Se o userId chegou agora (iframe carregou antes da auth), recarrega do Supabase
+    if(!hadUser && e.data.userId) _carregarOrcamentos();
   }
   if(cmd === 'syncTheme'){
     const isDark = e.data.theme === 'dark';

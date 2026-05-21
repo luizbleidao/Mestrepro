@@ -130,6 +130,7 @@
 [[headers]]
   for = "/pintopro-assinar.html"
   [headers.values]
-    X-Frame-Options  = "ALLOWALL"
+    # Fix #02 auditoria: removido ALLOWALL — página de assinatura não pode ser embarcada por terceiros (clickjacking)
+    X-Frame-Options  = "SAMEORIGIN"
     Cache-Control    = "no-cache, must-revalidate"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; img-src 'self' data: blob:; frame-ancestors *; object-src 'none';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; img-src 'self' data: blob:; frame-ancestors 'self' https://mestrepro.space; object-src 'none';"
