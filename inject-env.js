@@ -105,32 +105,40 @@ const configContent = `// pp-config.js — gerado automaticamente por inject-env
 // Gerado em: ${new Date().toISOString()}
 
 (function () {
-  // ── Supabase ──────────────────────────────────────────────
-  window.__SUPABASE_URL__  = '${supabaseUrl}';
-  window.__SUPABASE_ANON__ = '${supabaseAnon}';
-
 ${metaPixelBlock}
 
 ${ga4Block}
 
   // ── Config central ─────────────────────────────────────────
   window.PP = {
-    // Links do Mercado Pago — atualize conforme pp-config.template.js
-    mpBasico:       window.PP?.mpBasico       || '',
-    mpBasicoAnual:  window.PP?.mpBasicoAnual  || '',
-    mpPro:          window.PP?.mpPro          || '',
-    mpProAnual:     window.PP?.mpProAnual     || '',
-    mpEquipe:       window.PP?.mpEquipe       || '',
-    mpEquipeAnual:  window.PP?.mpEquipeAnual  || '',
-    mpIaPro:        window.PP?.mpIaPro        || '',
-    mpIaProAnual:   window.PP?.mpIaProAnual   || '',
+    // Supabase
+    supabaseUrl: '${supabaseUrl}',
+    supabaseKey: '${supabaseAnon}',
 
-    precos: window.PP?.precos || {
-      basico:  { mensal: 49,  anual: 490,  eq: 41  },
-      pro:     { mensal: 97,  anual: 970,  eq: 81  },
-      equipe:  { mensal: 197, anual: 1970, eq: 164 },
-      iaPro:   { mensal: 297, anual: 2970, eq: 248 },
+    // URLs do app
+    appUrl:      'https://mestrepro.space',
+    assinarPath: '/pintopro-assinar.html',
+    planosPath:  '/pintopro-planos.html',
+
+    // Links do Mercado Pago — atualize conforme pp-config.template.js
+    mpBasico:      'https://mpago.la/19VUY91',
+    mpBasicoAnual: 'https://mpago.la/2mBWE1i',
+    mpPro:         'https://mpago.la/1ieWwdr',
+    mpProAnual:    'https://mpago.la/2YpEhnF',
+    mpEquipe:      'https://mpago.la/1YuzDuc',
+    mpEquipeAnual: 'https://mpago.la/15PqKDb',
+    mpIaPro:       'https://mpago.la/1iWJVWP',
+    mpIaProAnual:  'https://mpago.la/119g9kC',
+
+    precos: {
+      basico:   { mensal: 49,  anual: 490,  eq: 41  },
+      pro:      { mensal: 97,  anual: 970,  eq: 81  },
+      equipe:   { mensal: 197, anual: 1970, eq: 164 },
+      'ia-pro': { mensal: 297, anual: 2970, eq: 247 },
     },
+
+    appNome:   'MestrePro',
+    appSlogan: 'Plataforma do Profissional',
   };
 })();
 `
