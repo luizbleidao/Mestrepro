@@ -427,7 +427,7 @@ function _orcKey(){ return 'orcamentos_' + (_getUserId()||'anon'); }
 function _cntKey(){ return 'pp_orc_count_' + (_getUserId()||'anon'); }
 
 // Notifica o app.html pai para recarregar o dashboard
-function _notifyParent(evt){ try{ window.parent.postMessage({type:evt||'pp_orc_updated'},'*'); }catch(e){} }
+function _notifyParent(evt){ try{ window.parent.postMessage({type:evt||'pp_orc_updated'}, window.location.origin); }catch(e){} }
 
 // Persiste cache local para uso offline
 function _saveLocalCache(){
@@ -518,7 +518,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   const _inIframe = window.self !== window.top;
   if(_inIframe){
     // Sinaliza ao pai que o iframe está pronto — pai responde com syncUser
-    window.parent.postMessage({ type: 'pp_iframe_ready', src: 'orcamentos' }, '*');
+    window.parent.postMessage({ type: 'pp_iframe_ready', src: 'orcamentos' }, window.location.origin);
     // Oculta topbar e dashboard header — o app pai já tem esses elementos
     const style = document.createElement('style');
     style.textContent = `
@@ -662,12 +662,26 @@ function duplicarOrcamento(id){
 // ══════════════════════════════════════════════
 // WIZARD INIT
 // ══════════════════════════════════════════════
-function novoOrcamento(){
-  // Verificar cota do plano
-  const plano=_getUserPlano();
-  const limites={gratuito:5,basico:9999,pro:9999,equipe:9999,'ia-pro':9999,trial:5,'pintor-std':9999,'pintor-pro':9999};
-  const lim=limites[plano]??5;
-  if(_orcas.length>=lim&&lim<9999){alert(`Você atingiu o limite de ${lim} orçamentos do plano Gratuito.\nFaça upgrade para o plano Básico ou superior para criar mais orçamentos.`);return;}
+async function novoOrcamento(){
+  // Verificar cota do plano via RPC server-side — não confiar em sessionStorage
+  const uid = _getUserId();
+  if(uid && uid !== 'demo'){
+    try {
+      const { data: uso, error } = await _sb.rpc('meu_uso');
+      if(error) throw error;
+      if(!uso.orcamentos_ilimitado && uso.orcamentos_restantes !== null && uso.orcamentos_restantes <= 0){
+        alert(`Você atingiu o limite de ${uso.orcamentos_limite} orçamentos do seu plano.\nFaça upgrade para criar mais orçamentos.`);
+        return;
+      }
+    } catch(e) {
+      // Fallback: verificar pelo array local em caso de falha de rede
+      console.warn('[MestrePro] Fallback para verificação local de limite:', e.message);
+      const plano=_getUserPlano();
+      const limites={gratuito:5,basico:9999,pro:9999,equipe:9999,'ia-pro':9999,trial:5,'pintor-std':9999,'pintor-pro':9999};
+      const lim=limites[plano]??5;
+      if(_orcas.length>=lim&&lim<9999){alert(`Você atingiu o limite de ${lim} orçamentos do plano Gratuito.\nFaça upgrade para criar mais orçamentos.`);return;}
+    }
+  }
 
   currentId=null; servicos=[]; itensManual=[]; relacao=[]; logoBase64=null;
   limparCampos();
@@ -1252,7 +1266,7 @@ async function gerarPDF(){
     let x=M;
     cols.forEach((c,i)=>{
       doc.setFontSize(head?7:8);doc.setFont('helvetica',head?'bold':'normal');
-      doc.setTextColor(head?[AR,AG,AB]:[45,55,75]);
+      doc.setTextColor(...(head?[AR,AG,AB]:[45,55,75]));
       const al=i===cols.length-1?'right':'left';
       doc.text(String(c||'').slice(0,65),al==='right'?x+ws[i]:x,Y,{align:al,maxWidth:ws[i]});
       x+=ws[i]+2;
@@ -1304,7 +1318,7 @@ async function gerarPDF(){
 
     // COMPOSIÇÃO
     np(50);sec('COMPOSIÇÃO DO VALOR');
-    const tr=(lbl,val,grand=false)=>{np(8);doc.setFontSize(grand?10:8);doc.setFont('helvetica',grand?'bold':'normal');doc.setTextColor(grand?[25,35,55]:[100,115,135]);doc.text(lbl,M+CW*0.42,Y);doc.setTextColor(grand?[AR,AG,AB]:[16,185,129]);doc.text(val,W-M,Y,{align:'right'});Y+=grand?7.5:5.5;};
+    const tr=(lbl,val,grand=false)=>{np(8);doc.setFontSize(grand?10:8);doc.setFont('helvetica',grand?'bold':'normal');doc.setTextColor(...(grand?[25,35,55]:[100,115,135]));doc.text(lbl,M+CW*0.42,Y);doc.setTextColor(...(grand?[AR,AG,AB]:[16,185,129]));doc.text(val,W-M,Y,{align:'right'});Y+=grand?7.5:5.5;};
     if(T.totalServ>0)tr('Mão de Obra / Serviços','R$ '+fmt(T.totalServ));
     if(orcMode==='prod')tr('Produtos / Materiais','R$ '+fmt(T.totalMat));
     if((T.outros||0)>0)tr('Outros Custos','R$ '+fmt(T.outros));
@@ -1411,6 +1425,8 @@ async function gerarPDF(){
 <script>
 // ── Ouvir comandos do app pai (postMessage)
 window.addEventListener('message', e => {
+  // Rejeitar mensagens de origens não autorizadas — previne injeção de plano/userId falso
+  if(e.origin !== window.location.origin) return;
   if(!e.data || e.data.type !== 'pp_cmd') return;
   const cmd = e.data.cmd;
   if(cmd === 'novoOrcamento'){ novoOrcamento(); }
@@ -1750,31 +1766,4 @@ async function analisarFotoPatologia(i){
         <div class="ia-pat-row"><strong>Tratamento:</strong><span>${data.tratamento}</span></div>
         <div class="ia-pat-row"><strong>Custo extra:</strong><span>${custoStr}</span></div>
         <div style="margin-top:8px">
-          <button class="ia-pat-btn" onclick="aplicarDiagnostico(${i},'${data.tipoPatologia}',\`${data.descricao.replace(/`/g,"'")}\`)">✓ Aplicar diagnóstico ao campo</button>
-        </div>
-      </div>`;
-
-    if(status) status.textContent = '✅ Análise concluída';
-
-  } catch(err) {
-    if(status) status.textContent = '❌ ' + err.message;
-    console.error('[ia-patologia]', err);
-  } finally {
-    if(btn){
-      btn.disabled = false;
-      btn.innerHTML = '🔬 ' + (_getUserPlano()==='ia-pro'?'Analisar novamente':'IA Pro necessário');
-    }
-  }
-}
-
-function aplicarDiagnostico(i, tipo, descricao){
-  sS(i, 'tipoPatologia', tipo);
-  // Atualiza o select visualmente re-renderizando apenas o card
-  const obsEl = document.querySelector(`#step3content .servico-card:nth-child(${i+2}) input[oninput*="obsPatologia"]`);
-  if(obsEl && !obsEl.value) obsEl.value = descricao;
-  sS(i, 'obsPatologia', descricao, true);
-  renderStep3();
-}
-</script>
-</body>
-</html>
+          <button class="ia-pat-btn" onclick="aplicarDiagnostico(${i},'${data.tipoPatologia}',\`${data.descricao.replace(/`/g,"'")}\`)">

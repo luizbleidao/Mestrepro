@@ -915,18 +915,27 @@ async function loadDashboard(){
   }
 
   let orcs = [];
+  let orcCount = 0;
   try{
-    const {data:orcsDb}=await sb.from('orcamentos').select('id,numero,cliente,status,total').eq('user_id',USER.id).order('criado_em',{ascending:false});
+    // Buscar lista para renderização + usar meu_uso() como fonte de verdade para contagem/limite
+    const [{data:orcsDb}, {data:uso}] = await Promise.all([
+      sb.from('orcamentos').select('id,numero,cliente,status,total').eq('user_id',USER.id).order('criado_em',{ascending:false}),
+      sb.rpc('meu_uso')
+    ]);
     orcs = orcsDb || [];
+    // Preferir contador server-side (meu_uso) sobre length do array local
+    orcCount = uso?.orcamentos_total ?? orcs.length;
+    const orcLim   = uso?.orcamentos_limite ?? null;
+    const orcIlim  = uso?.orcamentos_ilimitado ?? true;
+    const orcRest  = uso?.orcamentos_restantes ?? null;
+    document.getElementById('d-orc').textContent = orcIlim ? (orcCount||'—') : `${orcCount}/${orcLim}`;
+    document.getElementById('d-orc-s').textContent = orcIlim ? 'Total criados' : `${Math.max(0,orcRest??0)} restante${orcRest!==1?'s':''}`;
   }catch(e){
-    const orcKey='orcamentos_'+(USER?.id||'anon');
-    orcs=JSON.parse(localStorage.getItem(orcKey)||'[]');
+    console.error('[MestrePro] Erro ao carregar dados do dashboard:', e?.message||e);
+    // Fallback sem localStorage — mostrar estado indeterminado
+    document.getElementById('d-orc').textContent = '—';
+    document.getElementById('d-orc-s').textContent = 'Erro ao carregar';
   }
-
-  const orcCount=orcs.length;
-  const _limOrc=cfg.orcLim<9999;
-  document.getElementById('d-orc').textContent=_limOrc?`${orcCount}/${cfg.orcLim}`:(orcCount||'—');
-  document.getElementById('d-orc-s').textContent=_limOrc?`${Math.max(0,cfg.orcLim-orcCount)} restante${cfg.orcLim-orcCount!==1?'s':''}`:'Total criados';
 
   /* Fix #08 Trecho B — try/catch no query de laudos para evitar spinner infinito */
   let laudos = [];
@@ -1684,21 +1693,4 @@ window._iframeReadyFull = iframeReady;
 function _mostrarErroCritico(msg){
   const el=document.getElementById('loading');
   if(el)el.innerHTML=`<div class="brand" style="font-size:22px;font-weight:700;">MestrePro</div>`
-    +`<p style="color:#f87171;margin-top:16px;font-size:14px;max-width:280px;text-align:center;">${msg}</p>`
-    +`<button onclick="window.location.href='pintopro-login.html'" `
-    +`style="margin-top:12px;padding:8px 20px;background:#5b7fff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Voltar ao login</button>`;
-}
-
-async function _iniciarApp(){
-  try{
-    await init();
-  }catch(e){
-    console.error('[MestrePro] Erro crítico na inicialização:', e?.message||e);
-    _mostrarErroCritico('Ocorreu um erro ao carregar a aplicação.<br>Tente recarregar a página.');
-  }
-}
-
-_iniciarApp();
-</script>
-</body>
-</html>
+    +`<p style="color:#f87171;margin-top:16px;font-size:14px;max-width:28

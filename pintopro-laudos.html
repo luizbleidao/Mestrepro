@@ -686,7 +686,7 @@ function _lpGetUserId(){ return sessionStorage.getItem('pp_user_id')||null; }
 function _laudosKey(){ return LAUDOS_KEY + '_' + (_lpGetUserId()||'anon'); }
 
 // Notifica app.html pai para recarregar dashboard
-function _lpNotifyParent(){ try{ window.parent.postMessage({type:'pp_ldo_updated'},'*'); }catch(e){} }
+function _lpNotifyParent(){ try{ window.parent.postMessage({type:'pp_ldo_updated'}, window.location.origin); }catch(e){} }
 
 async function _syncLaudoSupabase(snap){
   const userId=_lpGetUserId(); if(!userId || !_lpSb)return;
@@ -2607,7 +2607,7 @@ document.addEventListener('drop',e=>{
 document.addEventListener('DOMContentLoaded',()=>{
  // Sinaliza ao pai que o iframe está pronto — pai responde com syncUser
  if(window.self !== window.top){
-   window.parent.postMessage({ type: 'pp_iframe_ready', src: 'laudos' }, '*');
+   window.parent.postMessage({ type: 'pp_iframe_ready', src: 'laudos' }, window.location.origin);
  }
  loadLaudos(); render();
  // Load prof sig from unified storage (safe — no DOM needed)
@@ -2619,6 +2619,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 
  // ── Ouvir comandos do app pai (postMessage)
  window.addEventListener('message', e => {
+   // Rejeitar mensagens de origens não autorizadas — previne injeção de plano/userId falso
+   if(e.origin !== window.location.origin) return;
    if(!e.data || e.data.type !== 'pp_cmd') return;
    const cmd = e.data.cmd;
    if(cmd === 'startNewLaudo'){ startNewLaudo(); }
@@ -2636,11 +2638,4 @@ document.addEventListener('DOMContentLoaded',()=>{
      document.documentElement.style.setProperty('--white', isDark ? '#1a1a17' : '#fff');
      document.documentElement.style.setProperty('--txt', isDark ? '#f2ede6' : '#1E2A3A');
      document.documentElement.style.setProperty('--border', isDark ? '#2a2a26' : '#C8D8EE');
-     document.documentElement.style.setProperty('--sub', isDark ? '#a09080' : '#5A6A7E');
-     document.body.style.background = isDark ? '#0a0a09' : '#EEF3FA';
-   }
- });
-});
-</script>
-</body>
-</html>
+     document.docum
