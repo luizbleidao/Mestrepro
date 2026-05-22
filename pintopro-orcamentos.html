@@ -1766,4 +1766,31 @@ async function analisarFotoPatologia(i){
         <div class="ia-pat-row"><strong>Tratamento:</strong><span>${data.tratamento}</span></div>
         <div class="ia-pat-row"><strong>Custo extra:</strong><span>${custoStr}</span></div>
         <div style="margin-top:8px">
-          <button class="ia-pat-btn" onclick="aplicarDiagnostico(${i},'${data.tipoPatologia}',\`${data.descricao.replace(/`/g,"'")}\`)">
+          <button class="ia-pat-btn" onclick="aplicarDiagnostico(${i},'${data.tipoPatologia}',\`${data.descricao.replace(/`/g,"'")}\`)">✓ Aplicar diagnóstico ao campo</button>
+        </div>
+      </div>`;
+
+    if(status) status.textContent = '✅ Análise concluída';
+
+  } catch(err) {
+    if(status) status.textContent = '❌ ' + err.message;
+    console.error('[ia-patologia]', err);
+  } finally {
+    if(btn){
+      btn.disabled = false;
+      btn.innerHTML = '🔬 ' + (_getUserPlano()==='ia-pro'?'Analisar novamente':'IA Pro necessário');
+    }
+  }
+}
+
+function aplicarDiagnostico(i, tipo, descricao){
+  sS(i, 'tipoPatologia', tipo);
+  // Atualiza o select visualmente re-renderizando apenas o card
+  const obsEl = document.querySelector(`#step3content .servico-card:nth-child(${i+2}) input[oninput*="obsPatologia"]`);
+  if(obsEl && !obsEl.value) obsEl.value = descricao;
+  sS(i, 'obsPatologia', descricao, true);
+  renderStep3();
+}
+</script>
+</body>
+</html>

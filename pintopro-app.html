@@ -823,7 +823,7 @@ async function init(){
   if(!session){window.location.href='pintopro-login.html';return;}
   USER=session.user;
   try { await sb.rpc('verificar_expiracao_trial', { p_user_id: USER.id }); } catch(e) {}
-  const {data:profile}=await sb.from('profiles').select('*').eq('id',USER.id).single();
+  const {data:profile}=await sb.from('profiles').select('id,nome,plano,perfil,criado_em,trial_fim,cidade,tel,sig_profissional,empresa_data,preferencias,lgpd_aceito,equipe_owner_id,laudos_mes,orcamentos_total,ativo,conta_excluir_em').eq('id',USER.id).single();
   PROFILE=profile||{nome:USER.user_metadata?.nome||USER.email,perfil:'pintor',plano:'gratuito',criado_em:USER.created_at,trial_fim:null};
   PLANO=_resolverPlano(PROFILE.plano||'gratuito');
   sessionStorage.setItem('pp_user_id', USER.id);
@@ -1189,7 +1189,7 @@ function irCheckout(planoId, anual){
     const planoKey      = `mestrepro_${idNormalizado}_${periodo}`;
     link = `${link}?external_reference=${encodeURIComponent(USER.id + ':' + planoKey)}`;
   }
-  if (link) { window.open(link, '_blank'); }
+  if (link) { window.open(link, '_blank', 'noopener,noreferrer'); }
   else {
     window.location.href = 'pintopro-planos.html?plano=' + planoId + (anual ? '&periodo=anual' : '');
   }
@@ -1390,7 +1390,12 @@ function loadSettings() {
     if (el_cidade) el_cidade.value = PROFILE.cidade || '';
   }
 
-  const emp = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+  // Usar empresa_data do Supabase como fonte de verdade; localStorage como fallback offline
+  const empRemoto = PROFILE?.empresa_data;
+  const empLocal  = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+  const emp = empRemoto || empLocal;
+  // Sincronizar localStorage com dados do servidor para que PDFs usem dados atualizados
+  if (empRemoto) localStorage.setItem('empresaSalva', JSON.stringify(empRemoto));
   const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
   _s('cfg-emp-nome', emp.nome);
   _s('cfg-emp-doc', emp.doc);
@@ -1412,7 +1417,11 @@ function loadSettings() {
     document.getElementById('cfg-logo-placeholder').style.display = 'none';
   }
 
-  const pref = JSON.parse(localStorage.getItem('pp_preferencias') || '{}');
+  // Preferências: Supabase tem prioridade sobre localStorage
+  const prefRemoto = PROFILE?.preferencias;
+  const prefLocal  = JSON.parse(localStorage.getItem('pp_preferencias') || '{}');
+  const pref = prefRemoto || prefLocal;
+  if (prefRemoto) localStorage.setItem('pp_preferencias', JSON.stringify(prefRemoto));
   if (pref.validade) document.getElementById('cfg-validade').value = pref.validade;
   if (pref.cond) document.getElementById('cfg-cond').value = pref.cond;
   if (pref.assinatura) document.getElementById('cfg-assinatura').value = pref.assinatura;
@@ -1458,7 +1467,7 @@ async function changePassword() {
   showCfgMsg('cfg-senha-msg', '✅ Senha alterada com sucesso!', 'ok');
 }
 
-function saveCompanyData() {
+async function saveCompanyData() {
   const gv = id => document.getElementById(id)?.value?.trim() || '';
   const emp = {
     nome: gv('cfg-emp-nome'),
@@ -1475,12 +1484,23 @@ function saveCompanyData() {
     pixWpp: gv('cfg-pix-wpp'),
     logo: cfgLogoBase64 || null
   };
+  // Sempre salva no localStorage (cache local + modo demo)
   localStorage.setItem('empresaSalva', JSON.stringify(emp));
+  // Salvar no Supabase (fonte de verdade — persiste entre dispositivos)
+  if (USER?.id && USER.id !== 'demo') {
+    const { error } = await sb.from('profiles').update({ empresa_data: emp }).eq('id', USER.id);
+    if (error) {
+      console.error('[MestrePro] Erro ao salvar empresa no Supabase:', error.message);
+      showCfgMsg('cfg-empresa-msg', '⚠️ Salvo localmente, mas houve erro ao sincronizar: ' + error.message, 'err');
+      return;
+    }
+    if (PROFILE) PROFILE.empresa_data = emp;
+  }
   showCfgMsg('cfg-empresa-msg', '✅ Dados da empresa salvos! Serão usados em novos orçamentos e PDFs.', 'ok');
   notif('🏢 Empresa atualizada!');
 }
 
-function savePreferences() {
+async function savePreferences() {
   const pref = {
     validade: document.getElementById('cfg-validade')?.value || '15',
     cond: document.getElementById('cfg-cond')?.value || '50_50',
@@ -1488,6 +1508,11 @@ function savePreferences() {
     obsPadrao: document.getElementById('cfg-obs-padrao')?.value?.trim() || ''
   };
   localStorage.setItem('pp_preferencias', JSON.stringify(pref));
+  if (USER?.id && USER.id !== 'demo') {
+    const { error } = await sb.from('profiles').update({ preferencias: pref }).eq('id', USER.id);
+    if (error) console.error('[MestrePro] Erro ao salvar preferências:', error.message);
+    else if (PROFILE) PROFILE.preferencias = pref;
+  }
   showCfgMsg('cfg-pref-msg', '✅ Preferências salvas com sucesso!', 'ok');
   notif('⚙️ Preferências atualizadas!');
 }
@@ -1652,7 +1677,7 @@ function compartilharWpp() {
   const link = document.getElementById('equipe-link-input')?.dataset?.link || document.getElementById('equipe-link-input')?.value;
   if (!link) return;
   const msg = `Olá! Você foi convidado para entrar na minha equipe no MestrePro. Clique para acessar: ${link}`;
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener,noreferrer');
 }
 
 async function removerMembro(membroId, nome) {
@@ -1693,4 +1718,21 @@ window._iframeReadyFull = iframeReady;
 function _mostrarErroCritico(msg){
   const el=document.getElementById('loading');
   if(el)el.innerHTML=`<div class="brand" style="font-size:22px;font-weight:700;">MestrePro</div>`
-    +`<p style="color:#f87171;margin-top:16px;font-size:14px;max-width:28
+    +`<p style="color:#f87171;margin-top:16px;font-size:14px;max-width:280px;text-align:center;">${msg}</p>`
+    +`<button onclick="window.location.href='pintopro-login.html'" `
+    +`style="margin-top:12px;padding:8px 20px;background:#5b7fff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Voltar ao login</button>`;
+}
+
+async function _iniciarApp(){
+  try{
+    await init();
+  }catch(e){
+    console.error('[MestrePro] Erro crítico na inicialização:', e?.message||e);
+    _mostrarErroCritico('Ocorreu um erro ao carregar a aplicação.<br>Tente recarregar a página.');
+  }
+}
+
+_iniciarApp();
+</script>
+</body>
+</html>

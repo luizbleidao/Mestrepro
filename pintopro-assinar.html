@@ -338,4 +338,33 @@ async function assinar() {
     : null);
 
   if (error) {
-    showErr('Er
+    showErr('Erro ao registrar assinatura: ' + error.message);
+    btn.disabled = false;
+    btn.innerHTML = '✍️ Assinar documento';
+    return;
+  }
+
+  const code = `PP-${TOKEN.slice(0,8).toUpperCase()}-${docRecord.id.slice(-6).toUpperCase()}`;
+  document.getElementById('sucesso-code').textContent = code;
+  show('scr-sucesso');
+}
+
+// ── Captura de IP via API pública (para trilha de auditoria) ─────────
+// O IP é capturado no momento da assinatura e registrado junto
+// com data/hora como evidência para validade jurídica da MP 2.200-2/2001.
+async function getClientIP() {
+  try {
+    // api.ipify.org retorna apenas o IP em texto puro (sem dados pessoais extras)
+    const res = await fetch('https://api.ipify.org?format=json');
+    if (!res.ok) return 'indisponível';
+    const data = await res.json();
+    return data.ip || 'indisponível';
+  } catch {
+    return 'indisponível';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

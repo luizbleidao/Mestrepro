@@ -67,7 +67,7 @@ async function loadContratos() {
 
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
-    const { data } = await sb.from('contratos').select('*').eq('user_id', uid).order('criado_em', { ascending: false });
+    const { data } = await sb.from('contratos').select('id,numero,cliente,endereco,valor,status,dados,assinado_prof,assinado_cli,sig_token,sig_cli_base64,sig_cli_at,sig_cli_nome,sig_cli_ip,sig_prof,sig_token_expires_at,orcamento_id,data_inicio,data_fim,criado_em,atualizado_em').eq('user_id', uid).order('criado_em', { ascending: false });
     _contratos = data || [];
   } else {
     try { _contratos = JSON.parse(localStorage.getItem('pp_contratos') || '[]'); } catch { _contratos = []; }
@@ -593,7 +593,7 @@ ${ct.dados?.clausulas ? `<div class="sec">
 </body></html>`;
 
   const w = window.open('', '_blank');
-  if (w) { w.document.write(html); w.document.close(); }
+  if (w) { w.opener = null; w.document.write(html); w.document.close(); }
 }
 
 async function gerarReciboDeContrato(contratoId) {
@@ -615,7 +615,7 @@ async function loadRecibos() {
 
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
-    const { data } = await sb.from('recibos').select('*').eq('user_id', uid).order('criado_em', { ascending: false });
+    const { data } = await sb.from('recibos').select('id,numero,cliente,valor,descricao,forma_pgto,data,dados,criado_em,contrato_id,observacao,parcela,orc_id').eq('user_id', uid).order('criado_em', { ascending: false });
     _recibos = data || [];
   } else {
     try { _recibos = JSON.parse(localStorage.getItem('pp_recibos') || '[]'); } catch { _recibos = []; }
@@ -881,7 +881,7 @@ ${canhotoBrief}
 </body></html>`;
 
   const w = window.open('', '_blank');
-  if (w) { w.document.write(html); w.document.close(); }
+  if (w) { w.opener = null; w.document.write(html); w.document.close(); }
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -895,7 +895,7 @@ const _TIPO_IC  = { servico:'🔨', visita:'🔍', reuniao:'💬', prazo:'⏰', 
 async function loadAgenda() {
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
-    const { data } = await sb.from('agenda').select('*').eq('user_id', uid).order('data_inicio');
+    const { data } = await sb.from('agenda').select('id,titulo,cliente,endereco,tipo,status,data_inicio,data_fim,hora_inicio,hora_fim,cor,obs,criado_em,atualizado_em').eq('user_id', uid).order('data_inicio');
     _eventos = (data || []).map(e => ({...e, inicio: e.data_inicio, fim: e.data_fim}));
   } else {
     try { _eventos = JSON.parse(localStorage.getItem('pp_agenda') || '[]'); } catch { _eventos = []; }
@@ -1103,4 +1103,4 @@ async function excluirEvento(id) {
 
 // ──────────────────────────────────────────────────────────────
 // MODAL COMPARTILHADO (módulos)
-// ───────────────────────�
+// ───────────────────────�
