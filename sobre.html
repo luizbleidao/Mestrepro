@@ -78,7 +78,7 @@ h1{font-family:'Syne',sans-serif;font-size:clamp(36px,6vw,72px);font-weight:800;
 .time{padding:80px 0;}
 .time h2{font-family:'Syne',sans-serif;font-size:clamp(28px,3.5vw,44px);font-weight:800;letter-spacing:-0.03em;margin-bottom:12px;}
 .time-sub{font-size:17px;color:var(--text2);max-width:480px;margin-bottom:48px;}
-.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:720px;margin:0 auto;}
 .team-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:32px 24px;text-align:center;transition:.2s;}
 .team-card:hover{border-color:var(--acc);transform:translateY(-3px);}
 .team-av{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;margin:0 auto 16px;border:2px solid var(--border);}
@@ -114,7 +114,6 @@ footer{background:var(--surf);border-top:1px solid var(--border);padding:48px 24
 @media(max-width:900px){
   .missao{grid-template-columns:1fr;gap:48px;}
   .valores-grid{grid-template-columns:1fr 1fr;}
-  .team-grid{grid-template-columns:1fr 1fr;}
   .footer-inner{grid-template-columns:1fr 1fr;}
 }
 @media(max-width:600px){
@@ -272,29 +271,23 @@ footer{background:var(--surf);border-top:1px solid var(--border);padding:48px 24
     <div class="time reveal">
       <span class="section-label">As pessoas por trás</span>
       <h2>Nosso time</h2>
-      <p class="time-sub">Um time pequeno e obcecado com um problema real.</p>
+      <p class="time-sub">Dois fundadores, um problema real, zero enrolação.</p>
       <div class="team-grid">
         <div class="team-card">
           <div class="team-av">LF</div>
           <div class="team-name">Luiz Felipe</div>
-          <div class="team-role">Produto & Colorimetria</div>
-          <p class="team-bio">Consultor técnico em tintas com expertise em colorimetria de precisão e patologias de superfície. Trouxe a visão do profissional que usa o produto todo dia.</p>
+          <div class="team-role">Fundador & Produto</div>
+          <p class="team-bio">Criou o MestrePro do zero — da ideia ao código, do layout ao banco de dados. Consultor técnico em tintas com expertise em colorimetria e patologias de superfície, trouxe a visão de quem viveu o problema por dentro e decidiu resolver.</p>
         </div>
         <div class="team-card">
-          <div class="team-av">RP</div>
-          <div class="team-name">Rafael P.</div>
-          <div class="team-role">Engenharia</div>
-          <p class="team-bio">Engenheiro de software especializado em produtos para mobile. Garante que o sistema funcione com sinal 3G em qualquer canto do Brasil.</p>
-        </div>
-        <div class="team-card">
-          <div class="team-av">CN</div>
-          <div class="team-name">Carolina N.</div>
-          <div class="team-role">Design & UX</div>
-          <p class="team-bio">Designer com foco em interfaces para usuários não-técnicos. Sua regra de ouro: se o seu pai de 60 anos não consegue usar, a interface está errada.</p>
+          <div class="team-av">AI</div>
+          <div class="team-name">Adriano Ítalo</div>
+          <div class="team-role">Marketing & Crescimento</div>
+          <p class="team-bio">Responsável por levar o MestrePro até os profissionais que mais precisam dele. Estrategista de crescimento com foco em canais digitais para o mercado de serviços autônomos no Brasil.</p>
         </div>
       </div>
       <p style="text-align:center;margin-top:32px;font-size:14px;color:var(--text3)">
-        Quer fazer parte? <a href="mailto:time@mestrepro.com.br" style="color:var(--acc);text-decoration:none;">time@mestrepro.com.br</a>
+        Quer fazer parte? <a href="mailto:contatomestrepro@gmail.com" style="color:var(--acc);text-decoration:none;">contatomestrepro@gmail.com</a>
       </p>
     </div>
   </div>
@@ -327,7 +320,7 @@ footer{background:var(--surf);border-top:1px solid var(--border);padding:48px 24
       <a href="/sobre.html">Sobre nós</a>
       <a href="/blog.html">Blog</a>
       <a href="/pintopro-login.html?plano=afiliado">Afiliados</a>
-      <a href="mailto:suporte@mestrepro.com.br">Contato</a>
+      <a href="mailto:contatomestrepro@gmail.com">Contato</a>
     </div>
     <div class="footer-col">
       <h4>Legal</h4>
@@ -338,7 +331,6 @@ footer{background:var(--surf);border-top:1px solid var(--border);padding:48px 24
   </div>
   <div class="footer-bottom">
     <span>© 2026 MestrePro. Todos os direitos reservados.</span>
-    <span>Feito com ❤️ no Brasil</span>
   </div>
 </footer>
 
@@ -354,3 +346,4 @@ window.addEventListener('scroll', () => {
 </script>
 </body>
 </html>
+                                                                                                                                                                                                                                              
