@@ -752,7 +752,7 @@ const CFG = {
   gratuito: {
     label:'🆓 Gratuito',
     telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
-    orcLim:3, laudoLim:1, pdfMarca:true, multiUser:false, ia:false,
+    orcLim:5, laudoLim:2, pdfMarca:true, multiUser:false, ia:false,
   },
   trial: {
     label:'🕐 Trial 7 dias',
@@ -915,49 +915,41 @@ async function loadDashboard(){
   }
 
   let orcs = [];
+  let laudos = [];
   let orcCount = 0;
   try{
-    // Buscar lista para renderização + usar meu_uso() como fonte de verdade para contagem/limite
-    const [{data:orcsDb}, {data:uso}] = await Promise.all([
+    // Buscar orçamentos, laudos e uso em paralelo — meu_uso() é fonte de verdade para limites
+    const [{data:orcsDb}, {data:laudosDb}, {data:uso}] = await Promise.all([
       sb.from('orcamentos').select('id,numero,cliente,status,total').eq('user_id',USER.id).order('criado_em',{ascending:false}),
+      sb.from('laudos').select('id,cliente,criticidade,data').eq('user_id',USER.id).order('data',{ascending:false}).limit(5),
       sb.rpc('meu_uso')
     ]);
-    orcs = orcsDb || [];
-    // Preferir contador server-side (meu_uso) sobre length do array local
+    orcs   = orcsDb   || [];
+    laudos = laudosDb || [];
+
+    // ── Orçamentos (fonte: meu_uso RPC) ──
     orcCount = uso?.orcamentos_total ?? orcs.length;
-    const orcLim   = uso?.orcamentos_limite ?? null;
-    const orcIlim  = uso?.orcamentos_ilimitado ?? true;
-    const orcRest  = uso?.orcamentos_restantes ?? null;
+    const orcLim  = uso?.orcamentos_limite ?? null;
+    const orcIlim = uso?.orcamentos_ilimitado ?? true;
+    const orcRest = uso?.orcamentos_restantes ?? null;
     document.getElementById('d-orc').textContent = orcIlim ? (orcCount||'—') : `${orcCount}/${orcLim}`;
     document.getElementById('d-orc-s').textContent = orcIlim ? 'Total criados' : `${Math.max(0,orcRest??0)} restante${orcRest!==1?'s':''}`;
+
+    // ── Laudos (fonte: meu_uso RPC — não mais cfg.laudoLim hardcoded) ──
+    const ldoIlim = uso?.laudos_ilimitado ?? (cfg.laudoLim >= 9999);
+    const ldoMes  = uso?.laudos_mes       ?? laudos.length;
+    const ldoLim  = uso?.laudos_limite_mes ?? null;
+    const ldoRest = uso?.laudos_restantes  ?? null;
+    document.getElementById('d-ldo').textContent = ldoIlim ? (laudos.length||'—') : `${ldoMes}/${ldoLim}`;
+    document.getElementById('d-ldo-s').textContent = ldoIlim ? 'laudos emitidos' : `${Math.max(0,ldoRest??0)} restante${ldoRest!==1?'s':''} este mês`;
+
   }catch(e){
     console.error('[MestrePro] Erro ao carregar dados do dashboard:', e?.message||e);
-    // Fallback sem localStorage — mostrar estado indeterminado
     document.getElementById('d-orc').textContent = '—';
     document.getElementById('d-orc-s').textContent = 'Erro ao carregar';
+    document.getElementById('d-ldo').textContent = '—';
+    document.getElementById('d-ldo-s').textContent = 'Erro ao carregar';
   }
-
-  /* Fix #08 Trecho B — try/catch no query de laudos para evitar spinner infinito */
-  let laudos = [];
-  try{
-    const {data:laudosDb,error:laudosErr}=await sb.from('laudos').select('id,cliente,criticidade,data').eq('user_id',USER.id).order('data',{ascending:false}).limit(5);
-    if(laudosErr) throw laudosErr;
-    laudos = laudosDb || [];
-  }catch(e){ console.error('[loadDashboard] laudos:', e?.message||e); }
-  const laudoCount=laudos.length;
-  const _limLdo=cfg.laudoLim<9999;
-
-  let laudoMes=laudoCount;
-  if(_limLdo && laudos.length){
-    const agora=new Date();
-    laudoMes=laudos.filter(l=>{
-      if(!l.data) return false;
-      const d=new Date(l.data);
-      return d.getMonth()===agora.getMonth() && d.getFullYear()===agora.getFullYear();
-    }).length;
-  }
-  document.getElementById('d-ldo').textContent=_limLdo?`${laudoMes}/${cfg.laudoLim}`:laudoCount;
-  document.getElementById('d-ldo-s').textContent=_limLdo?`${Math.max(0,cfg.laudoLim-laudoMes)} restante${(cfg.laudoLim-laudoMes)!==1?'s':''} este mês`:'laudos emitidos';
 
   renderDashLaudos(laudos);
   renderDashOrcs(orcs.slice(0,3));
@@ -1733,6 +1725,67 @@ async function _iniciarApp(){
 }
 
 _iniciarApp();
+</script>
+
+<!-- BOTÃO FLUTUANTE DE SUPORTE -->
+<style>
+.suporte-fab{position:fixed;bottom:24px;right:24px;z-index:9000;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
+.suporte-fab-btn{width:52px;height:52px;border-radius:50%;background:var(--acc);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:.2s;flex-shrink:0;}
+.suporte-fab-btn:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(0,0,0,.3);}
+.suporte-modal{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:20px;width:260px;box-shadow:0 8px 32px rgba(0,0,0,.2);display:none;flex-direction:column;gap:12px;}
+.suporte-modal.open{display:flex;}
+.suporte-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.suporte-modal-title{font-weight:700;font-size:15px;color:var(--text);}
+.suporte-modal-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:0;}
+.suporte-modal-close:hover{color:var(--text);}
+.suporte-link{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surf2);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:.15s;}
+.suporte-link:hover{border-color:var(--acc);background:var(--surf);}
+.suporte-link-icon{font-size:22px;flex-shrink:0;}
+.suporte-link-info{display:flex;flex-direction:column;gap:2px;}
+.suporte-link-label{font-weight:600;font-size:13px;}
+.suporte-link-detail{font-size:12px;color:var(--text3);}
+.suporte-divider{font-size:11px;color:var(--text3);text-align:center;}
+@media(max-width:400px){.suporte-fab{bottom:16px;right:16px;}.suporte-modal{width:calc(100vw - 32px);}}
+</style>
+
+<div class="suporte-fab" id="suporte-fab">
+  <div class="suporte-modal" id="suporte-modal">
+    <div class="suporte-modal-header">
+      <span class="suporte-modal-title">💬 Precisa de ajuda?</span>
+      <button class="suporte-modal-close" onclick="toggleSuporteModal()" aria-label="Fechar">✕</button>
+    </div>
+    <a class="suporte-link" href="https://wa.me/5517991840628?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20MestrePro!" target="_blank" rel="noopener noreferrer">
+      <span class="suporte-link-icon">🟢</span>
+      <div class="suporte-link-info">
+        <span class="suporte-link-label">WhatsApp</span>
+        <span class="suporte-link-detail">(17) 99184-0628</span>
+      </div>
+    </a>
+    <span class="suporte-divider">ou</span>
+    <a class="suporte-link" href="mailto:contatomestrepro@gmail.com?subject=Suporte%20MestrePro">
+      <span class="suporte-link-icon">✉️</span>
+      <div class="suporte-link-info">
+        <span class="suporte-link-label">E-mail</span>
+        <span class="suporte-link-detail">contatomestrepro@gmail.com</span>
+      </div>
+    </a>
+    <p style="font-size:11px;color:var(--text3);margin:4px 0 0;text-align:center">Respondemos em até 24h 🕐</p>
+  </div>
+  <button class="suporte-fab-btn" onclick="toggleSuporteModal()" aria-label="Abrir suporte" title="Suporte">🎧</button>
+</div>
+
+<script>
+function toggleSuporteModal(){
+  const m = document.getElementById('suporte-modal');
+  m.classList.toggle('open');
+}
+// Fechar ao clicar fora
+document.addEventListener('click', function(e){
+  const fab = document.getElementById('suporte-fab');
+  if(fab && !fab.contains(e.target)){
+    document.getElementById('suporte-modal').classList.remove('open');
+  }
+});
 </script>
 </body>
 </html>
