@@ -1059,7 +1059,43 @@ async function _syncSigTokens(){
   }catch(e){}
 }
 
-function startNewLaudo(){ newLaudo();SCR='form';render(); }
+async function startNewLaudo(){
+  // Verificar cota do plano via RPC server-side — não confiar apenas no frontend
+  const uid = _lpGetUserId();
+  if(uid && uid !== 'demo'){
+    try{
+      const { data: res, error } = await _lpSb.rpc('check_laudo_permitido');
+      if(error) throw error;
+      if(res && res.permitido === false){
+        const lim  = res.limite  ?? '?';
+        const rest = res.restantes ?? 0;
+        const reset = res.reset_em ? ` Limite reinicia em ${res.reset_em}.` : '';
+        alert(`Você atingiu o limite de ${lim} laudo${lim!==1?'s':''} este mês.\nFaça upgrade para criar mais laudos.${reset}`);
+        return;
+      }
+    }catch(e){
+      // Fallback: verificar pelo contador local em caso de falha de rede
+      console.warn('[MestrePro] Fallback verificação limite laudos:', e.message);
+      const plano = _lpGetUserPlano ? _lpGetUserPlano() : (sessionStorage.getItem('pp_user_plano')||'gratuito');
+      const limites = {gratuito:2, trial:5, basico:3, pro:9999, equipe:9999, 'ia-pro':9999};
+      const lim = limites[plano] ?? 2;
+      if(lim < 9999){
+        const mes = new Date().getMonth();
+        const ano = new Date().getFullYear();
+        const usadosMes = LAUDOS.filter(l => {
+          if(!l.data) return false;
+          const d = new Date(l.data);
+          return d.getMonth()===mes && d.getFullYear()===ano;
+        }).length;
+        if(usadosMes >= lim){
+          alert(`Você atingiu o limite de ${lim} laudo${lim!==1?'s':''} este mês.\nFaça upgrade para criar mais laudos.`);
+          return;
+        }
+      }
+    }
+  }
+  newLaudo(); SCR='form'; render();
+}
 
 // ─── CONFIGURAÇÕES / ASSINATURA DO TÉCNICO ───────────────────
 let settingsSigPad = null;

@@ -65,6 +65,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-out:hover{border-color:var(--acc);color:var(--acc);}
 .forgot{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif;float:right;margin:-4px 0 10px;}
 .forgot:hover{color:var(--acc);}
+/* OTP */
+.otp-digit{width:42px;height:52px;text-align:center;font-size:22px;font-weight:700;font-family:'DM Sans',sans-serif;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);outline:none;transition:.15s;}
+.otp-digit:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(90,120,255,.15);}
+@media(max-width:380px){.otp-digit{width:36px;height:46px;font-size:18px;}}
 
 /* ── FEEDBACK ── */
 .msg{border-radius:var(--rs);padding:10px 13px;font-size:12px;margin-bottom:12px;display:none;}
@@ -203,7 +207,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <button class="btn btn-out" onclick="setTab('c')">Ainda não tenho conta</button>
       </div>
 
-      <!-- CRIAR CONTA -->
+      <!-- CRIAR CONTA — Passo 1: Dados -->
       <div id="tc" style="display:none">
         <div class="msg err" id="ec"></div>
         <div class="field">
@@ -229,7 +233,35 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
           <label>Senha</label>
           <input id="cs" type="password" placeholder="Mínimo 6 caracteres">
         </div>
-        <button class="btn btn-acc" id="btn-cad" onclick="cadastrar()">Criar conta e escolher plano</button>
+        <button class="btn btn-acc" id="btn-cad" onclick="iniciarCadastro()">Criar conta e escolher plano</button>
+      </div>
+
+      <!-- CRIAR CONTA — Passo 2: Verificação OTP -->
+      <div id="tc-otp" style="display:none">
+        <div class="msg err" id="ec-otp"></div>
+        <div style="text-align:center;margin-bottom:18px">
+          <div style="font-size:32px;margin-bottom:8px">📱</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)">Verifique seu WhatsApp</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.5">
+            Enviamos um código de 6 dígitos para<br>
+            <strong id="otp-tel-display"></strong>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:18px" id="otp-inputs">
+          <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        </div>
+        <button class="btn btn-acc" id="btn-verificar" onclick="verificarOTP()">Verificar e criar conta</button>
+        <div style="text-align:center;margin-top:12px">
+          <button class="forgot" id="btn-reenviar" onclick="reenviarOTP()">Não recebi — reenviar código</button>
+        </div>
+        <div style="text-align:center;margin-top:8px">
+          <button class="forgot" onclick="voltarCadastro()">← Voltar e corrigir dados</button>
+        </div>
       </div>
     </div>
 
@@ -445,29 +477,110 @@ async function login(){
   }
 }
 
-async function cadastrar(){
+// ── OTP: estado temporário do cadastro ──
+let _otpTokenVerificacao = null;
+
+function _normalizarTel(tel){
+  const d = tel.replace(/\D/g,'');
+  if(d.startsWith('55') && d.length >= 12) return d;
+  if(d.length === 11 || d.length === 10) return '55' + d;
+  return d;
+}
+
+// Passo 1: validar campos e enviar OTP
+async function iniciarCadastro(){
+  const nome=gv('cn'),email=gv('ce'),tel=gv('ct'),cidade=gv('cc'),senha=gv('cs');
+  hideMsg('ec');
+  if(!nome||!email||!tel||!senha||senha.length<6){
+    showMsg('ec','Preencha todos os campos (senha mín. 6 caracteres).','err'); return;
+  }
+  const telNorm = _normalizarTel(tel);
+  if(telNorm.length < 12){
+    showMsg('ec','WhatsApp inválido. Digite com DDD, ex: (17) 99999-9999.','err'); return;
+  }
+
+  setBtn('btn-cad','<div class="spin"></div> Enviando código...', true);
+  try{
+    const supaUrl = window.PP?.supabaseUrl || '';
+    const supaKey = window.PP?.supabaseAnonKey || '';
+    const res = await fetch(`${supaUrl}/functions/v1/wpp-otp-send`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':supaKey},
+      body: JSON.stringify({ telefone: tel }),
+    });
+    const json = await res.json();
+    if(!res.ok){
+      const msg = json?.mensagem || (json?.erro === 'numero_ja_cadastrado'
+        ? 'Este número já tem uma conta MestrePro. Faça login.'
+        : 'Não foi possível enviar o código. Tente novamente.');
+      showMsg('ec', msg, 'err');
+      setBtn('btn-cad','Criar conta e escolher plano', false);
+      return;
+    }
+
+    // Mostrar tela de OTP
+    document.getElementById('otp-tel-display').textContent =
+      tel.replace(/(\d{2})(\d{2})(\d{5})(\d{4})/, '+$1 ($2) $3-$4') || tel;
+    document.getElementById('tc').style.display = 'none';
+    document.getElementById('tc-otp').style.display = '';
+    _initOtpInputs();
+    document.querySelector('.otp-digit').focus();
+  }catch(e){
+    showMsg('ec','Erro de conexão. Verifique sua internet e tente novamente.','err');
+    setBtn('btn-cad','Criar conta e escolher plano', false);
+  }
+}
+
+// Passo 2: verificar OTP e criar conta
+async function verificarOTP(){
+  hideMsg('ec-otp');
+  const digits = [...document.querySelectorAll('.otp-digit')].map(i=>i.value).join('');
+  if(digits.length < 6){ showMsg('ec-otp','Digite os 6 dígitos do código.','err'); return; }
+
   const nome=gv('cn'),email=gv('ce'),tel=gv('ct'),cidade=gv('cc');
   const perfil=document.getElementById('cp').value,senha=gv('cs');
-  hideMsg('ec');
-  if(!nome||!email||!senha||senha.length<6){showMsg('ec','Preencha todos os campos (senha mín. 6 caracteres).','err');return;}
-  setBtn('btn-cad','<div class="spin"></div> Criando conta...',true);
+
+  setBtn('btn-verificar','<div class="spin"></div> Verificando...', true);
   try{
-    const{data:signUpData, error}=await sb.auth.signUp({email,password:senha,options:{data:{nome,tel,cidade,perfil}}});
+    const supaUrl = window.PP?.supabaseUrl || '';
+    const supaKey = window.PP?.supabaseAnonKey || '';
+
+    // Verificar OTP
+    const resOtp = await fetch(`${supaUrl}/functions/v1/wpp-otp-verify`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':supaKey},
+      body: JSON.stringify({ telefone: tel, codigo: digits }),
+    });
+    const jsonOtp = await resOtp.json();
+    if(!resOtp.ok){
+      showMsg('ec-otp', jsonOtp?.mensagem || 'Código inválido. Tente novamente.', 'err');
+      setBtn('btn-verificar','Verificar e criar conta', false);
+      return;
+    }
+    _otpTokenVerificacao = jsonOtp.token_verificacao;
+
+    // Criar conta
+    setBtn('btn-verificar','<div class="spin"></div> Criando conta...', true);
+    const{data:signUpData, error}=await sb.auth.signUp({
+      email, password:senha, options:{data:{nome,tel,cidade,perfil}}
+    });
     if(error) throw error;
 
-    // Supabase retorna user sem session quando o e-mail já existe (anti-enumeração)
     if(signUpData?.user && !signUpData?.session){
-      showMsg('ec','Este e-mail já está cadastrado. Faça login ou recupere sua senha abaixo.','err');
-      setBtn('btn-cad','Criar conta e escolher plano',false);
+      showMsg('ec-otp','Este e-mail já está cadastrado. Faça login ou recupere sua senha.','err');
+      setBtn('btn-verificar','Verificar e criar conta', false);
       return;
     }
 
     if(signUpData?.user?.id){
       const{error:profErr}=await sb.from('profiles').upsert({
-        id:        signUpData.user.id,
+        id: signUpData.user.id,
         nome, tel, cidade, perfil,
-        plano:     'trial',
-        ativo:     true,
+        plano: 'trial',
+        ativo: true,
+        whatsapp: _normalizarTel(tel).replace(/^55/,''),
+        whatsapp_verificado: true,
+        whatsapp_verificado_em: new Date().toISOString(),
         criado_em: new Date().toISOString(),
       }, { onConflict: 'id' });
       if(profErr) console.warn('[MestrePro] upsert profiles:', profErr.message);
@@ -475,7 +588,7 @@ async function cadastrar(){
     }
 
     if(sessionStorage.getItem('pp_convite_pendente')){
-      setBtn('btn-cad','⏳ Entrando na equipe...',true);
+      setBtn('btn-verificar','⏳ Entrando na equipe...',true);
       await _processarConvitePendente();
       window.location.href='pintopro-app.html';
       return;
@@ -484,9 +597,71 @@ async function cadastrar(){
     document.getElementById('psub').textContent=`Bem-vindo, ${nome.split(' ')[0]}! Escolha seu plano abaixo.`;
     showS('scr-planos');
   }catch(err){
-    showMsg('ec',err.message,'err');
-    setBtn('btn-cad','Criar conta e escolher plano',false);
+    showMsg('ec-otp', err.message || 'Erro ao criar conta. Tente novamente.','err');
+    setBtn('btn-verificar','Verificar e criar conta', false);
   }
+}
+
+async function reenviarOTP(){
+  hideMsg('ec-otp');
+  const tel = gv('ct');
+  const supaUrl = window.PP?.supabaseUrl || '';
+  const supaKey = window.PP?.supabaseAnonKey || '';
+  const btn = document.getElementById('btn-reenviar');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try{
+    const res = await fetch(`${supaUrl}/functions/v1/wpp-otp-send`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':supaKey},
+      body: JSON.stringify({ telefone: tel }),
+    });
+    const json = await res.json();
+    if(!res.ok){ showMsg('ec-otp', json?.mensagem || 'Não foi possível reenviar.','err'); }
+    else { showMsg('ec-otp','Novo código enviado! Verifique seu WhatsApp.','ok'); }
+  }catch(e){ showMsg('ec-otp','Erro de conexão.','err'); }
+  finally{
+    setTimeout(()=>{ btn.disabled=false; btn.textContent='Não recebi — reenviar código'; }, 30000);
+  }
+}
+
+function voltarCadastro(){
+  document.getElementById('tc-otp').style.display='none';
+  document.getElementById('tc').style.display='';
+  setBtn('btn-cad','Criar conta e escolher plano', false);
+  hideMsg('ec');
+}
+
+// Auto-avançar entre caixas OTP
+function _initOtpInputs(){
+  const inputs = [...document.querySelectorAll('.otp-digit')];
+  inputs.forEach((inp,i)=>{
+    inp.value='';
+    inp.oninput = e => {
+      const v = e.target.value.replace(/\D/g,'');
+      e.target.value = v.slice(-1);
+      if(v && i < inputs.length-1) inputs[i+1].focus();
+      if(inputs.every(x=>x.value)) verificarOTP();
+    };
+    inp.onkeydown = e => {
+      if(e.key==='Backspace' && !inp.value && i > 0) inputs[i-1].focus();
+      if(e.key==='ArrowLeft' && i > 0) inputs[i-1].focus();
+      if(e.key==='ArrowRight' && i < inputs.length-1) inputs[i+1].focus();
+    };
+    inp.onpaste = e => {
+      const pasted = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');
+      if(pasted.length >= 6){
+        e.preventDefault();
+        inputs.forEach((x,j) => x.value = pasted[j] || '');
+        inputs[5].focus();
+        setTimeout(verificarOTP, 100);
+      }
+    };
+  });
+}
+
+// Mantém cadastrar() como alias para retrocompatibilidade (convites etc.)
+async function cadastrar(){
+  return iniciarCadastro();
 }
 
 function irRecuperar(){
