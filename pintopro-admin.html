@@ -548,8 +548,11 @@ function openUser(id){
     </div>
     <div class="modal-actions">
       <button class="btn btn-sm btn-blue" onclick="openChangePlan('${id}')">↑ Alterar plano</button>
-      <button class="btn btn-sm ${u.ativo!==false?'btn-red':'btn-green'}" onclick="toggleAtivo('${id}',${u.ativo!==false})">${u.ativo!==false?'Suspender conta':'Reativar conta'}</button>
+      <button class="btn btn-sm ${u.ativo!==false?'btn-red':'btn-green'}" onclick="toggleAtivo('${id}',${u.ativo!==false})">${u.ativo!==false?'⛔ Suspender':'✅ Reativar'}</button>
       <button class="btn btn-sm btn-ghost" onclick="salvarObs('${id}')">💾 Salvar obs.</button>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <button class="btn btn-sm" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);color:#f87171;width:100%;justify-content:center" onclick="confirmarDeletar('${id}','${(u.nome||'este usuário').replace(/'/g,"\\'")}')">🗑 Remover conta permanentemente</button>
     </div>`;
   openModal('modal-usr');
 }
@@ -569,6 +572,25 @@ async function toggleAtivo(id, atualAtivo){
   closeModal('modal-usr');
   renderUsersTable(allUsers);
   notif(atualAtivo ? '⛔ Conta suspensa' : '✅ Conta reativada');
+}
+
+function confirmarDeletar(id, nome){
+  const ok = confirm(`⚠️ ATENÇÃO: Remover permanentemente a conta de "${nome}"?\n\nEsta ação é IRREVERSÍVEL. Todos os dados do usuário (orçamentos, contratos, laudos) serão deletados.\n\nClique OK para confirmar.`);
+  if(ok) deletarConta(id, nome);
+}
+
+async function deletarConta(id, nome){
+  const { data, error } = await sb.rpc('admin_deletar_usuario', { target_id: id });
+  if(error){
+    notif('⚠️ Erro ao remover conta: ' + error.message);
+    console.error('[Admin] Erro ao deletar usuário:', error);
+    return;
+  }
+  allUsers = allUsers.filter(u => u.id !== id);
+  closeModal('modal-usr');
+  renderUsersTable(allUsers);
+  updateStats();
+  notif(`🗑 Conta de "${nome}" removida permanentemente.`);
 }
 
 // ── Alterar plano ─────────────────────────────────────────
@@ -730,15 +752,16 @@ async function salvarPagamento(){
 
 // ── Stats ─────────────────────────────────────────────────
 function updateStats(){
-  const total   = allUsers.length;
-  const pagos   = allUsers.filter(u=>['basico','pro','equipe','ia-pro','pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
-  const gratis  = allUsers.filter(u=>u.plano==='gratuito'||u.plano==='trial').length;
-  const pends   = allPags.filter(p=>p.status==='pendente').length;
-  const receita = allUsers.reduce((s,u)=>{return s+(PLANO_VALOR[u.plano]||0);},0);
+  const nonAdmins = allUsers.filter(u=>!u.is_admin);
+  const total   = nonAdmins.length;
+  const pagos   = nonAdmins.filter(u=>['basico','pro','equipe','ia-pro','pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
+  const gratis  = nonAdmins.filter(u=>u.plano==='gratuito'||u.plano==='trial').length;
+  const pends   = allPags.filter(p=>p.status==='pendente');
+  const receita = nonAdmins.reduce((s,u)=>{return s+(PLANO_VALOR[u.plano]||0);},0);
   document.getElementById('st-total').textContent    = total;
   document.getElementById('st-pagos').textContent    = pagos;
   document.getElementById('st-gratis').textContent   = gratis;
-  document.getElementById('st-pendentes').textContent= pends;
+  document.getElementById('st-pendentes').textContent= pends.length;
   document.getElementById('st-receita').textContent  = `R$${receita.toLocaleString('pt-BR')}`;
 }
 
