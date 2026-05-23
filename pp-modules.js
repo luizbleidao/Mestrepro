@@ -954,11 +954,13 @@ function renderAgenda() {
     const d = new Date(e.data_inicio || e.inicio);
     const dStr = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', weekday:'short' });
     const h = e.hora_inicio ? e.hora_inicio.slice(0,5) : '';
+    const mapsUrl = e.endereco ? 'https://maps.google.com/?q=' + encodeURIComponent(e.endereco) : '';
+    const mapsBtn = mapsUrl ? `<a href="${mapsUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:.7rem;color:var(--acc);text-decoration:none;background:rgba(var(--acc-rgb,24,95,165),.08);border-radius:4px;padding:2px 6px;flex-shrink:0" title="${e.endereco}">📍 Maps</a>` : '';
     return `<div class="ag-ev-item" onclick="editEvento('${e.id}')">
       <div class="ag-ev-stripe" style="background:${_TIPO_COR[e.tipo]||'#5b7fff'}"></div>
       <div class="ag-ev-body">
         <div class="ag-ev-titulo">${_TIPO_IC[e.tipo]||'📌'} ${e.titulo}</div>
-        <div class="ag-ev-meta">${dStr}${h?' às '+h:''} ${e.cliente?'· '+e.cliente:''}</div>
+        <div class="ag-ev-meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${dStr}${h?' às '+h:''} ${e.cliente?'· '+e.cliente:''} ${mapsBtn}</div>
       </div>
       <button class="ag-ev-del" onclick="event.stopPropagation();excluirEvento('${e.id}')">✕</button>
     </div>`;
@@ -977,7 +979,7 @@ function renderAgenda() {
       </div>
       <div>
         <div class="card" style="margin-bottom:10px">
-          <div class="ch"><div class="ct">Próximos eventos</div></div>
+          <div class="ch"><div class="ct">Próximos eventos</div><button class="btn-sm" onclick="openEventoModal(null)" style="font-size:.72rem;padding:4px 10px">+ Novo</button></div>
           <div class="ag-ev-list">${upcomingHtml}</div>
         </div>
         <div class="card">
@@ -1099,6 +1101,35 @@ async function excluirEvento(id) {
   } else localStorage.setItem('pp_agenda', JSON.stringify(_eventos));
   _eventos = _eventos.filter(e => e.id !== id);
   renderAgenda();
+}
+
+// Agendar serviço a partir de um orçamento aprovado
+// Uso: agendarServicoDe({ titulo, cliente, endereco, data_inicio })
+function agendarServicoDe(orc) {
+  if (!orc) return;
+  // pré-preenche via sessionStorage e abre modal
+  const pre = {
+    titulo: orc.titulo || (orc.nome_projeto ? 'Serviço: ' + orc.nome_projeto : 'Serviço agendado'),
+    cliente: orc.cliente || orc.nome_cliente || '',
+    endereco: orc.endereco || orc.local || '',
+    data_inicio: orc.data_inicio || new Date().toISOString().split('T')[0],
+    tipo: 'servico',
+  };
+  // Se a agenda ainda não foi carregada, carregamos primeiro
+  if (typeof loadAgenda === 'function' && typeof renderAgenda === 'function') {
+    loadAgenda().then(() => {
+      _agendaMes = new Date(pre.data_inicio + 'T12:00:00');
+      openEventoModal(pre.data_inicio);
+      // Preenche campos após o modal abrir
+      setTimeout(() => {
+        const setV = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+        setV('me-titulo', pre.titulo);
+        setV('me-cliente', pre.cliente);
+        setV('me-endereco', pre.endereco);
+        setV('me-inicio', pre.data_inicio);
+      }, 80);
+    });
+  }
 }
 
 // ──────────────────────────────────────────────────────────────

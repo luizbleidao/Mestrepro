@@ -353,6 +353,49 @@ window._IFRAME_LOADED={};
           <div class="sc"><div class="lb">Plano atual</div><div class="vl" id="d-plano" style="font-size:15px">—</div><div class="sb2" id="d-plano-s">—</div></div>
           <div class="sc"><div class="lb">Membro desde</div><div class="vl" id="d-desde" style="font-size:15px">—</div><div class="sb2">data de cadastro</div></div>
         </div>
+
+        <!-- PAINEL FINANCEIRO — visível apenas nos planos Pro, Equipe e IA Pro -->
+        <div id="dash-financeiro" style="display:none;margin-bottom:12px">
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="ch" style="padding:12px 16px;border-bottom:1px solid var(--border)">
+              <div class="ct">💰 Painel financeiro</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select id="dash-fin-periodo" onchange="renderDashFinanceiro()" style="font-size:11px;background:var(--surf2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:3px 8px">
+                  <option value="mes">Este mês</option>
+                  <option value="trimestre">Últimos 3 meses</option>
+                  <option value="ano">Este ano</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border)">
+              <div style="padding:14px 16px;border-right:1px solid var(--border)">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Faturamento</div>
+                <div style="font-size:20px;font-weight:600;color:var(--green)" id="fin-fat">—</div>
+                <div style="font-size:11px;color:var(--text3)" id="fin-fat-s">orçamentos aprovados</div>
+              </div>
+              <div style="padding:14px 16px;border-right:1px solid var(--border)">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">A receber</div>
+                <div style="font-size:20px;font-weight:600;color:var(--acc)" id="fin-rec">—</div>
+                <div style="font-size:11px;color:var(--text3)" id="fin-rec-s">orçamentos enviados</div>
+              </div>
+              <div style="padding:14px 16px;border-right:1px solid var(--border)">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Ticket médio</div>
+                <div style="font-size:20px;font-weight:600" id="fin-ticket">—</div>
+                <div style="font-size:11px;color:var(--text3)">por orçamento aprovado</div>
+              </div>
+              <div style="padding:14px 16px">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Taxa de aprovação</div>
+                <div style="font-size:20px;font-weight:600" id="fin-taxa">—</div>
+                <div style="font-size:11px;color:var(--text3)">orçamentos fechados</div>
+              </div>
+            </div>
+            <div style="padding:12px 16px">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:500">Orçamentos por status</div>
+              <div id="fin-status-bars" style="display:flex;flex-direction:column;gap:6px"></div>
+            </div>
+          </div>
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="card">
             <div class="ch"><div class="ct">Orçamentos recentes</div><button class="btn-s" onclick="ir('orcamentos')">Ver todos →</button></div>
@@ -386,6 +429,16 @@ window._IFRAME_LOADED={};
         <div style="text-align:center;padding:60px 20px;color:var(--text2)">
           <div style="font-size:48px;margin-bottom:12px">📅</div>
           <div style="font-size:14px">Carregando agenda...</div>
+        </div>
+      </div>
+
+      <!-- INDICAÇÃO / AFILIADOS -->
+      <div class="screen" id="s-indicacao">
+        <div id="indicacao-wrap" style="max-width:680px;margin:0 auto">
+          <div style="text-align:center;padding:40px 20px 20px;color:var(--text2)">
+            <div style="font-size:48px;margin-bottom:12px">🤝</div>
+            <div style="font-size:14px">Carregando programa de indicação...</div>
+          </div>
         </div>
       </div>
 
@@ -802,10 +855,11 @@ const NAV = [
   {id:'agenda',        ic:'📅', lb:'Agenda'},
   {id:'posts',         ic:'✨', lb:'Gerador de Posts IA'},
   {id:'ia_pro',        ic:'🤖', lb:'IA Pro', plano:'ia-pro'},
+  {id:'indicacao',     ic:'🤝', lb:'Indicar & Ganhar'},
   {id:'configuracoes', ic:'⚙️', lb:'Configurações'},
 ];
-const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',contratos:'Contratos',recibos:'Recibos',agenda:'Agenda',ia_pro:'IA Pro',configuracoes:'Configurações'};
-const BTNS   = {dashboard:'+ Nova ação',orcamentos:'+ Novo orçamento',laudos:'+ Novo laudo',contratos:'+ Novo contrato',recibos:'+ Novo recibo',agenda:'+ Agendar',ia_pro:'Explorar IA',configuracoes:'Salvar'};
+const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',contratos:'Contratos',recibos:'Recibos',agenda:'Agenda',ia_pro:'IA Pro',indicacao:'Indicar & Ganhar',configuracoes:'Configurações'};
+const BTNS   = {dashboard:'+ Nova ação',orcamentos:'+ Novo orçamento',laudos:'+ Novo laudo',contratos:'+ Novo contrato',recibos:'+ Novo recibo',agenda:'+ Agendar',ia_pro:'Explorar IA',indicacao:'Compartilhar link',configuracoes:'Salvar'};
 
 let USER=null, PROFILE=null, PLANO='gratuito', cfg=CFG.gratuito;
 
@@ -954,8 +1008,75 @@ async function loadDashboard(){
   renderDashLaudos(laudos);
   renderDashOrcs(orcs.slice(0,3));
 
+  // ── Dashboard Financeiro — exibir apenas para planos Pro+ ──
+  const _planosComFinanceiro = ['pro','equipe','ia_pro','ia-pro'];
+  if (_planosComFinanceiro.includes(cfg?.plano)) {
+    window._dashOrcamentos = orcs; // cache para re-renderizar ao trocar período
+    const painelFin = document.getElementById('dash-financeiro');
+    if (painelFin) painelFin.style.display = 'block';
+    renderDashFinanceiro();
+  }
+
   if(typeof _contratos!=='undefined') renderOnboarding();
   else setTimeout(renderOnboarding,800);
+}
+
+function renderDashFinanceiro() {
+  const orcs = window._dashOrcamentos || [];
+  const periodo = document.getElementById('dash-fin-periodo')?.value || 'mes';
+  const hoje = new Date();
+  let dataInicio;
+  if (periodo === 'mes') {
+    dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  } else if (periodo === 'trimestre') {
+    dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 2, 1);
+  } else {
+    dataInicio = new Date(hoje.getFullYear(), 0, 1);
+  }
+
+  const filtrados = orcs.filter(o => {
+    const d = new Date(o.criado_em || o.data || 0);
+    return d >= dataInicio;
+  });
+
+  const aprovados  = filtrados.filter(o => o.status === 'aprovado');
+  const enviados   = filtrados.filter(o => o.status === 'enviado' || o.status === 'pendente');
+  const recusados  = filtrados.filter(o => o.status === 'recusado' || o.status === 'cancelado');
+  const rascunhos  = filtrados.filter(o => o.status === 'rascunho');
+
+  const faturamento = aprovados.reduce((s, o) => s + (parseFloat(o.total) || 0), 0);
+  const aReceber    = enviados.reduce((s, o) => s + (parseFloat(o.total) || 0), 0);
+  const ticketMedio = aprovados.length ? faturamento / aprovados.length : 0;
+  const taxaAprov   = filtrados.length ? Math.round((aprovados.length / filtrados.length) * 100) : 0;
+
+  const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  document.getElementById('fin-fat').textContent = fmt(faturamento);
+  document.getElementById('fin-fat-s').textContent = `${aprovados.length} aprovado${aprovados.length !== 1 ? 's' : ''}`;
+  document.getElementById('fin-rec').textContent = fmt(aReceber);
+  document.getElementById('fin-rec-s').textContent = `${enviados.length} aguardando`;
+  document.getElementById('fin-ticket').textContent = aprovados.length ? fmt(ticketMedio) : '—';
+  document.getElementById('fin-taxa').textContent = filtrados.length ? `${taxaAprov}%` : '—';
+
+  // Barras de status
+  const barsEl = document.getElementById('fin-status-bars');
+  if (!barsEl) return;
+  const total = filtrados.length || 1;
+  const status_list = [
+    { label: 'Aprovados',  count: aprovados.length,  color: '#22c55e' },
+    { label: 'Enviados',   count: enviados.length,   color: '#5b7fff' },
+    { label: 'Recusados',  count: recusados.length,  color: '#ef4444' },
+    { label: 'Rascunhos',  count: rascunhos.length,  color: '#4a5a80' },
+  ];
+  barsEl.innerHTML = status_list.map(s => `
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="font-size:11px;color:var(--text2);min-width:70px">${s.label}</div>
+      <div style="flex:1;height:6px;background:var(--surf2);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${Math.round((s.count/total)*100)}%;background:${s.color};border-radius:3px;transition:width .4s"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);min-width:16px;text-align:right">${s.count}</div>
+    </div>
+  `).join('');
 }
 
 function renderDashOrcs(list){
@@ -1040,6 +1161,7 @@ function ir(id){
     if(id==='contratos')loadContratos();
     if(id==='recibos')loadRecibos();
     if(id==='agenda')loadAgenda();
+    if(id==='indicacao')loadIndicacao();
     document.getElementById('top-btn').textContent = BTNS[id]||'+ Nova ação';
 
     if(id==='orcamentos'){
@@ -1077,7 +1199,163 @@ function topAction(){
   else if(t==='Contratos')openContratoModal();
   else if(t==='Recibos')openReciboModal();
   else if(t==='Agenda')openEventoModal();
+  else if(t==='Indicar & Ganhar')compartilharLinkIndicacao();
   else notif('✅ Ação executada!');
+}
+
+// ── INDICAÇÃO / AFILIADOS ──────────────────────────────────────
+async function loadIndicacao() {
+  const wrap = document.getElementById('indicacao-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:24px">⏳</div><div>Carregando...</div></div>`;
+
+  // Link de indicação: baseia-se no email ou ID do usuário (sem expor service key)
+  const uid = USER?.id;
+  const email = USER?.email || '';
+  // Código de referral: hash simples do UID (8 chars)
+  const refCode = uid && uid !== 'demo'
+    ? uid.replace(/-/g,'').slice(0,8).toUpperCase()
+    : 'DEMO1234';
+  const refLink = `${window.location.origin}/pintopro-login.html?ref=${refCode}`;
+
+  // Buscar stats (quantos indicados, comissão acumulada)
+  let indicados = 0, comissao = 0;
+  if (uid && uid !== 'demo') {
+    try {
+      const { data } = await sb.from('indicacoes')
+        .select('id, status, comissao_brl')
+        .eq('referrer_id', uid);
+      if (data) {
+        indicados = data.length;
+        comissao = data.filter(r=>r.status==='pago').reduce((s,r)=>s+(r.comissao_brl||0), 0);
+      }
+    } catch(e) {
+      // Tabela pode não existir ainda — mostrar zero sem erro
+    }
+  }
+
+  const plano = cfg?.plano || 'gratuito';
+  const pct = ['equipe','ia-pro','ia_pro'].includes(plano) ? 30 : 20;
+
+  wrap.innerHTML = `
+    <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(91,127,255,.12),rgba(91,127,255,.04));border-color:rgba(91,127,255,.3)">
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px">🤝 Indicar & Ganhar</div>
+      <p style="color:var(--text2);font-size:13px;line-height:1.6;margin-bottom:0">
+        Compartilhe seu link exclusivo. Cada pintor que assinar o plano Pro ou superior através do seu link gera uma comissão de <strong style="color:var(--acc)">${pct}% sobre o primeiro pagamento</strong> — creditada automaticamente.
+      </p>
+    </div>
+
+    <!-- Estatísticas -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="card" style="text-align:center;padding:16px 12px">
+        <div style="font-size:28px;font-weight:700;font-family:'Syne',sans-serif;color:var(--acc)">${indicados}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Indicados</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px 12px">
+        <div style="font-size:22px;font-weight:700;font-family:'Syne',sans-serif;color:var(--green)">R$ ${comissao.toFixed(2).replace('.',',')}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Comissão acumulada</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px 12px">
+        <div style="font-size:22px;font-weight:700;font-family:'Syne',sans-serif;color:var(--acc)">${pct}%</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Comissão por venda</div>
+      </div>
+    </div>
+
+    <!-- Link de indicação -->
+    <div class="card" style="margin-bottom:14px">
+      <div style="font-weight:600;margin-bottom:10px;font-size:13px">🔗 Seu link exclusivo</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="ref-link-input" value="${refLink}" readonly style="flex:1;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;font-size:12px;color:var(--text);font-family:'DM Mono',monospace">
+        <button onclick="compartilharLinkIndicacao()" class="tbtn tbtn-a" style="flex-shrink:0">📋 Copiar</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button onclick="_compartilharWhats('${refLink}')" style="background:#25D366;color:#fff;border:none;border-radius:var(--rs);padding:8px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px">
+          <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" style="width:14px;height:14px;filter:invert(1)" alt=""> WhatsApp
+        </button>
+        <button onclick="_compartilharInstagram()" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;border:none;border-radius:var(--rs);padding:8px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">
+          📸 Instagram (copiar)
+        </button>
+        <button onclick="_compartilharEmail('${refLink}')" style="background:var(--surf2);color:var(--text);border:1px solid var(--border);border-radius:var(--rs);padding:8px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">
+          ✉️ E-mail
+        </button>
+      </div>
+    </div>
+
+    <!-- Como funciona -->
+    <div class="card" style="margin-bottom:14px">
+      <div style="font-weight:600;margin-bottom:12px;font-size:13px">📋 Como funciona</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${[
+          ['1', 'Compartilhe seu link', 'Envie para colegas pintores, grupos de WhatsApp ou redes sociais.'],
+          ['2', 'Eles se cadastram', 'Quando alguém se registra pelo seu link, você fica vinculado como indicador.'],
+          ['3', 'Eles assinam', 'Ao contratar qualquer plano pago, a comissão é calculada automaticamente.'],
+          ['4', 'Você recebe', `${pct}% do valor do primeiro pagamento são creditados em até 30 dias via Pix.`],
+        ].map(([n,t,d])=>`
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${n}</div>
+            <div>
+              <div style="font-weight:600;font-size:13px;margin-bottom:2px">${t}</div>
+              <div style="font-size:12px;color:var(--text2)">${d}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Texto pronto para compartilhar -->
+    <div class="card">
+      <div style="font-weight:600;margin-bottom:8px;font-size:13px">💬 Texto pronto para compartilhar</div>
+      <div id="share-text-box" style="background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;font-size:12px;line-height:1.7;color:var(--text2);white-space:pre-line">Oi! Uso o MestrePro para fazer orçamentos, contratos e laudos na minha pintura. É muito fácil, tudo no celular mesmo.
+
+Se você é pintor e quer se organizar melhor, se cadastra por aqui que você já entra com 7 dias grátis:
+${refLink}
+
+Qualquer dúvida me chama! 👊🎨</div>
+      <button onclick="_copiarTextoShare()" style="margin-top:8px;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);padding:7px 14px;font-size:12px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif">📋 Copiar texto</button>
+    </div>
+  `;
+}
+
+function compartilharLinkIndicacao() {
+  const inp = document.getElementById('ref-link-input');
+  if (!inp) return;
+  const link = inp.value;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(()=>notif('✅ Link copiado!')).catch(()=>_fallbackCopy(link));
+  } else _fallbackCopy(link);
+}
+
+function _fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  document.execCommand('copy'); document.body.removeChild(ta);
+  notif('✅ Link copiado!');
+}
+
+function _compartilharWhats(link) {
+  const txt = encodeURIComponent(`Oi! Uso o MestrePro pra fazer orçamentos e contratos na pintura. Bem fácil, tudo pelo celular. Se cadastra com meu link e já entra com 7 dias grátis: ${link}`);
+  window.open(`https://wa.me/?text=${txt}`, '_blank', 'noopener');
+}
+
+function _compartilharInstagram() {
+  // Instagram não tem deep link para compartilhar, então copiamos e orientamos
+  compartilharLinkIndicacao();
+  notif('📸 Link copiado! Cole na bio ou nos Stories do Instagram.');
+}
+
+function _compartilharEmail(link) {
+  const sub = encodeURIComponent('Dica de app para pintores — 7 dias grátis');
+  const body = encodeURIComponent(`Oi!\n\nUso o MestrePro para fazer orçamentos, contratos e laudos técnicos no meu trabalho de pintura. Simplificou muito a minha vida.\n\nSe você é pintor, entra pelo meu link e testa grátis por 7 dias:\n${link}\n\nAbração!`);
+  window.open(`mailto:?subject=${sub}&body=${body}`, '_self');
+}
+
+function _copiarTextoShare() {
+  const box = document.getElementById('share-text-box');
+  if (!box) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(box.textContent.trim()).then(()=>notif('✅ Texto copiado!')).catch(()=>_fallbackCopy(box.textContent.trim()));
+  } else _fallbackCopy(box.textContent.trim());
 }
 
 function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('ov').classList.toggle('open');}
@@ -1725,6 +2003,47 @@ async function _iniciarApp(){
 }
 
 _iniciarApp();
+
+// ── SERVICE WORKER — Modo Offline ──────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      console.log('[MestrePro] Service Worker registrado:', reg.scope);
+    } catch (e) {
+      console.warn('[MestrePro] Service Worker falhou:', e.message);
+    }
+  });
+
+  // Banner offline/online
+  const _offlineBanner = document.createElement('div');
+  _offlineBanner.id = 'offline-banner';
+  _offlineBanner.style.cssText = 'display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#ef4444;color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+  _offlineBanner.textContent = '📶 Sem internet — trabalhando offline';
+  document.body.appendChild(_offlineBanner);
+
+  const _onlineBanner = document.createElement('div');
+  _onlineBanner.id = 'online-banner';
+  _onlineBanner.style.cssText = 'display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+  _onlineBanner.textContent = '✅ Conexão restaurada!';
+  document.body.appendChild(_onlineBanner);
+
+  window.addEventListener('offline', () => {
+    _offlineBanner.style.display = 'block';
+    _onlineBanner.style.display = 'none';
+  });
+  window.addEventListener('online', () => {
+    _offlineBanner.style.display = 'none';
+    _onlineBanner.style.display = 'block';
+    setTimeout(() => { _onlineBanner.style.display = 'none'; }, 3000);
+    // Sincronizar dados pendentes via Background Sync
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      navigator.serviceWorker.ready.then(sw => sw.sync.register('sync-pending-data'));
+    }
+  });
+
+  if (!navigator.onLine) _offlineBanner.style.display = 'block';
+}
 </script>
 
 <!-- BOTÃO FLUTUANTE DE SUPORTE -->

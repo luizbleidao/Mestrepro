@@ -89,6 +89,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .servico-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .servico-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;color:var(--text)}
 .servico-valor-display{font-family:'DM Mono',monospace;font-size:1rem;color:var(--acc);font-weight:500;margin-top:2px;font-size:.82rem}
+/* CALCULADORA DE TINTA */
+.calc-tinta-wrap{border:1px solid rgba(var(--acc-rgb,24,95,165),.2);border-radius:8px;padding:4px 12px 10px;background:rgba(var(--acc-rgb,24,95,165),.03)}
+.calc-tinta-wrap summary::-webkit-details-marker{color:var(--acc)}
 /* PATOLOGIA */
 .pat-box{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:var(--r);padding:14px;margin-top:12px}
 .pat-title{font-size:.78rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
@@ -390,6 +393,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <button class="btn btn-secondary" onclick="goStep(4)">← Voltar</button>
         <div style="display:flex;gap:10px">
           <button class="btn btn-secondary" onclick="salvarOrcamento()">💾 Salvar</button>
+          <button class="btn btn-secondary" onclick="gerarPortalCliente()" id="btn-portal-link">🌐 Portal do cliente</button>
+          <button class="btn btn-secondary" onclick="gerarLinkAprovacao()" id="btn-aprov-link">📩 Link de aprovação</button>
           <button class="btn btn-secondary" onclick="gerarLinkAssinatura()" id="btn-sig-link">🔗 Link de assinatura</button>
           <button class="btn btn-green" onclick="gerarPDF()">📄 Gerar PDF</button>
         </div>
@@ -768,7 +773,7 @@ function renderStep3(){
   wrap.innerHTML=html;
 }
 
-function servicoDef(){return{id:Date.now(),nome:'',tipoServico:'',valorServico:0,patologia:false,tipoPatologia:'fissuras',obsPatologia:'',fotosPatologia:[]};}
+function servicoDef(){return{id:Date.now(),nome:'',tipoServico:'',valorServico:0,area_m2:0,demao:2,patologia:false,tipoPatologia:'fissuras',obsPatologia:'',fotosPatologia:[]};}
 
 function renderServicoCard(s,i){
   const fotos=(s.fotosPatologia||[]);
@@ -795,6 +800,34 @@ function renderServicoCard(s,i){
         <input type="number" value="${s.valorServico||0}" min="0" step="10" oninput="sS(${i},'valorServico',parseFloat(this.value)||0)">
       </div>
     </div>
+    <!-- CALCULADORA DE TINTA -->
+    <details class="calc-tinta-wrap" style="margin:4px 0 0">
+      <summary style="cursor:pointer;font-size:.82rem;font-weight:600;color:var(--acc);padding:6px 0;user-select:none">🎨 Calculadora de Tinta</summary>
+      <div class="form-grid c3" style="margin-top:8px">
+        <div class="field"><label>Área total (m²)</label>
+          <input type="number" value="${s.area_m2||0}" min="0" step="0.5" placeholder="0"
+            oninput="sS(${i},'area_m2',parseFloat(this.value)||0);_calcTinta(${i})">
+        </div>
+        <div class="field"><label>Nº de demãos</label>
+          <select onchange="sS(${i},'demao',parseInt(this.value));_calcTinta(${i})">
+            ${[1,2,3,4].map(n=>`<option value="${n}" ${(s.demao||2)===n?'selected':''}>${n} demão${n>1?'s':''}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Rendimento (m²/L)</label>
+          <input type="number" id="rend-${i}" value="10" min="1" step="0.5"
+            oninput="_calcTinta(${i})" title="Rendimento médio: latex 10-12 m²/L, acrílico 8-10 m²/L">
+        </div>
+      </div>
+      <div id="calc-result-${i}" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-top:6px;font-size:.85rem;display:${(s.area_m2||0)>0?'block':'none'}">
+        <span id="calc-litros-${i}"></span>
+      </div>
+      <script>
+        (function(){
+          // Inicializar cálculo se já tiver área
+          if(${(s.area_m2||0)}>0) setTimeout(()=>_calcTinta(${i}),50);
+        })();
+      </script>
+    </details>
     <div style="padding-top:8px">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.87rem;font-weight:600">
         <input type="checkbox" ${s.patologia?'checked':''} onchange="sS(${i},'patologia',this.checked)" style="accent-color:var(--acc);width:15px;height:15px">
@@ -842,6 +875,32 @@ function sS(i,k,v,noRender=false){
     const disp=document.querySelector('[data-sv-val="'+i+'"]');
     if(disp)disp.textContent=v>0?'R$ '+fmt(v):'';
   }
+}
+
+function _calcTinta(i){
+  const s=servicos[i];
+  const area=s.area_m2||0;
+  const demao=s.demao||2;
+  const rendEl=document.getElementById('rend-'+i);
+  const rend=rendEl?parseFloat(rendEl.value)||10:10;
+  const result=document.getElementById('calc-result-'+i);
+  const litrosEl=document.getElementById('calc-litros-'+i);
+  if(!result||!litrosEl)return;
+  if(area<=0){result.style.display='none';return;}
+  const litros=(area*demao)/rend;
+  const galoes=litros/3.6;
+  const latas18=(litros/18); // lata 18L
+  const latas3_6=(litros/3.6); // galão 3.6L
+  result.style.display='block';
+  litrosEl.innerHTML=`
+    <strong>📊 Estimativa de tinta para ${area} m² com ${demao} demão${demao>1?'s':''}:</strong><br>
+    <span style="font-size:.95rem">
+      🪣 <b>${litros.toFixed(1)} litros</b> no total &nbsp;|&nbsp;
+      ≈ <b>${Math.ceil(latas18)} lata${Math.ceil(latas18)>1?'s':''} de 18 L</b> &nbsp;ou&nbsp;
+      ≈ <b>${Math.ceil(latas3_6)} galão${Math.ceil(latas3_6)>1?'ões':'ão'} de 3,6 L</b>
+    </span>
+    <div style="font-size:.75rem;color:var(--text3);margin-top:4px">⚠️ Estimativa baseada em ${rend} m²/L. Verifique o rótulo da tinta para o rendimento exato.</div>
+  `;
 }
 
 function addFotosPatologia(i,input){
@@ -1150,6 +1209,93 @@ async function salvarOrcamento(){
 
 
 // ── ASSINATURA DIGITAL ───────────────────────────────
+async function gerarPortalCliente(){
+  if(!currentId){salvarOrcamento();}
+  const uid=_getUserId();
+  if(!uid){alert('Você precisa estar logado.');return;}
+  const orc=_orcas.find(o=>o.id===currentId);
+  if(!orc){alert('Salve o orçamento primeiro.');return;}
+
+  let token=orc.portalToken;
+  if(!token){
+    token='pt_'+Array.from(crypto.getRandomValues(new Uint8Array(14))).map(b=>b.toString(16).padStart(2,'0')).join('');
+    orc.portalToken=token;
+    _saveLocalCache();
+    try{await _sb.from('orcamentos').update({portal_token:token,portal_progresso:0,portal_etapa:0}).eq('id',currentId).eq('user_id',uid);}
+    catch(e){console.warn('[MestrePro] Falha ao salvar portal_token:',e);}
+  }
+
+  const baseUrl=(window.PP?.appUrl||window.location.origin);
+  const url=`${baseUrl}/pintopro-portal-cliente.html?ptoken=${token}`;
+  const wppMsg=encodeURIComponent(`Olá, ${orc.cliente||''}! 🎨
+
+Você pode acompanhar o andamento do seu serviço em tempo real aqui:
+${url}
+
+Neste portal você vê o progresso, fotos do serviço e pode enviar mensagens.`);
+
+  const box=document.createElement('div');
+  box.className='sig-link-box';
+  box.style.borderColor='var(--green)';
+  box.setAttribute('data-tipo','portal');
+  box.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px">🌐 Portal do cliente — link de acompanhamento</div>
+    <div class="link-url">${url}</div>
+    <div class="link-actions">
+      <button class="btn btn-secondary" style="padding:6px 12px;font-size:11px" onclick="navigator.clipboard.writeText('${url}').then(()=>alert('Link copiado!'))">📋 Copiar link</button>
+      <a href="https://wa.me/?text=${wppMsg}" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:6px 12px;font-size:11px;text-decoration:none">📲 WhatsApp</a>
+      <a href="${url}" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:6px 12px;font-size:11px;text-decoration:none">👁 Ver portal</a>
+    </div>`;
+
+  const target=document.getElementById('btn-portal-link').parentElement;
+  const existing=target.parentElement.querySelector('.sig-link-box[data-tipo="portal"]');
+  if(existing)existing.remove();
+  target.parentElement.insertBefore(box,target);
+}
+
+async function gerarLinkAprovacao(){
+  if(!currentId){salvarOrcamento();}
+  const uid=_getUserId();
+  if(!uid){alert('Você precisa estar logado.');return;}
+  const orc=_orcas.find(o=>o.id===currentId);
+  if(!orc){alert('Salve o orçamento primeiro.');return;}
+
+  // Gera token de aprovação (diferente do token de assinatura)
+  let token=orc.aprovToken;
+  if(!token){
+    token='ap_'+Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b=>b.toString(16).padStart(2,'0')).join('');
+    orc.aprovToken=token;
+    _saveLocalCache();
+    try{await _sb.from('orcamentos').update({aprov_token:token,aprov_status:'pendente'}).eq('id',currentId).eq('user_id',uid);}
+    catch(e){console.warn('[MestrePro] Falha ao salvar aprov_token:',e);}
+  }
+
+  const baseUrl = (window.PP?.appUrl || window.location.origin);
+  const url=`${baseUrl}/pintopro-aprovacao.html?aptoken=${token}`;
+  const statusAtual = orc.aprovStatus || 'pendente';
+  const statusLabel = {aprovado:'✅ Aprovado',recusado:'❌ Recusado',pendente:'⏳ Aguardando'}[statusAtual]||'⏳ Aguardando';
+  const wppMsg=encodeURIComponent(`Olá, ${orc.cliente||''}! Aqui está o orçamento #${orc.numero} para sua aprovação:
+
+${url}
+
+Basta acessar o link, revisar a proposta e clicar em Aprovar ou Recusar.`);
+
+  const box=document.createElement('div');
+  box.className='sig-link-box';
+  box.style.borderColor='var(--acc)';
+  box.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--acc);margin-bottom:6px">📩 Link de aprovação <span class="sig-status-badge" style="background:rgba(24,95,165,.12);color:var(--acc);padding:2px 8px;border-radius:10px;font-size:11px">${statusLabel}</span></div>
+    <div class="link-url">${url}</div>
+    <div class="link-actions">
+      <button class="btn btn-secondary" style="padding:6px 12px;font-size:11px" onclick="navigator.clipboard.writeText('${url}').then(()=>alert('Link copiado!'))">📋 Copiar link</button>
+      <a href="https://wa.me/?text=${wppMsg}" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:6px 12px;font-size:11px;text-decoration:none">📲 WhatsApp</a>
+    </div>`;
+
+  const target=document.getElementById('btn-aprov-link').parentElement;
+  const existing=target.parentElement.querySelector('.sig-link-box[data-tipo="aprov"]');
+  if(existing)existing.remove();
+  box.setAttribute('data-tipo','aprov');
+  target.parentElement.insertBefore(box,target);
+}
+
 async function gerarLinkAssinatura(){
   if(!currentId){salvarOrcamento();}
   const uid=_getUserId();

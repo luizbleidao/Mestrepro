@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>MestrePro — Aprovação de Orçamento</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pp-config.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --acc:#185FA5;--acc2:#2272c3;--green:#16a34a;--red:#dc2626;
+  --bg:#f5f7fa;--surf:#ffffff;--border:#e2e8f0;
+  --text:#1a202c;--text2:#4a5568;--text3:#a0aec0;
+  --r:12px;--rs:8px;--sh:0 2px 16px rgba(0,0,0,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+.wrap{max-width:680px;margin:0 auto;padding:24px 16px 60px;}
+
+/* HEADER */
+.hd{text-align:center;margin-bottom:28px;}
+.hd .logo{font-size:22px;font-weight:800;color:var(--acc);letter-spacing:-.5px;margin-bottom:4px;}
+.hd .sub{font-size:13px;color:var(--text3);}
+
+/* CARD */
+.card{background:var(--surf);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden;}
+.card-body{padding:20px 22px;}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px;}
+
+/* STATUS BANNER */
+.status-bar{padding:14px 22px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;}
+.status-bar.pending{background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e;}
+.status-bar.approved{background:#f0fdf4;border-bottom:1px solid #86efac;color:#15803d;}
+.status-bar.refused{background:#fef2f2;border-bottom:1px solid #fca5a5;color:#991b1b;}
+.status-icon{font-size:20px;}
+
+/* ORC HEADER */
+.orc-header{background:var(--acc);color:#fff;padding:22px 22px 18px;}
+.orc-num{font-size:11px;font-weight:600;opacity:.75;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.orc-title{font-size:20px;font-weight:700;margin-bottom:2px;}
+.orc-meta{font-size:12px;opacity:.8;}
+.orc-total-badge{display:inline-block;background:rgba(255,255,255,.18);border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;margin-top:12px;}
+
+/* SECTIONS */
+.section{padding:18px 22px;border-bottom:1px solid var(--border);}
+.section:last-child{border-bottom:none;}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.info-item label{font-size:11px;color:var(--text3);display:block;margin-bottom:2px;}
+.info-item span{font-size:13px;font-weight:500;color:var(--text);}
+
+/* SERVIÇOS */
+.serv-card{background:#f8fafc;border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;}
+.serv-name{font-weight:600;font-size:13px;margin-bottom:2px;}
+.serv-meta{font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;}
+.serv-val{font-weight:700;color:var(--acc);}
+.pat-tag{background:#fee2e2;color:#991b1b;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;}
+
+/* MATERIAIS */
+.mat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.mat-row:last-child{border-bottom:none;}
+.mat-name{color:var(--text);}
+.mat-val{font-weight:600;color:var(--text);}
+
+/* TOTAIS */
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:13px;border-bottom:1px solid var(--border);}
+.total-row:last-child{border-bottom:none;font-size:16px;font-weight:700;padding-top:12px;}
+.total-label{color:var(--text2);}
+.total-val{font-weight:600;}
+.total-val.green{color:var(--green);}
+.total-val.red{color:var(--red);}
+.total-val.grand{color:var(--acc);font-size:18px;}
+
+/* OBS */
+.obs-box{background:#f8fafc;border-left:3px solid var(--acc);border-radius:0 var(--rs) var(--rs) 0;padding:12px 14px;font-size:13px;line-height:1.6;color:var(--text2);}
+
+/* VALIDADE */
+.validade-bar{background:#fffbeb;border-radius:var(--rs);padding:10px 14px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px;margin-top:8px;}
+
+/* BOTÕES DE AÇÃO */
+.action-section{background:var(--surf);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);padding:22px;margin-bottom:16px;}
+.action-title{font-size:15px;font-weight:700;margin-bottom:6px;text-align:center;}
+.action-sub{font-size:13px;color:var(--text2);text-align:center;margin-bottom:18px;line-height:1.5;}
+.action-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.btn-aprov{background:var(--green);color:#fff;border:none;border-radius:var(--rs);padding:14px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;font-family:inherit;}
+.btn-aprov:hover{background:#15803d;}
+.btn-recusar{background:#fff;color:var(--red);border:2px solid var(--red);border-radius:var(--rs);padding:14px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;font-family:inherit;}
+.btn-recusar:hover{background:#fef2f2;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surf);border-radius:16px 16px 0 0;width:100%;max-width:500px;padding:24px;animation:slideUp .25s ease;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:8px;}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5;}
+.modal textarea{width:100%;border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;min-height:80px;margin-bottom:14px;color:var(--text);}
+.modal .modal-btns{display:flex;gap:10px;}
+.modal .btn-conf{flex:1;padding:12px;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+.modal .btn-cancel{flex:1;padding:12px;border:1px solid var(--border);border-radius:var(--rs);font-size:14px;cursor:pointer;background:#fff;font-family:inherit;}
+
+/* LOADING / FEEDBACK */
+.spinner{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:14px;color:var(--text2);font-size:14px;}
+.spinner .ring{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.feedback{text-align:center;padding:40px 20px;}
+.feedback .ic{font-size:56px;margin-bottom:14px;}
+.feedback h2{font-size:20px;font-weight:700;margin-bottom:8px;}
+.feedback p{font-size:13px;color:var(--text2);line-height:1.6;max-width:340px;margin:0 auto;}
+
+/* RODAPÉ */
+.footer{text-align:center;font-size:11px;color:var(--text3);padding:24px 0;}
+.footer a{color:var(--acc);text-decoration:none;}
+
+@media(max-width:480px){
+  .info-grid{grid-template-columns:1fr;}
+  .action-btns{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd">
+    <div class="logo">MestrePro</div>
+    <div class="sub">Orçamento para aprovação</div>
+  </div>
+  <div id="main-content">
+    <div class="spinner"><div class="ring"></div><span>Carregando orçamento...</span></div>
+  </div>
+</div>
+
+<!-- MODAL RECUSAR -->
+<div class="modal-overlay" id="modal-recusar">
+  <div class="modal">
+    <h3>❌ Recusar orçamento</h3>
+    <p>Informe o motivo para que o profissional possa ajustar a proposta.</p>
+    <textarea id="motivo-recusa" placeholder="Ex: Valor acima do esperado, prazo não adequado..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="fecharModal()">Voltar</button>
+      <button class="btn-conf" style="background:var(--red);color:#fff" onclick="confirmarRecusa()">Recusar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL APROVAR -->
+<div class="modal-overlay" id="modal-aprovar">
+  <div class="modal">
+    <h3>✅ Aprovar orçamento</h3>
+    <p>Ao aprovar, o profissional será notificado e poderá dar início ao serviço. Sua aprovação fica registrada com data e hora.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="fecharModal()">Voltar</button>
+      <button class="btn-conf" style="background:var(--green);color:#fff" onclick="confirmarAprovacao()">✅ Confirmar aprovação</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const _params = new URLSearchParams(location.search);
+const _apToken = _params.get('aptoken') || _params.get('token');
+let _sb, _orc, _orcId, _uid;
+
+async function init() {
+  if (!_apToken) {
+    showErro('Link inválido', 'Este link de aprovação está incompleto. Peça ao profissional para reenviar.');
+    return;
+  }
+
+  // Init Supabase (config vem de pp-config.js)
+  const cfg = window.PP_CONFIG || window.PP || {};
+  const url = cfg.supabaseUrl || cfg.SUPABASE_URL;
+  const key = cfg.supabaseAnonKey || cfg.SUPABASE_ANON_KEY;
+  if (!url || !key) { showErro('Configuração ausente', 'Erro interno. Tente novamente mais tarde.'); return; }
+  _sb = window.supabase.createClient(url, key);
+
+  // Busca o orçamento pelo token de aprovação
+  const { data, error } = await _sb
+    .from('orcamentos')
+    .select('id, numero, cliente, endereco, status, total, data_completa, aprov_token, aprov_status, aprov_at, aprov_motivo, user_id, mode')
+    .eq('aprov_token', _apToken)
+    .single();
+
+  if (error || !data) {
+    // Tenta buscar pelo sig_token para compatibilidade retroativa
+    const { data: d2, error: e2 } = await _sb
+      .from('orcamentos')
+      .select('id, numero, cliente, endereco, status, total, data_completa, aprov_token, aprov_status, aprov_at, aprov_motivo, user_id, mode, sig_token')
+      .eq('sig_token', _apToken)
+      .single();
+    if (e2 || !d2) { showErro('Orçamento não encontrado', 'Este link pode ter expirado ou ser inválido. Solicite um novo link ao profissional.'); return; }
+    _orc = d2; _orcId = d2.id;
+  } else {
+    _orc = data; _orcId = data.id;
+  }
+
+  renderOrcamento(_orc);
+}
+
+function fmt(v){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T12:00:00'); return d.toLocaleDateString('pt-BR'); }
+
+function renderOrcamento(o) {
+  const dc = o.data_completa || {};
+  const servicos = dc.servicos || [];
+  const materiais = dc.materiais || dc.produtos || [];
+  const status = o.aprov_status || o.status || 'pendente';
+  const isApproved = status === 'aprovado';
+  const isRefused = status === 'recusado';
+  const isDone = isApproved || isRefused;
+
+  const totalServ = servicos.reduce((s,sv)=>s+(parseFloat(sv.valorServico)||0),0);
+  const totalMat  = materiais.reduce((s,m)=>s+(parseFloat(m.total||m.subtotal)||(parseFloat(m.preco||0)*parseFloat(m.qtd||1))),0);
+  const desconto  = parseFloat(dc.desconto||o.desconto||0);
+  const total     = parseFloat(o.total||0);
+  const validade  = dc.validade || o.validade;
+
+  // Status bar
+  let statusHtml = '';
+  if (isApproved) {
+    const at = o.aprov_at ? new Date(o.aprov_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    statusHtml = `<div class="status-bar approved"><span class="status-icon">✅</span> Orçamento <strong>aprovado</strong>${at?' em '+at:''}.</div>`;
+  } else if (isRefused) {
+    statusHtml = `<div class="status-bar refused"><span class="status-icon">❌</span> Orçamento <strong>recusado</strong>${o.aprov_motivo?' — "'+o.aprov_motivo+'"':''}.</div>`;
+  } else {
+    statusHtml = `<div class="status-bar pending"><span class="status-icon">⏳</span> Aguardando sua decisão sobre esta proposta.</div>`;
+  }
+
+  // Empresa do pintor
+  const empresa = dc.empresa || dc.empresaNome || '';
+  const pintor  = dc.pintor  || dc.profissional || '';
+  const contato = dc.telefone || dc.whatsapp || '';
+
+  // Serviços HTML
+  let servHtml = '';
+  servicos.forEach(sv => {
+    const hasPat = sv.patologia;
+    servHtml += `<div class="serv-card">
+      <div class="serv-name">${sv.nome||'Serviço'} ${hasPat?'<span class="pat-tag">⚠️ Correção inclusa</span>':''}</div>
+      <div class="serv-meta">
+        <span>${sv.tipoServico||''}</span>
+        <span class="serv-val">R$ ${fmt(sv.valorServico||0)}</span>
+      </div>
+    </div>`;
+  });
+  if (!servHtml) servHtml = '<p style="color:var(--text3);font-size:13px">Nenhum ambiente registrado.</p>';
+
+  // Materiais HTML
+  let matHtml = '';
+  if (materiais.length && o.mode !== 'rel') {
+    materiais.forEach(m => {
+      const val = m.total || m.subtotal || (parseFloat(m.preco||0)*parseFloat(m.qtd||1));
+      matHtml += `<div class="mat-row"><span class="mat-name">${m.nome||m.descricao||'Item'} ${m.qtd>1?'(×'+m.qtd+')':''}</span><span class="mat-val">R$ ${fmt(val)}</span></div>`;
+    });
+    matHtml = `<div class="section">
+      <div class="section-title">🛒 Materiais / Produtos</div>
+      ${matHtml}
+    </div>`;
+  }
+
+  // Totais
+  let totHtml = '';
+  if (totalServ > 0) totHtml += `<div class="total-row"><span class="total-label">Mão de obra / serviços</span><span class="total-val">R$ ${fmt(totalServ)}</span></div>`;
+  if (totalMat > 0 && o.mode !== 'rel') totHtml += `<div class="total-row"><span class="total-label">Materiais / produtos</span><span class="total-val">R$ ${fmt(totalMat)}</span></div>`;
+  if (desconto > 0) totHtml += `<div class="total-row"><span class="total-label">Desconto</span><span class="total-val red">− R$ ${fmt(desconto)}</span></div>`;
+  totHtml += `<div class="total-row"><span class="total-label">Total</span><span class="total-val grand">R$ ${fmt(total)}</span></div>`;
+
+  // Validade
+  let validadeHtml = '';
+  if (validade) {
+    const vd = new Date(validade+'T12:00:00');
+    const hoje = new Date();
+    const diff = Math.ceil((vd-hoje)/(1000*60*60*24));
+    if (diff < 0) {
+      validadeHtml = `<div class="validade-bar">⚠️ Esta proposta expirou em ${fmtDate(validade)}. Solicite uma atualização ao profissional.</div>`;
+    } else {
+      validadeHtml = `<div class="validade-bar">📅 Proposta válida até <strong>${fmtDate(validade)}</strong> (${diff} dia${diff!==1?'s':''})</div>`;
+    }
+  }
+
+  // Obs
+  const obs = dc.observacoes || dc.obs || '';
+  const obsHtml = obs ? `<div class="section"><div class="section-title">📝 Observações</div><div class="obs-box">${obs}</div></div>` : '';
+
+  // Ações
+  const actionHtml = isDone ? '' : `
+    <div class="action-section">
+      <div class="action-title">O que você decide?</div>
+      <div class="action-sub">Revise com atenção. Ao aprovar, o profissional iniciará o planejamento do serviço.</div>
+      <div class="action-btns">
+        <button class="btn-aprov" onclick="abrirModalAprovar()">✅ Aprovar orçamento</button>
+        <button class="btn-recusar" onclick="abrirModalRecusar()">❌ Recusar</button>
+      </div>
+    </div>`;
+
+  document.getElementById('main-content').innerHTML = `
+    ${statusHtml ? `<div class="card" style="overflow:hidden;margin-bottom:16px">${statusHtml}</div>` : ''}
+
+    <div class="card" style="overflow:hidden">
+      <div class="orc-header">
+        <div class="orc-num">Orçamento #${o.numero||'—'} · ${fmtDate(dc.data||o.data)}</div>
+        <div class="orc-title">${dc.nomeProjeto||dc.nome_projeto||o.cliente||'Proposta de serviço'}</div>
+        ${empresa?`<div class="orc-meta">por ${empresa}${pintor?' · '+pintor:''}${contato?' · '+contato:''}</div>`:''}
+        <div class="orc-total-badge">R$ ${fmt(total)}</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">📋 Informações gerais</div>
+        <div class="info-grid">
+          <div class="info-item"><label>Cliente</label><span>${o.cliente||'—'}</span></div>
+          <div class="info-item"><label>Endereço / Local</label><span>${o.endereco||'—'}</span></div>
+          ${dc.prazo?`<div class="info-item"><label>Prazo estimado</label><span>${dc.prazo}</span></div>`:''}
+          ${dc.condicaoPagamento||dc.pagamento?`<div class="info-item"><label>Pagamento</label><span>${dc.condicaoPagamento||dc.pagamento}</span></div>`:''}
+        </div>
+        ${validadeHtml}
+      </div>
+
+      <div class="section">
+        <div class="section-title">🔨 Ambientes / Serviços</div>
+        ${servHtml}
+      </div>
+
+      ${matHtml}
+
+      ${obsHtml}
+
+      <div class="section">
+        <div class="section-title">💰 Resumo financeiro</div>
+        ${totHtml}
+      </div>
+    </div>
+
+    ${actionHtml}
+
+    <div class="footer">
+      Proposta gerada via <a href="https://mestrepro.com.br" target="_blank">MestrePro</a> · Plataforma para pintores profissionais
+    </div>
+  `;
+}
+
+function abrirModalAprovar() {
+  document.getElementById('modal-aprovar').classList.add('open');
+}
+function abrirModalRecusar() {
+  document.getElementById('modal-recusar').classList.add('open');
+}
+function fecharModal() {
+  document.getElementById('modal-aprovar').classList.remove('open');
+  document.getElementById('modal-recusar').classList.remove('open');
+}
+
+async function confirmarAprovacao() {
+  const btn = document.querySelector('#modal-aprovar .btn-conf');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  const { error } = await _sb.from('orcamentos').update({
+    aprov_status: 'aprovado',
+    aprov_at: new Date().toISOString(),
+    status: 'aprovado',
+  }).eq('id', _orcId);
+
+  if (error) { btn.disabled=false; btn.textContent='✅ Confirmar aprovação'; alert('Erro ao registrar. Tente novamente.'); return; }
+
+  fecharModal();
+  document.getElementById('main-content').innerHTML = `
+    <div class="feedback">
+      <div class="ic">🎉</div>
+      <h2>Orçamento aprovado!</h2>
+      <p>Sua aprovação foi registrada com sucesso. O profissional será notificado e entrará em contato em breve para combinar os detalhes do serviço.</p>
+      <p style="margin-top:14px;font-size:12px;color:var(--text3)">Aprovado em ${new Date().toLocaleString('pt-BR')}</p>
+    </div>
+    <div class="footer">Proposta gerada via <a href="https://mestrepro.com.br" target="_blank">MestrePro</a></div>
+  `;
+}
+
+async function confirmarRecusa() {
+  const motivo = document.getElementById('motivo-recusa').value.trim();
+  const btn = document.querySelector('#modal-recusar .btn-conf');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  const { error } = await _sb.from('orcamentos').update({
+    aprov_status: 'recusado',
+    aprov_at: new Date().toISOString(),
+    aprov_motivo: motivo,
+    status: 'recusado',
+  }).eq('id', _orcId);
+
+  if (error) { btn.disabled=false; btn.textContent='Recusar'; alert('Erro ao registrar. Tente novamente.'); return; }
+
+  fecharModal();
+  document.getElementById('main-content').innerHTML = `
+    <div class="feedback">
+      <div class="ic">📩</div>
+      <h2>Recusa registrada</h2>
+      <p>O profissional será informado sobre sua decisão${motivo?' e o motivo indicado':''}.  Caso queira negociar, basta entrar em contato diretamente.</p>
+    </div>
+    <div class="footer">Proposta gerada via <a href="https://mestrepro.com.br" target="_blank">MestrePro</a></div>
+  `;
+}
+
+function showErro(titulo, msg) {
+  document.getElementById('main-content').innerHTML = `
+    <div class="feedback">
+      <div class="ic">😕</div>
+      <h2>${titulo}</h2>
+      <p>${msg}</p>
+    </div>`;
+}
+
+// Fechar modal ao clicar fora
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target===el) fecharModal(); });
+});
+
+init();
+</script>
+</body>
+</html>
