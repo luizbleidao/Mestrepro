@@ -251,7 +251,7 @@ async function salvarContrato(existingId) {
 
   const id = existingId || 'ct_' + Date.now();
   const numero = existingId ? (_contratos.find(c=>c.id===existingId)?.numero || id.slice(-6)) : String(Date.now()).slice(-6);
-  const emp = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+  const emp = (typeof PROFILE !== 'undefined' && PROFILE?.empresa_data) ? PROFILE.empresa_data : JSON.parse(localStorage.getItem('empresaSalva') || '{}');
 
   const obj = {
     id, numero, cliente, endereco, valor,
@@ -343,7 +343,7 @@ async function gerarLinkContratoAssinatura(contratoId) {
       <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;">🔗 Link de assinatura gerado</div>
       <div style="font-size:12px;color:var(--text2,#a09080);margin-bottom:16px;">
         Envie ao cliente para assinar digitalmente o Contrato #${ct.numero}<br>
-        <span style="color:#f59e0b;">⏱ Válido por 30 dias · Expira em ${new Date(expires).toLocaleDateString('pt-BR')}</span>
+        <span style="color:#f59e0b;">⏱ Válido por 30 dias · Expira em ${ct.sig_token_expires_at ? new Date(ct.sig_token_expires_at).toLocaleDateString('pt-BR') : 'N/A'}</span>
       </div>
       <input id="sig-url-input" value="${url}" readonly
         style="width:100%;background:var(--surf2,#131311);border:1px solid var(--border,#2a2a26);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text,#f2ede6);margin-bottom:14px;outline:none;" />
@@ -708,7 +708,7 @@ async function salvarRecibo(existingId, contratoId) {
     descricao: document.getElementById('mr-desc')?.value?.trim() || '',
     observacao: document.getElementById('mr-obs')?.value?.trim() || '',
     contrato_id: contratoId || null,
-    dados: { empresa: JSON.parse(localStorage.getItem('empresaSalva') || '{}') },
+    dados: { empresa: (typeof PROFILE !== 'undefined' && PROFILE?.empresa_data) ? PROFILE.empresa_data : JSON.parse(localStorage.getItem('empresaSalva') || '{}') },
     criado_em: new Date().toISOString(),
   };
 
@@ -739,7 +739,7 @@ async function excluirRecibo(id) {
   if (!confirm('Excluir este recibo?')) return;
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
-    const { error } = await sb.from('recibos').delete().eq('id', id);
+    const { error } = await sb.from('recibos').delete().eq('id', id).eq('user_id', uid);
     if (error) { console.error('[MestrePro] Erro ao excluir recibo:', error.message); notif('❌ Erro ao excluir recibo. Tente novamente.'); return; }
   } else localStorage.setItem('pp_recibos', JSON.stringify(_recibos));
   _recibos = _recibos.filter(r => r.id !== id);

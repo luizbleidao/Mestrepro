@@ -50,7 +50,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .tb-r{display:flex;gap:8px;align-items:center;flex-shrink:0;}
 .tbtn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--rs);font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
 .tbtn-a{background:var(--acc);color:#fff;}
-.tbtn-a:hover{background:#d46b08;}
+.tbtn-a:hover{background:#4a6fee;}
 .theme-t{background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;transition:.15s;}
 .theme-t:hover{border-color:var(--acc);}
 .banner{background:rgba(91,127,255,.08);border-bottom:1px solid rgba(232,119,10,.25);padding:7px 18px;display:flex;align-items:center;justify-content:space-between;font-size:12px;flex-shrink:0;gap:10px;}
@@ -175,7 +175,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 .up-plan-features li.no::before{content:'✗ ';color:var(--text3);}
 .up-cta{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px;transition:.15s;}
 .up-cta.pri{background:var(--acc);color:#fff;}
-.up-cta.pri:hover{background:#d46b08;}
+.up-cta.pri:hover{background:#4a6fee;}
 .up-cta.sec{background:var(--surf2);border:1px solid var(--border);color:var(--text2);}
 .up-cta.sec:hover{border-color:var(--acc);color:var(--acc);}
 .up-cta.cur{background:var(--surf3);color:var(--green);cursor:default;}
@@ -1010,7 +1010,7 @@ async function loadDashboard(){
 
   // ── Dashboard Financeiro — exibir apenas para planos Pro+ ──
   const _planosComFinanceiro = ['pro','equipe','ia_pro','ia-pro'];
-  if (_planosComFinanceiro.includes(cfg?.plano)) {
+  if (_planosComFinanceiro.includes(PLANO)) {
     window._dashOrcamentos = orcs; // cache para re-renderizar ao trocar período
     const painelFin = document.getElementById('dash-financeiro');
     if (painelFin) painelFin.style.display = 'block';
@@ -1234,8 +1234,7 @@ async function loadIndicacao() {
     }
   }
 
-  const plano = cfg?.plano || 'gratuito';
-  const pct = ['equipe','ia-pro','ia_pro'].includes(plano) ? 30 : 20;
+  const pct = ['equipe','ia-pro','ia_pro'].includes(PLANO) ? 30 : 20;
 
   wrap.innerHTML = `
     <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(91,127,255,.12),rgba(91,127,255,.04));border-color:rgba(91,127,255,.3)">
@@ -1471,7 +1470,7 @@ function renderOnboarding(){
   const key = 'pp_ob_dismissed_' + (USER?.id || 'anon');
   if(localStorage.getItem(key)) return;
 
-  const emp = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+  const emp = PROFILE?.empresa_data || JSON.parse(localStorage.getItem('empresaSalva') || '{}');
   const orcKey = 'orcamentos_' + (USER?.id || 'anon');
   const orcs = JSON.parse(localStorage.getItem(orcKey) || '[]');
   const temSig = !!localStorage.getItem('pp_sig_profissional');

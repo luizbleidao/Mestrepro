@@ -196,31 +196,40 @@ serve(async (req: Request) => {
 
     console.log(`[webhook-mp] ✅ Plano ${planoInfo.plano} ativado para user ${userId} até ${fim.toISOString()}`);
 
-    // ── Creditar comissão de indicação (se houver referrer) ───────────────
-    try {
-      const { data: comissaoData, error: comissaoErr } = await sb.rpc('creditar_comissao', {
-        p_indicado_id: userId,
-        p_valor_pago:  payment.transaction_amount,
-        p_plano:       planoInfo.plano,
-      });
-      if (comissaoErr) {
-        // Não falha o webhook — ausência de indicação é o caso mais comum
-        console.warn('[webhook-mp] creditar_comissao() aviso:', comissaoErr.message);
-      } else if (comissaoData?.ok) {
-        console.log(`[webhook-mp] 💰 Comissão R$ ${comissaoData.comissao_brl} creditada para referrer ${comissaoData.referrer_id}`);
+    // ── Registrar pagamento na tabela pagamentos ───────────────────────────
+    await sb.from('pagamentos').upsert({
+      mp_payment_id: String(paymentId),
+      user_id: userId,
+      valor: payment.transaction_amount,
+      status: 'aprovado',
+      metodo: payment.payment_type_id ?? 'outros',
+      plano: planoInfo.plano,
+      criado_em: agora.toISOString(),
+    }, { onConflict: 'mp_payment_id' });
 
-        // ── Disparar PIX automático para o referrer ───────────────────────
-        // Fire-and-forget: não bloqueia o webhook, falhas são registradas no banco
-        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-        const internalSecret = Deno.env.get('INTERNAL_SECRET') ?? '';
-        fetch(`${supabaseUrl}/functions/v1/pagar-comissao`, {
-          method: 'POST',
-          headers: {
-            'Content-Type':      'application/json',
-            'Authorization':     `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''}`,
-            'x-internal-secret': internalSecret,
-          },
-          body: JSON.stringify({
-            indicacao_id: comissaoData.indicacao_id,
-            referrer_id:  comissaoData.referrer_id,
-            comissao_brl: comissaoData.comi
+    return new Response(JSON.stringify({ ok: true, plano: planoInfo.plano, userId }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+  } catch (err) {
+    console.error('[webhook-mp] Erro inesperado:', err);
+    return new Response('Internal error: ' + String(err), { status: 500 });
+  }
+});
+
+// ── Cancela/rebaixa plano por chargeback ou cancelamento ──────────────────
+async function handleCancelamento(payment: Record<string, unknown>) {
+  const [userId] = (String(payment.external_reference ?? '')).split(':');
+  if (!userId) return;
+
+  const sbUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const sb    = createClient(sbUrl, sbKey);
+
+  // Rebaixa para gratuito
+  await sb.from('profiles').update({ plano: 'gratuito' }).eq('id', userId);
+  await sb.from('subscriptions').update({ status: 'cancelada' }).eq('user_id', userId).eq('status', 'ativa');
+
+  console.log(`[webhook-mp] ⚠️ Plano de ${userId} cancelado/rebaixado para gratuito`);
+}

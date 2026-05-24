@@ -527,27 +527,6 @@ async function cadastrar(){
       }, { onConflict: 'id' });
       if(profErr) console.warn('[MestrePro] upsert profiles:', profErr.message);
       sessionStorage.setItem('pp_user_id', signUpData.user.id);
-
-      // ── Registrar indicação se usuário veio de um link de referral ──
-      const savedRef = sessionStorage.getItem('pp_ref_code');
-      if(savedRef){
-        try {
-          const { data: indData, error: indErr } = await sb.rpc('registrar_indicacao', {
-            p_ref_code:      savedRef,
-            p_indicado_id:   signUpData.user.id,
-            p_indicado_email: email,
-          });
-          if(indErr) console.warn('[MestrePro] registrar_indicacao erro:', indErr.message);
-          else if(indData?.ok) {
-            console.log('[MestrePro] Indicação registrada. Comissão:', indData.comissao_pct + '%');
-            sessionStorage.removeItem('pp_ref_code'); // consumir após uso
-          } else {
-            console.warn('[MestrePro] registrar_indicacao:', indData?.erro);
-          }
-        } catch(e) {
-          console.warn('[MestrePro] registrar_indicacao exception:', e);
-        }
-      }
     }
 
     if(sessionStorage.getItem('pp_convite_pendente')){
@@ -689,4 +668,27 @@ async function _processarConvitePendente() {
       window.location.href = 'pintopro-app.html';
       return;
     }
-    await validarConvite(c
+    await validarConvite(convite);
+    return;
+  }
+
+  if(params.get('tab')==='c') setTab('c');
+  const isUpgrade=params.get('upgrade')==='1';
+  const{data:{session}}=await sb.auth.getSession();
+  if(session&&!isUpgrade){window.location.href='pintopro-app.html';return;}
+  if(session&&isUpgrade){
+    document.getElementById('psub').textContent='Você está logado. Escolha o plano para fazer upgrade.';
+    showS('scr-planos');
+  }
+})();
+</script>
+
+<footer style="text-align:center;padding:24px 16px 32px;color:var(--text3);font-size:.75rem">
+  <a href="termos.html" style="color:var(--text3);text-decoration:none" target="_blank">Termos de Uso</a>
+  &nbsp;·&nbsp;
+  <a href="termos.html#política-de-privacidade" style="color:var(--text3);text-decoration:none" target="_blank">Política de Privacidade</a>
+  &nbsp;·&nbsp;
+  <a href="mailto:contatomestrepro@gmail.com" style="color:var(--text3);text-decoration:none">Suporte</a>
+</footer>
+</body>
+</html>

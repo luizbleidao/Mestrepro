@@ -15,8 +15,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+const _APP_URL = Deno.env.get('APP_URL');
+if (!_APP_URL) {
+  console.error('[emails-automaticos] APP_URL não configurada — CORS bloqueado por segurança.');
+}
 const CORS = {
-  'Access-Control-Allow-Origin': Deno.env.get('APP_URL') || '*',
+  'Access-Control-Allow-Origin': _APP_URL || 'https://mestrepro.space',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 

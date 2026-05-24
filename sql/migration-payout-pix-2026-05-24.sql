@@ -88,7 +88,7 @@ BEGIN
 END;
 $$;
 
--- ── 3. RPC: listar_payouts_pendentes ─────────────────────────
+-- ── 4. RPC: listar_payouts_pendentes ─────────────────────────
 -- Chamada pelo painel admin para reprocessar falhas manualmente
 CREATE OR REPLACE FUNCTION public.listar_payouts_pendentes()
 RETURNS TABLE (
