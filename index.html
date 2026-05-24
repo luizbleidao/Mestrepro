@@ -691,7 +691,7 @@ footer {
   <div class="preview-frame">
     <div class="preview-topbar">
       <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
-      <div class="preview-url">mestrepro.com.br/app</div>
+      <div class="preview-url">mestrepro.space/app</div>
     </div>
     <div class="preview-body">
       <div class="preview-sidebar">
@@ -1134,28 +1134,4 @@ function toggleFaq(el) {
   const item = el.parentElement;
   const wasOpen = item.classList.contains('open');
   document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-  if (!wasOpen) item.classList.add('open');
-}
-
-// ── Pricing toggle
-let anual = false;
-function toggleAnual(el) {
-  anual = !anual;
-  el.classList.toggle('on', anual);
-  document.querySelectorAll('.amount').forEach(span => {
-    span.textContent = anual ? span.dataset.anual : span.dataset.mensal;
-  });
-  ['basico','pro','equipe','ia'].forEach(id => {
-    const note = document.getElementById('note-' + id);
-    if (note) note.style.display = anual ? 'block' : 'none';
-  });
-}
-
-// ── Nav smooth highlight on scroll
-window.addEventListener('scroll', () => {
-  const nav = document.querySelector('nav');
-  nav.style.background = window.scrollY > 50 ? 'rgba(10,10,9,0.95)' : 'rgba(10,10,9,0.8)';
-});
-</script>
-</body>
-</html>
+  if (!wasOpen) item.classList.add(

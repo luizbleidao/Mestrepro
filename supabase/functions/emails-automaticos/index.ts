@@ -7,8 +7,8 @@
 //
 // Variáveis de ambiente necessárias no Supabase:
 //   RESEND_API_KEY       — chave da Resend API (resend.com)
-//   EMAIL_FROM           — ex: "MestrePro <noreply@mestrepro.com.br>"
-//   APP_URL              — ex: https://mestrepro.com.br
+//   EMAIL_FROM           — ex: "MestrePro <noreply@mestrepro.space>"
+//   APP_URL              — ex: https://mestrepro.space
 //   SUPABASE_SERVICE_ROLE_KEY  (já configurada pelo Supabase)
 //   SUPABASE_URL               (já configurada pelo Supabase)
 
@@ -141,7 +141,7 @@ function baseTemplate(content: string): string {
     </div>
     <div style="padding:28px 28px 20px">${content}</div>
     <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:14px 28px;font-size:11px;color:#9ca3af;text-align:center">
-      MestrePro · mestrepro.com.br<br>
+      MestrePro · mestrepro.space<br>
       Para cancelar o recebimento destes e-mails, acesse as configurações da sua conta.
     </div>
   </div>
@@ -190,7 +190,7 @@ serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: `Tipo desconhecido: ${tipo}` }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
   }
 
-  const appUrl = Deno.env.get('APP_URL') || 'https://mestrepro.com.br';
+  const appUrl = Deno.env.get('APP_URL') || 'https://mestrepro.space';
   const emailData: EmailData = { tipo, email, nome, appUrl, dados };
   const { subject, html } = template(emailData);
 
@@ -201,7 +201,7 @@ serve(async (req: Request) => {
     return new Response(JSON.stringify({ ok: true, mock: true, subject }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
   }
 
-  const fromEmail = Deno.env.get('EMAIL_FROM') || 'MestrePro <noreply@mestrepro.com.br>';
+  const fromEmail = Deno.env.get('EMAIL_FROM') || 'MestrePro <noreply@mestrepro.space>';
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',

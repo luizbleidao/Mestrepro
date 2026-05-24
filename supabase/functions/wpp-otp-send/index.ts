@@ -1,8 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const ALLOWED_ORIGINS = [
-  'https://mestrepro.com.br',
-  'https://www.mestrepro.com.br',
+  'https://mestrepro.space',
+  'https://www.mestrepro.space',
   'https://mestrepro.vercel.app',
 ];
 
