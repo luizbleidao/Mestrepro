@@ -208,23 +208,19 @@ serve(async (req: Request) => {
         console.warn('[webhook-mp] creditar_comissao() aviso:', comissaoErr.message);
       } else if (comissaoData?.ok) {
         console.log(`[webhook-mp] 💰 Comissão R$ ${comissaoData.comissao_brl} creditada para referrer ${comissaoData.referrer_id}`);
-      } else {
-        console.log('[webhook-mp] creditar_comissao: sem indicação ativa para este usuário.');
-      }
-    } catch (comissaoEx) {
-      // Nunca derrubar o webhook por causa de comissão — é não-crítico
-      console.warn('[webhook-mp] creditar_comissao exception (não crítico):', String(comissaoEx));
-    }
 
-    // ── Registrar pagamento na tabela pagamentos ───────────────────────────
-    await sb.from('pagamentos').upsert({
-      mp_payment_id: String(paymentId),
-      user_id: userId,
-      valor: payment.transaction_amount,
-      status: 'aprovado',
-      metodo: payment.payment_type_id ?? 'outros',
-      plano: planoInfo.plano,
-      criado_em: agora.toISOString(),
-    }, { onConflict: 'mp_payment_id' });
-
-    return new Response(JSON.stringify({ o
+        // ── Disparar PIX automático para o referrer ───────────────────────
+        // Fire-and-forget: não bloqueia o webhook, falhas são registradas no banco
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+        const internalSecret = Deno.env.get('INTERNAL_SECRET') ?? '';
+        fetch(`${supabaseUrl}/functions/v1/pagar-comissao`, {
+          method: 'POST',
+          headers: {
+            'Content-Type':      'application/json',
+            'Authorization':     `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''}`,
+            'x-internal-secret': internalSecret,
+          },
+          body: JSON.stringify({
+            indicacao_id: comissaoData.indicacao_id,
+            referrer_id:  comissaoData.referrer_id,
+            comissao_brl: comissaoData.comi
