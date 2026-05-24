@@ -1,7 +1,7 @@
 // MestrePro Service Worker — Modo Offline
-// Versão: 1.0.0 — 2026-05-23
-const CACHE_NAME = 'mestrepro-v1';
-const CACHE_STATIC = 'mestrepro-static-v1';
+// Versão: 1.1.0 — 2026-05-24
+const CACHE_NAME = 'mestrepro-v2';
+const CACHE_STATIC = 'mestrepro-static-v2';
 
 // Assets críticos que funcionam offline
 const STATIC_ASSETS = [
@@ -54,6 +54,12 @@ self.addEventListener('fetch', event => {
   if (url.hostname.includes('anthropic.com')) return;
   if (url.hostname.includes('mercadopago.com')) return;
   if (url.hostname.includes('mercadolibre.com')) return;
+  // CDNs e fontes externas — deixar passar sem interferência do SW
+  if (url.hostname.includes('googleapis.com')) return;
+  if (url.hostname.includes('gstatic.com')) return;
+  if (url.hostname.includes('jsdelivr.net')) return;
+  if (url.hostname.includes('cdnjs.cloudflare.com')) return;
+  if (url.hostname.includes('unpkg.com')) return;
 
   // Estratégia: Network First com fallback para cache
   // Para HTML/JS/CSS: tenta rede, se falhar usa cache
@@ -62,8 +68,8 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Para APIs Supabase já filtradas acima — deixa passar normalmente
   // Para outros requests: network only com fallback para página offline
+  // IMPORTANTE: sempre retornar uma Response válida — nunca undefined
   event.respondWith(
     fetch(request).catch(() => {
       if (request.destination === 'document') {
@@ -71,6 +77,8 @@ self.addEventListener('fetch', event => {
           headers: { 'Content-Type': 'text/html; charset=utf-8' }
         });
       }
+      // Fallback para recursos não-documento (scripts, estilos, imagens)
+      return new Response('', { status: 503, statusText: 'Service Unavailable' });
     })
   );
 });

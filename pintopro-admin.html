@@ -907,4 +907,11 @@ applyTheme();
     document.getElementById('app-screen').style.display='block';
     loadAll();
   } else {
-    // Sessão válida mas sem permissão de admi
+    // Sessão válida mas sem permissão de admin — encerrar silenciosamente
+    await sb.auth.signOut();
+    document.getElementById('auth-screen').style.display='flex';
+  }
+})();
+</script>
+</body>
+</html>
