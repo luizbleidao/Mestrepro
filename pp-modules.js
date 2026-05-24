@@ -108,14 +108,32 @@ function renderContratos() {
   el.innerHTML = rows;
 }
 
-function openContratoModal(contratoId) {
+async function openContratoModal(contratoId) {
   const existing = contratoId ? _contratos.find(c => c.id === contratoId) : null;
-  let orcOptions = '';
-  try {
-    const orcKey = 'orcamentos_' + (USER?.id || 'demo');
-    const orcas = JSON.parse(localStorage.getItem(orcKey) || '[]');
-    orcOptions = orcas.map(o => `<option value="${o.id}" ${existing?.orcamento_id === o.id ? 'selected' : ''}>#${o.numero} — ${o.cliente||'?'} (R$ ${Number(o.total||0).toLocaleString('pt-BR',{minimumFractionDigits:2})})</option>`).join('');
-  } catch {}
+
+  // Buscar orçamentos do Supabase (ou localStorage apenas no modo demo)
+  let _orcasParaContrato = [];
+  const _uid = USER?.id;
+  if (_uid && _uid !== 'demo') {
+    try {
+      const { data, error } = await sb.from('orcamentos')
+        .select('id, numero, cliente, total, endereco, dados')
+        .eq('user_id', _uid)
+        .order('criado_em', { ascending: false })
+        .limit(50);
+      if (!error && data) _orcasParaContrato = data;
+      else if (error) console.warn('[MestrePro] openContratoModal: erro ao buscar orçamentos:', error.message);
+    } catch (e) {
+      console.warn('[MestrePro] openContratoModal: exceção ao buscar orçamentos:', String(e));
+    }
+  } else {
+    try {
+      _orcasParaContrato = JSON.parse(localStorage.getItem('orcamentos_' + (_uid || 'demo')) || '[]');
+    } catch {}
+  }
+  const orcOptions = _orcasParaContrato.map(o =>
+    `<option value="${o.id}" ${existing?.orcamento_id === o.id ? 'selected' : ''}>#${o.numero} — ${o.cliente||'?'} (R$ ${Number(o.total||0).toLocaleString('pt-BR',{minimumFractionDigits:2})})</option>`
+  ).join('');
 
   openModuleModal('Contrato de Serviço', `
     <div class="mf-grid">
@@ -222,22 +240,18 @@ function openContratoModal(contratoId) {
     </div>
   `, () => salvarContrato(existing?.id));
 
-  // Auto-fill from orcamento
+  // Auto-fill from orcamento — usa array já carregado do Supabase (sem localStorage)
   document.getElementById('mc-orc')?.addEventListener('change', function() {
-    try {
-      const orcKey = 'orcamentos_' + (USER?.id || 'demo');
-      const orcas = JSON.parse(localStorage.getItem(orcKey) || '[]');
-      const orc = orcas.find(o => o.id === this.value);
-      if (!orc) return;
-      const cli = document.getElementById('mc-cliente');
-      const end = document.getElementById('mc-endereco');
-      const val = document.getElementById('mc-valor');
-      const doc = document.getElementById('mc-cli-doc');
-      if (cli && !cli.value) cli.value = orc.cliente || '';
-      if (end && !end.value) end.value = orc.endereco || '';
-      if (val && !val.value) val.value = orc.total || '';
-      if (doc && !doc.value) doc.value = orc.cliDoc || '';
-    } catch {}
+    const orc = _orcasParaContrato.find(o => o.id === this.value);
+    if (!orc) return;
+    const cli = document.getElementById('mc-cliente');
+    const end = document.getElementById('mc-endereco');
+    const val = document.getElementById('mc-valor');
+    const doc = document.getElementById('mc-cli-doc');
+    if (cli && !cli.value) cli.value = orc.cliente || '';
+    if (end && !end.value) end.value = orc.endereco || '';
+    if (val && !val.value) val.value = orc.total || '';
+    if (doc && !doc.value) doc.value = orc.dados?.cliDoc || orc.cliDoc || '';
   });
 }
 
