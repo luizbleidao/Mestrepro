@@ -471,6 +471,7 @@ async function loadUsers(){
     console.error('loadUsers error:', error);
     document.getElementById('users-table-wrap').innerHTML =
       `<div class="tbl-empty">⚠️ Erro ao carregar: ${error.message}</div>`;
+    renderUltimosTable([]); // limpa spinner de últimos cadastros mesmo com erro
     notif('⚠️ Erro ao carregar usuários: ' + error.message);
     return;
   }
@@ -633,6 +634,7 @@ async function loadPagamentos(){
     console.error('loadPagamentos error:', error);
     document.getElementById('pags-table-wrap').innerHTML =
       `<div class="tbl-empty">⚠️ Erro: ${error.message}</div>`;
+    renderPagsPendentes([]); // limpa spinner de pagamentos pendentes mesmo com erro
     notif('⚠️ Erro pagamentos: ' + error.message);
     return;
   }
@@ -905,11 +907,4 @@ applyTheme();
     document.getElementById('app-screen').style.display='block';
     loadAll();
   } else {
-    // Sessão válida mas sem permissão de admin — encerrar silenciosamente
-    await sb.auth.signOut();
-    document.getElementById('auth-screen').style.display='flex';
-  }
-})();
-</script>
-</body>
-</html>
+    // Sessão válida mas sem permissão de admi
