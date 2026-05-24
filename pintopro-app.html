@@ -804,35 +804,35 @@ const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
 const CFG = {
   gratuito: {
     label:'🆓 Gratuito',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','indicacao','configuracoes'],
     orcLim:5, laudoLim:2, pdfMarca:true, multiUser:false, ia:false,
   },
   trial: {
     label:'🕐 Trial 7 dias',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','indicacao','configuracoes'],
     orcLim:9999, laudoLim:9999, pdfMarca:false, multiUser:false, ia:false,
   },
   basico: {
     label:'⭐ Básico',
-    telas:['dashboard','orcamentos','contratos','recibos','agenda','configuracoes'],
+    telas:['dashboard','orcamentos','contratos','recibos','agenda','indicacao','configuracoes'],
     orcLim:9999, laudoLim:3, pdfMarca:false, multiUser:false, ia:false,
     _alias:['pintor-std'],
   },
   pro: {
     label:'🚀 Pro',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','indicacao','configuracoes'],
     orcLim:9999, laudoLim:9999, pdfMarca:false, multiUser:false, ia:false,
     _alias:['pintor-pro'],
   },
   equipe: {
     label:'👥 Equipe',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','indicacao','configuracoes'],
     orcLim:9999, laudoLim:9999, pdfMarca:false, multiUser:true, multiUserLim:5, ia:false,
     _alias:['lojista'],
   },
   'ia-pro': {
     label:'🤖 IA Pro',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','posts','ia_pro','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','posts','ia_pro','indicacao','configuracoes'],
     orcLim:9999, laudoLim:9999, pdfMarca:false, multiUser:true, multiUserLim:9999, ia:true,
     _alias:['ia_pro','ia-pro'],
   },
