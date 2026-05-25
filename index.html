@@ -1134,4 +1134,12 @@ function toggleFaq(el) {
   const item = el.parentElement;
   const wasOpen = item.classList.contains('open');
   document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-  if (!wasOpen) item.classList.add(
+  if (!wasOpen) item.classList.add('open');
+}
+</script>
+
+<!-- Vercel Web Analytics + Speed Insights (ativar em vercel.com → Analytics) -->
+<script defer src="/_vercel/insights/script.js"></script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+</body>
+</html>
