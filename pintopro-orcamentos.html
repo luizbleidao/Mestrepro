@@ -855,6 +855,8 @@ function renderStep3(){
   servicos.forEach((s,i)=>html+=renderServicoCard(s,i));
   html+=`<button class="add-btn" onclick="addServico()">＋ Adicionar Ambiente / Serviço</button>`;
   wrap.innerHTML=html;
+  // Inicializar calculadora de tinta para serviços que já têm área preenchida
+  servicos.forEach((s,i)=>{ if((s.area_m2||0)>0) setTimeout(()=>_calcTinta(i),50); });
 }
 
 function servicoDef(){return{id:Date.now(),nome:'',tipoServico:'',valorServico:0,area_m2:0,demao:2,patologia:false,tipoPatologia:'fissuras',obsPatologia:'',fotosPatologia:[]};}
@@ -905,12 +907,6 @@ function renderServicoCard(s,i){
       <div id="calc-result-${i}" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-top:6px;font-size:.85rem;display:${(s.area_m2||0)>0?'block':'none'}">
         <span id="calc-litros-${i}"></span>
       </div>
-      <script>
-        (function(){
-          // Inicializar cálculo se já tiver área
-          if(${(s.area_m2||0)}>0) setTimeout(()=>_calcTinta(${i}),50);
-        })();
-      </script>
     </details>
     <div style="padding-top:8px">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.87rem;font-weight:600">
