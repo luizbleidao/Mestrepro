@@ -228,8 +228,20 @@ function buildMpLink(baseLink, planoId, isAnual) {
   return `${baseLink}?external_reference=${extRef}`;
 }
 
+// ── Analytics helper ─────────────────────────────────────────────────────────
+function _track(event, params={}){
+  try{ if(typeof gtag!=='undefined') gtag('event', event, params); } catch(e){}
+  try{ if(typeof fbq !=='undefined') fbq('track', event, params);  } catch(e){}
+}
+
 // Intercepta cliques em links de checkout quando userId ainda não carregou
 function handleCheckoutClick(evt, planoId, isAnual) {
+  const precos={basico:49,pro:99,equipe:179,'ia-pro':249};
+  _track('InitiateCheckout', {
+    content_name: `${planoId}_${isAnual?'anual':'mensal'}`,
+    currency: 'BRL',
+    value: precos[planoId] || 0
+  });
   if (!userId) {
     evt.preventDefault();
     notifPlanos('⏳ Aguarde — identificando sua conta...');

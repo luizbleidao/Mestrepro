@@ -260,6 +260,39 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       ✨ Gerar orçamento com IA
     </button>
   </div>
+  <!-- BARRA DE BUSCA + FILTROS -->
+  <div style="max-width:960px;margin:0 auto 4px;padding:0 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <div style="position:relative;flex:1;min-width:180px">
+      <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:.9rem;pointer-events:none;color:var(--text3)">🔍</span>
+      <input id="searchOrc" type="text" placeholder="Buscar por cliente, nº, endereço…"
+        oninput="filtrarOrcamentos()"
+        style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.88rem;padding:9px 12px 9px 34px;outline:none;transition:.2s"
+        onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <select id="filterStatus" onchange="filtrarOrcamentos()"
+      style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.85rem;padding:9px 12px;outline:none;cursor:pointer;transition:.2s"
+      onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--border)'">
+      <option value="">Todos os status</option>
+      <option value="rascunho">Rascunho</option>
+      <option value="enviado">Enviado</option>
+      <option value="aprovado">Aprovado</option>
+      <option value="recusado">Recusado</option>
+    </select>
+    <select id="filterMode" onchange="filtrarOrcamentos()"
+      style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:.85rem;padding:9px 12px;outline:none;cursor:pointer;transition:.2s"
+      onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--border)'">
+      <option value="">Todos os tipos</option>
+      <option value="mao">Mão de obra</option>
+      <option value="prod">Com produtos</option>
+      <option value="rel">Relação</option>
+    </select>
+    <button onclick="limparFiltros()" id="btnLimparFiltros" title="Limpar filtros"
+      style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);padding:9px 13px;cursor:pointer;font-size:.82rem;white-space:nowrap;transition:.2s"
+      onmouseover="this.style.borderColor='var(--acc)';this.style.color='var(--acc)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">✕ Limpar</button>
+  </div>
+  <div id="searchCount" style="max-width:960px;margin:0 auto 6px;padding:0 20px;font-size:.75rem;color:var(--text3);display:none"></div>
+
   <div class="orca-list" id="orcaList">
     <div class="empty-state"><div style="font-size:2.8rem;margin-bottom:10px">🖌️</div><div style="font-weight:600;margin-bottom:5px">Nenhum orçamento ainda</div><div style="font-size:.83rem">Clique em + Novo Orçamento para começar</div></div>
   </div>
@@ -595,6 +628,59 @@ function abrirIADash(){
   abrirIAModal();
 }
 
+// ══════════════════════════════════════════════
+// BUSCA / FILTRO DE ORÇAMENTOS
+// ══════════════════════════════════════════════
+function filtrarOrcamentos(){
+  const q=(document.getElementById('searchOrc')?.value||'').toLowerCase().trim();
+  const fStatus=document.getElementById('filterStatus')?.value||'';
+  const fMode=document.getElementById('filterMode')?.value||'';
+  const btn=document.getElementById('btnLimparFiltros');
+  if(btn) btn.style.display=(q||fStatus||fMode)?'block':'none';
+  renderListFiltrada(q,fStatus,fMode);
+}
+function limparFiltros(){
+  const s=document.getElementById('searchOrc');
+  const fs=document.getElementById('filterStatus');
+  const fm=document.getElementById('filterMode');
+  if(s) s.value='';
+  if(fs) fs.value='';
+  if(fm) fm.value='';
+  document.getElementById('btnLimparFiltros').style.display='none';
+  document.getElementById('searchCount').style.display='none';
+  renderListFiltrada('','','');
+}
+function renderListFiltrada(q,fStatus,fMode){
+  const orcas=_orcas;
+  const list=document.getElementById('orcaList');
+  const countEl=document.getElementById('searchCount');
+  if(!orcas.length){
+    list.innerHTML='<div class="empty-state"><div style="font-size:2.8rem;margin-bottom:10px">🖌️</div><div style="font-weight:600;margin-bottom:5px">Nenhum orçamento ainda</div><div style="font-size:.83rem">Clique em + Novo Orçamento para começar</div></div>';
+    if(countEl) countEl.style.display='none';
+    return;
+  }
+  let filtered=orcas.slice().reverse();
+  if(q) filtered=filtered.filter(o=>{
+    const haystack=[o.cliente||'',o.numero||'',o.endereco||'',o.data||''].join(' ').toLowerCase();
+    return haystack.includes(q);
+  });
+  if(fStatus) filtered=filtered.filter(o=>o.status===fStatus);
+  if(fMode)   filtered=filtered.filter(o=>(o.mode||'prod')===fMode);
+  const isFiltering=!!(q||fStatus||fMode);
+  if(countEl){
+    if(isFiltering){
+      countEl.style.display='block';
+      countEl.textContent=`${filtered.length} de ${orcas.length} orçamentos encontrados`;
+    } else { countEl.style.display='none'; }
+  }
+  if(!filtered.length){
+    list.innerHTML='<div class="empty-state"><div style="font-size:2rem;margin-bottom:8px">🔎</div><div style="font-weight:600;margin-bottom:4px">Nenhum resultado</div><div style="font-size:.82rem">Tente outros termos ou limpe os filtros</div></div>';
+    return;
+  }
+  const sl={rascunho:'Rascunho',enviado:'Enviado',aprovado:'Aprovado',recusado:'Recusado'};
+  list.innerHTML=filtered.map(o=>_orcaCardHtml(o,sl)).join('');
+}
+
 function renderDash(){
   // Mostra o botão IA só para usuários ia-pro
   const dashIaBtn = document.getElementById('dash-ia-btn');
@@ -605,31 +691,29 @@ function renderDash(){
   const aprov=orcas.filter(o=>o.status==='aprovado').reduce((s,o)=>s+(o.total||0),0);
   document.getElementById('statAprov').textContent='R$ '+fmt(aprov);
   document.getElementById('statPend').textContent=orcas.filter(o=>o.status==='enviado').length;
-  const list=document.getElementById('orcaList');
-  if(!orcas.length){
-    list.innerHTML='<div class="empty-state"><div style="font-size:2.8rem;margin-bottom:10px">🖌️</div><div style="font-weight:600;margin-bottom:5px">Nenhum orçamento ainda</div><div style="font-size:.83rem">Clique em + Novo Orçamento para começar</div></div>';
-    return;
-  }
-  const sl={rascunho:'Rascunho',enviado:'Enviado',aprovado:'Aprovado',recusado:'Recusado'};
-  list.innerHTML=orcas.slice().reverse().map(o=>{
-    const tv=o.mode==='rel'?'—':'R$ '+fmt(o.total);
-    return`<div class="orca-card" onclick="editarOrcamento('${o.id}')">
-      <div style="min-width:0;flex:1">
-        <div class="orca-num">#${o.numero} <span class="mode-badge mode-${o.mode||'prod'}">${MODE_LABEL[o.mode||'prod']}</span></div>
-        <div class="orca-client">${o.cliente||'—'}</div>
-        <div class="orca-meta">${[o.endereco,fmtDate(o.data)].filter(Boolean).join(' · ')}</div>
-      </div>
-      <div class="orca-val" style="margin:0 12px">
-        <div class="orca-total">${tv}</div>
-        <span class="orca-status status-${o.status}">${sl[o.status]||o.status}</span>
-      </div>
-      <div class="card-actions" onclick="event.stopPropagation()">
-        <button class="icon-btn" title="Duplicar" onclick="duplicarOrcamento('${o.id}')">📋</button>
-        <button class="icon-btn" title="Editar" onclick="editarOrcamento('${o.id}')">✏️</button>
-        <button class="icon-btn" title="Excluir" onclick="deletarOrcamento('${o.id}')">🗑️</button>
-      </div>
-    </div>`;
-  }).join('');
+  // Re-aplicar filtros ao re-renderizar (ex: após salvar)
+  filtrarOrcamentos();
+}
+
+// Gera o HTML de um card de orçamento — usado pelo filtro
+function _orcaCardHtml(o, sl){
+  const tv=o.mode==='rel'?'—':'R$ '+fmt(o.total);
+  return`<div class="orca-card" onclick="editarOrcamento('${o.id}')">
+    <div style="min-width:0;flex:1">
+      <div class="orca-num">#${o.numero} <span class="mode-badge mode-${o.mode||'prod'}">${MODE_LABEL[o.mode||'prod']}</span></div>
+      <div class="orca-client">${o.cliente||'—'}</div>
+      <div class="orca-meta">${[o.endereco,fmtDate(o.data)].filter(Boolean).join(' · ')}</div>
+    </div>
+    <div class="orca-val" style="margin:0 12px">
+      <div class="orca-total">${tv}</div>
+      <span class="orca-status status-${o.status}">${sl[o.status]||o.status}</span>
+    </div>
+    <div class="card-actions" onclick="event.stopPropagation()">
+      <button class="icon-btn" title="Duplicar" onclick="duplicarOrcamento('${o.id}')">📋</button>
+      <button class="icon-btn" title="Editar" onclick="editarOrcamento('${o.id}')">✏️</button>
+      <button class="icon-btn" title="Excluir" onclick="deletarOrcamento('${o.id}')">🗑️</button>
+    </div>
+  </div>`;
 }
 let _pendingDelId = null;
 function deletarOrcamento(id){

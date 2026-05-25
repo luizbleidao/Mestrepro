@@ -883,6 +883,21 @@ async function init(){
   const {data:profile}=await sb.from('profiles').select('id,nome,plano,perfil,criado_em,trial_fim,cidade,tel,sig_profissional,empresa_data,preferencias,lgpd_aceito,equipe_owner_id,laudos_mes,orcamentos_total,ativo,conta_excluir_em').eq('id',USER.id).single();
   PROFILE=profile||{nome:USER.user_metadata?.nome||USER.email,perfil:'pintor',plano:'gratuito',criado_em:USER.created_at,trial_fim:null};
   PLANO=_resolverPlano(PROFILE.plano||'gratuito');
+
+  // ── Detectar upgrade de plano e disparar evento Purchase ─────────────────
+  const _planoAnterior = sessionStorage.getItem('pp_user_plano');
+  const _hierarquia = ['gratuito','trial','basico','pintor-std','pintor-pro','pro','lojista','equipe','ia-pro'];
+  if(_planoAnterior && _planoAnterior !== PLANO){
+    const idxAntes = _hierarquia.indexOf(_planoAnterior);
+    const idxAgora = _hierarquia.indexOf(PLANO);
+    if(idxAgora > idxAntes && idxAntes >= 0){
+      const precos={basico:49,'pintor-std':69,'pintor-pro':99,pro:99,lojista:99,equipe:179,'ia-pro':249};
+      try{ if(typeof gtag!=='undefined') gtag('event','purchase',{currency:'BRL',value:precos[PLANO]||0,items:[{item_name:PLANO}]}); }catch(e){}
+      try{ if(typeof fbq !=='undefined') fbq('track','Purchase',{currency:'BRL',value:precos[PLANO]||0}); }catch(e){}
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   sessionStorage.setItem('pp_user_id', USER.id);
   sessionStorage.setItem('pp_user_plano', PLANO);
   setup();

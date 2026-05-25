@@ -406,6 +406,12 @@ const setBtn  = (id,html,off) => { const b=document.getElementById(id); if(b){b.
 const showMsg = (id,msg,t) => { const el=document.getElementById(id); if(el){el.textContent=msg;el.className='msg '+t+' show';} };
 const hideMsg = id => { const el=document.getElementById(id); if(el)el.classList.remove('show'); };
 
+// ── Analytics helper — dispara GA4 + Meta Pixel se configurados ─────────────
+function _track(event, params={}){
+  try{ if(typeof gtag!=='undefined') gtag('event', event, params); } catch(e){}
+  try{ if(typeof fbq !=='undefined') fbq('track', event, params);  } catch(e){}
+}
+
 function setTab(t){
   document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',(t==='l'&&i===0)||(t==='c'&&i===1)));
   document.getElementById('tl').style.display=t==='l'?'block':'none';
@@ -435,7 +441,14 @@ function setBilling(anual){
 
 function irMP(plano,evt){
   evt&&evt.preventDefault();
-  const url=MP[plano]?.[_anual?'anual':'mensal'];
+  const periodo=_anual?'anual':'mensal';
+  const precos={basico:49,pro:99,equipe:179,'ia-pro':249};
+  _track('InitiateCheckout', {
+    content_name: `${plano}_${periodo}`,
+    currency: 'BRL',
+    value: precos[plano]||0
+  });
+  const url=MP[plano]?.[periodo];
   if(url) window.open(url,'_blank');
 }
 
@@ -447,6 +460,7 @@ async function login(){
   try{
     const{error}=await sb.auth.signInWithPassword({email,password:senha});
     if(error) throw error;
+    _track('Login', { method: 'email' });
     await _processarConvitePendente();
     window.location.href='pintopro-app.html';
   }catch(err){
@@ -527,6 +541,27 @@ async function cadastrar(){
       }, { onConflict: 'id' });
       if(profErr) console.warn('[MestrePro] upsert profiles:', profErr.message);
       sessionStorage.setItem('pp_user_id', signUpData.user.id);
+
+      // ── Registrar indicação se usuário veio de um link de referral ──
+      const savedRef = sessionStorage.getItem('pp_ref_code');
+      if(savedRef){
+        try {
+          const { data: indData, error: indErr } = await sb.rpc('registrar_indicacao', {
+            p_ref_code:      savedRef,
+            p_indicado_id:   signUpData.user.id,
+            p_indicado_email: email,
+          });
+          if(indErr) console.warn('[MestrePro] registrar_indicacao erro:', indErr.message);
+          else if(indData?.ok) {
+            console.log('[MestrePro] Indicação registrada. Comissão:', indData.comissao_pct + '%');
+            sessionStorage.removeItem('pp_ref_code'); // consumir após uso
+          } else {
+            console.warn('[MestrePro] registrar_indicacao:', indData?.erro);
+          }
+        } catch(e) {
+          console.warn('[MestrePro] registrar_indicacao exception:', e);
+        }
+      }
     }
 
     if(sessionStorage.getItem('pp_convite_pendente')){
@@ -536,6 +571,7 @@ async function cadastrar(){
       return;
     }
 
+    _track('CompleteRegistration', { method: 'email', content_name: perfil });
     document.getElementById('psub').textContent=`Bem-vindo, ${nome.split(' ')[0]}! Escolha seu plano abaixo.`;
     showS('scr-planos');
   }catch(err){
@@ -673,6 +709,13 @@ async function _processarConvitePendente() {
   }
 
   if(params.get('tab')==='c') setTab('c');
+
+  // ── Salvar ref_code de indicação se presente na URL ──────────
+  const refCode = params.get('ref');
+  if(refCode && /^[A-Z0-9]{8}$/i.test(refCode)){
+    sessionStorage.setItem('pp_ref_code', refCode.toUpperCase());
+  }
+
   const isUpgrade=params.get('upgrade')==='1';
   const{data:{session}}=await sb.auth.getSession();
   if(session&&!isUpgrade){window.location.href='pintopro-app.html';return;}
