@@ -112,6 +112,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <span class="sep">|</span>
     <div class="proj" id="hd-proj">Portal do cliente</div>
     <span class="status-pill pill-pendente" id="hd-status">Carregando...</span>
+    <span id="rt-indicator" style="font-size:11px;color:var(--text3);margin-left:4px" title="Status da conexão em tempo real">⚪ Conectando...</span>
   </div>
   <div id="main-content">
     <div class="spinner"><div class="ring"></div><span>Carregando seu portal...</span></div>
@@ -127,7 +128,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script>
 const _p = new URLSearchParams(location.search);
 const _portalToken = _p.get('ptoken') || _p.get('token');
-let _sb, _portalData, _msgs = [];
+let _sb, _portalData, _msgs = [], _channel = null, _sending = false;
 
 // ── HELPERS ───────────────────────────────────────────────────
 function fmt(v){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -170,6 +171,7 @@ async function init() {
   _portalData = orc;
   _msgs = orc.portal_mensagens || [];
   renderPortal(orc);
+  initRealtime();
 }
 
 // ── RENDER PRINCIPAL ─────────────────────────────────────────
@@ -284,7 +286,7 @@ function renderPortal(o) {
         <div class="msg-list" id="msg-list">${msgsHtml}</div>
         <div class="msg-input-row">
           <input id="msg-input" type="text" placeholder="Enviar mensagem ao profissional..." onkeydown="if(event.key==='Enter')enviarMensagem()">
-          <button onclick="enviarMensagem()">Enviar</button>
+          <button id="msg-send-btn" onclick="enviarMensagem()">Enviar</button>
         </div>
       </div>
     </div>
@@ -306,17 +308,93 @@ function renderPortal(o) {
   if (ml) ml.scrollTop = ml.scrollHeight;
 }
 
+// ── REALTIME ──────────────────────────────────────────────────
+function initRealtime(){
+  if(!_sb || !_portalData?.id) return;
+  try {
+    _channel = _sb.channel('portal-' + _portalData.id)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'orcamentos',
+        filter: `id=eq.${_portalData.id}`
+      }, payload => {
+        if (!payload.new) return;
+        const updated = {..._portalData, ...payload.new};
+        // Só re-renderiza se houve mudança relevante (progresso, etapa, fotos)
+        const changed = (
+          updated.portal_progresso !== _portalData.portal_progresso ||
+          updated.portal_etapa     !== _portalData.portal_etapa     ||
+          JSON.stringify(updated.portal_fotos) !== JSON.stringify(_portalData.portal_fotos)
+        );
+        // Mensagens novas do profissional
+        const newMsgs = (updated.portal_mensagens||[]).filter(m=>m.de==='pintor');
+        const oldMsgs = (_portalData.portal_mensagens||[]).filter(m=>m.de==='pintor');
+        const hasNewMsg = newMsgs.length > oldMsgs.length;
+        _portalData = updated;
+        if(hasNewMsg){
+          _msgs = updated.portal_mensagens || [];
+          appendNewMessages(newMsgs.slice(oldMsgs.length));
+        }
+        if(changed){
+          renderPortal(updated);
+          showPortalToast('✅ Profissional atualizou o progresso!');
+        } else if(hasNewMsg){
+          showPortalToast('💬 Nova mensagem do profissional');
+        }
+      })
+      .subscribe(status => {
+        const indicator = document.getElementById('rt-indicator');
+        if(!indicator) return;
+        if(status === 'SUBSCRIBED') {
+          indicator.textContent = '🟢 Ao vivo';
+          indicator.style.color = 'var(--green)';
+        } else {
+          indicator.textContent = '🔴 Offline';
+          indicator.style.color = 'var(--red)';
+        }
+      });
+  } catch(e){ console.warn('[Portal] Realtime não disponível:', e); }
+}
+
+function appendNewMessages(msgs){
+  const ml = document.getElementById('msg-list');
+  if(!ml) return;
+  msgs.forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'msg pintor';
+    el.innerHTML = `<div>${m.texto}</div><div class="msg-meta">Profissional · ${fmtDateTime(m.em)}</div>`;
+    ml.appendChild(el);
+  });
+  ml.scrollTop = ml.scrollHeight;
+}
+
+function showPortalToast(msg){
+  let t = document.getElementById('portal-toast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'portal-toast';
+    t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a202c;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 3500);
+}
+
 // ── MENSAGENS ─────────────────────────────────────────────────
 async function enviarMensagem() {
   const inp = document.getElementById('msg-input');
+  const btn = document.getElementById('msg-send-btn');
   const texto = inp?.value?.trim();
-  if (!texto) return;
+  if (!texto || _sending) return;
+  _sending = true;
+  if(btn){ btn.disabled = true; btn.textContent = '...'; }
   inp.value = '';
 
   const nova = { de: 'cliente', texto, em: new Date().toISOString() };
   _msgs.push(nova);
 
-  // Atualiza a lista localmente
+  // Atualiza lista localmente imediatamente
   const ml = document.getElementById('msg-list');
   if (ml) {
     const el = document.createElement('div');
@@ -330,6 +408,9 @@ async function enviarMensagem() {
   try {
     await _sb.from('orcamentos').update({ portal_mensagens: _msgs }).eq('id', _portalData.id);
   } catch(e) { console.warn('[MestrePro] Erro ao salvar mensagem:', e); }
+
+  if(btn){ btn.disabled = false; btn.textContent = 'Enviar'; }
+  _sending = false;
 }
 
 // ── LIGHTBOX ──────────────────────────────────────────────────

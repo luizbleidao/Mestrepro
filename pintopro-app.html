@@ -95,8 +95,11 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 .bz{background:var(--surf3);color:var(--text2);}
 .btn-s{display:inline-flex;align-items:center;padding:5px 10px;border-radius:var(--rs);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;transition:.15s;}
 .btn-s:hover{background:var(--surf2);color:var(--text);}
-.notif{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--acc);border-radius:var(--r);padding:10px 16px;font-size:13px;color:var(--text);display:none;z-index:999;box-shadow:var(--sh);max-width:280px;}
+.notif{position:fixed;bottom:20px;right:20px;background:var(--surf);border:1px solid var(--acc);border-radius:var(--r);padding:10px 16px;font-size:13px;color:var(--text);display:none;z-index:999;box-shadow:var(--sh);max-width:300px;transition:border-color .2s;}
 .notif.show{display:flex;align-items:center;gap:8px;animation:si .3s;}
+.notif.ok  {border-color:var(--green);}
+.notif.err {border-color:#ef4444;}
+.notif.warn{border-color:#f59e0b;}
 @keyframes si{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px;}
 .loading .brand{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--acc);}
@@ -1537,7 +1540,16 @@ async function sair(){
 }
 
 let _nt;
-function notif(msg){const n=document.getElementById('notif-el');n.textContent=msg;n.classList.add('show');clearTimeout(_nt);_nt=setTimeout(()=>n.classList.remove('show'),3000);}
+function notif(msg, tipo='info'){
+  const n=document.getElementById('notif-el');
+  n.textContent=msg;
+  n.className='notif show';
+  if(tipo==='ok')   n.classList.add('ok');
+  else if(tipo==='err')  n.classList.add('err');
+  else if(tipo==='warn') n.classList.add('warn');
+  clearTimeout(_nt);
+  _nt=setTimeout(()=>n.classList.remove('show'), tipo==='err'?4500:3000);
+}
 
 // ══ ASSINATURA DO PROFISSIONAL ══
 let _profSigCanvas = null, _profSigCtx = null, _profSigDrawing = false, _profSigHasDrawn = false;

@@ -78,7 +78,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .section.active{display:block;}
 
 /* ── STAT CARDS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
 .stat{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
 .stat .lb{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;}
 .stat .vl{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;}
@@ -197,6 +197,10 @@ tbody td:first-child{color:var(--text);font-weight:500;}
     <button class="tab" onclick="showTab('usuarios',this)">👥 Usuários</button>
     <button class="tab" onclick="showTab('pagamentos',this)">💳 Pagamentos</button>
     <button class="tab" onclick="showTab('metricas',this)">📈 Métricas</button>
+    <button class="tab" onclick="showTab('indicacoes',this)">🤝 Indicações</button>
+    <button class="tab" onclick="showTab('email-queue',this)">📧 Emails</button>
+    <button class="tab" onclick="showTab('ia-uso',this)">🤖 IA Uso</button>
+    <button class="tab" onclick="showTab('audit',this)">📋 Auditoria</button>
   </div>
 
   <div class="content">
@@ -209,6 +213,8 @@ tbody td:first-child{color:var(--text);font-weight:500;}
         <div class="stat"><div class="lb">Gratuitos</div><div class="vl" id="st-gratis" style="color:var(--acc2)">—</div><div class="sub">em trial</div></div>
         <div class="stat"><div class="lb">Pag. pendentes</div><div class="vl" id="st-pendentes" style="color:var(--acc)">—</div><div class="sub">aguardando aprovação</div></div>
         <div class="stat"><div class="lb">Receita mensal</div><div class="vl" id="st-receita" style="color:var(--green)">—</div><div class="sub">estimada</div></div>
+        <div class="stat"><div class="lb">MRR real</div><div class="vl" id="st-mrr" style="color:var(--green)">—</div><div class="sub">planos ativos</div></div>
+        <div class="stat"><div class="lb">ARR estimado</div><div class="vl" id="st-arr" style="color:var(--acc)">—</div><div class="sub">receita anual</div></div>
       </div>
 
       <!-- Últimos cadastros -->
@@ -342,6 +348,84 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 
     </div>
 
+    <!-- INDICAÇÕES -->
+    <div class="section" id="sec-indicacoes">
+      <div class="stats-grid" style="margin-bottom:16px">
+        <div class="stat"><div class="lb">Total indicações</div><div class="vl" id="ind-total">—</div><div class="sub">registradas</div></div>
+        <div class="stat"><div class="lb">Convertidas</div><div class="vl" id="ind-conv" style="color:var(--green)">—</div><div class="sub">ativo/pago</div></div>
+        <div class="stat"><div class="lb">Com payout</div><div class="vl" id="ind-pago" style="color:var(--acc)">—</div><div class="sub">comissões enviadas</div></div>
+        <div class="stat"><div class="lb">Total comissões</div><div class="vl" id="ind-valor" style="color:var(--green)">—</div><div class="sub">em R$</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Programa de indicações — todas as entradas</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-ghost" onclick="loadIndicacoes()">↻ Atualizar</button>
+            <button class="btn btn-sm btn-ghost" onclick="exportCSV(allIndicacoes,'indicacoes.csv')">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="card-body tbl-wrap" id="ind-table-wrap">
+          <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMAIL QUEUE -->
+    <div class="section" id="sec-email-queue">
+      <div class="stats-grid" style="margin-bottom:16px">
+        <div class="stat"><div class="lb">Total na fila</div><div class="vl" id="eq-total">—</div></div>
+        <div class="stat"><div class="lb">Pendentes</div><div class="vl" id="eq-pend" style="color:var(--acc)">—</div><div class="sub">aguardando envio</div></div>
+        <div class="stat"><div class="lb">Enviados</div><div class="vl" id="eq-ok" style="color:var(--green)">—</div></div>
+        <div class="stat"><div class="lb">Com erro</div><div class="vl" id="eq-err" style="color:var(--red)">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Fila de e-mails transacionais</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="filter-select" id="eq-filter" onchange="filterEmailQueue()">
+              <option value="">Todos os status</option>
+              <option value="pendente">Pendentes</option>
+              <option value="enviado">Enviados</option>
+              <option value="erro">Com erro</option>
+            </select>
+            <button class="btn btn-sm btn-ghost" onclick="loadEmailQueue()">↻ Atualizar</button>
+          </div>
+        </div>
+        <div class="card-body tbl-wrap" id="eq-table-wrap">
+          <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IA USO -->
+    <div class="section" id="sec-ia-uso">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Uso de IA por usuário e feature</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-ghost" onclick="loadIaUso()">↻ Atualizar</button>
+            <button class="btn btn-sm btn-ghost" onclick="exportCSV(allIaUso,'ia-uso.csv')">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="card-body tbl-wrap" id="ia-table-wrap">
+          <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDITORIA -->
+    <div class="section" id="sec-audit">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Log de auditoria do banco de dados</div>
+          <button class="btn btn-sm btn-ghost" onclick="loadAuditLog()">↻ Atualizar</button>
+        </div>
+        <div class="card-body tbl-wrap" id="audit-table-wrap">
+          <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -460,6 +544,7 @@ async function loadAll(){
   await Promise.all([ loadUsers(), loadPagamentos() ]);
   updateStats();
   loadMetricas();
+  loadMRR();
 }
 
 // ── Usuários ──────────────────────────────────────────────
@@ -486,7 +571,7 @@ function filterUsers(){
   const plano  = document.getElementById('usr-filter-plano').value;
   const perfil = document.getElementById('usr-filter-perfil').value;
   let filtered = allUsers;
-  if(q)      filtered = filtered.filter(u => (u.nome||'').toLowerCase().includes(q)||(u.cidade||'').toLowerCase().includes(q));
+  if(q)      filtered = filtered.filter(u => (u.nome||'').toLowerCase().includes(q)||(u.cidade||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q));
   if(plano)  filtered = filtered.filter(u => u.plano===plano);
   if(perfil) filtered = filtered.filter(u => u.perfil===perfil);
   renderUsersTable(filtered);
@@ -498,7 +583,7 @@ function renderUsersTable(list){
   wrap.innerHTML=`<table>
     <thead><tr><th>Nome</th><th>Perfil</th><th>Plano</th><th>Cidade</th><th>Cadastro</th><th>Status</th><th>Ações</th></tr></thead>
     <tbody>${list.map(u=>`<tr>
-      <td>${u.nome||'—'}</td>
+      <td><div>${u.nome||'—'}</div><div style="font-size:11px;color:var(--text3)">${u.email||''}</div></td>
       <td><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${u.perfil||'—'}</span></td>
       <td><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano||'—'}</span></td>
       <td>${u.cidade||'—'}</td>
@@ -868,9 +953,13 @@ function showTab(id, el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   const sec = document.getElementById('sec-'+id);
   if(sec) sec.classList.add('active');
-  // el pode ser o botão ou o elemento pai
   const btn = el ? el.closest('.tab')||el : null;
   if(btn) btn.classList.add('active');
+  // Lazy load abas novas
+  if(id==='indicacoes')  loadIndicacoes();
+  if(id==='email-queue') loadEmailQueue();
+  if(id==='ia-uso')      loadIaUso();
+  if(id==='audit')       loadAuditLog();
 }
 
 // ── Modais ────────────────────────────────────────────────
@@ -891,6 +980,180 @@ function toggleTheme(){ dark=!dark; applyTheme(); }
 // ── Notif ─────────────────────────────────────────────────
 let _nt;
 function notif(msg){ const n=document.getElementById('notif-el'); n.textContent=msg; n.classList.add('show'); clearTimeout(_nt); _nt=setTimeout(()=>n.classList.remove('show'),3500); }
+
+// ── Helper ────────────────────────────────────────────────
+function el(id){ return document.getElementById(id); }
+
+// ── MRR/ARR ───────────────────────────────────────────────
+async function loadMRR(){
+  const { data, error } = await sb.rpc('admin_get_mrr_stats');
+  if(error||!data) return;
+  el('st-mrr').textContent = `R$${Number(data.mrr||0).toLocaleString('pt-BR')}`;
+  el('st-arr').textContent = `R$${Number(data.arr||0).toLocaleString('pt-BR')}`;
+}
+
+// ── Indicações ────────────────────────────────────────────
+let allIndicacoes = [];
+async function loadIndicacoes(){
+  const wrap = el('ind-table-wrap');
+  if(wrap) wrap.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>';
+  const { data, error } = await sb.rpc('admin_get_indicacoes');
+  if(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
+  allIndicacoes = data||[];
+  const conv  = allIndicacoes.filter(i=>['ativo','pago'].includes(i.status)).length;
+  const pago  = allIndicacoes.filter(i=>i.payout_status==='enviado').length;
+  const valor = allIndicacoes.reduce((s,i)=>s+parseFloat(i.comissao_brl||0),0);
+  el('ind-total').textContent = allIndicacoes.length;
+  el('ind-conv').textContent  = conv;
+  el('ind-pago').textContent  = pago;
+  el('ind-valor').textContent = `R$${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+  renderIndicacoesTable(allIndicacoes);
+}
+
+function renderIndicacoesTable(list){
+  const wrap = el('ind-table-wrap');
+  if(!list.length){ wrap.innerHTML='<div class="tbl-empty">Nenhuma indicação registrada ainda</div>'; return; }
+  const stBadge = {pendente:'b-gray',cadastrado:'b-blue',ativo:'b-amber',pago:'b-green',expirado:'b-red'};
+  const ptBadge = {pendente:'b-gray',processando:'b-amber',enviado:'b-green',falhou:'b-red',nao_aplicavel:'b-gray'};
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Referrer</th><th>Indicado</th><th>Status</th><th>Plano</th><th>Comissão</th><th>Payout</th><th>Data</th></tr></thead>
+    <tbody>${list.map(i=>`<tr>
+      <td><div>${i.referrer_nome||'—'}</div><div style="font-size:11px;color:var(--text3)">${i.referrer_email||''}</div></td>
+      <td style="font-size:12px">${i.indicado_email||'—'}</td>
+      <td><span class="badge ${stBadge[i.status]||'b-gray'}">${i.status}</span></td>
+      <td>${i.plano_contratado?`<span class="badge ${PLANO_BADGE[i.plano_contratado]||'b-gray'}">${PLANO_LABEL[i.plano_contratado]||i.plano_contratado}</span>`:'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${i.comissao_pct||20}% → R$${parseFloat(i.comissao_brl||0).toFixed(2)}</td>
+      <td>
+        <span class="badge ${ptBadge[i.payout_status||'pendente']||'b-gray'}">${i.payout_status||'pendente'}</span>
+        ${i.payout_erro?`<div style="font-size:10px;color:#f87171;margin-top:2px" title="${i.payout_erro}">⚠️ ${i.payout_erro.slice(0,35)}...</div>`:''}
+      </td>
+      <td style="font-size:12px">${fmtDate(i.criado_em)}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ── Email Queue ───────────────────────────────────────────
+let allEmailQueue = [];
+async function loadEmailQueue(){
+  const wrap = el('eq-table-wrap');
+  if(wrap) wrap.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>';
+  const { data, error } = await sb.rpc('admin_get_email_queue');
+  if(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
+  allEmailQueue = data||[];
+  el('eq-total').textContent = allEmailQueue.length;
+  el('eq-pend').textContent  = allEmailQueue.filter(e=>e.status==='pendente').length;
+  el('eq-ok').textContent    = allEmailQueue.filter(e=>e.status==='enviado').length;
+  el('eq-err').textContent   = allEmailQueue.filter(e=>e.status==='erro').length;
+  filterEmailQueue();
+}
+
+function filterEmailQueue(){
+  const f = el('eq-filter')?.value;
+  renderEmailQueueTable(f ? allEmailQueue.filter(e=>e.status===f) : allEmailQueue);
+}
+
+function renderEmailQueueTable(list){
+  const wrap = el('eq-table-wrap');
+  if(!list.length){ wrap.innerHTML='<div class="tbl-empty">Nenhum email neste filtro</div>'; return; }
+  const stBadge = {pendente:'b-amber',enviado:'b-green',erro:'b-red',processando:'b-blue'};
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Email</th><th>Nome</th><th>Template</th><th>Status</th><th>Agendado para</th><th>Enviado em</th><th>Tentativas</th><th>Ações</th></tr></thead>
+    <tbody>${list.map(e=>`<tr>
+      <td style="font-size:12px">${e.email}</td>
+      <td>${e.nome||'—'}</td>
+      <td><span class="badge b-blue">${e.template}</span></td>
+      <td>
+        <span class="badge ${stBadge[e.status]||'b-gray'}">${e.status}</span>
+        ${e.erro_msg?`<div style="font-size:10px;color:#f87171;margin-top:2px" title="${e.erro_msg}">⚠️ ${e.erro_msg.slice(0,40)}</div>`:''}
+      </td>
+      <td style="font-size:12px">${fmtHora(e.agendado_para)}</td>
+      <td style="font-size:12px">${e.enviado_em?fmtHora(e.enviado_em):'—'}</td>
+      <td style="text-align:center">${e.tentativas}</td>
+      <td>${e.status!=='enviado'?`<button class="btn btn-sm btn-blue" onclick="reenviarEmail('${e.id}')">↻ Reenviar</button>`:'—'}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function reenviarEmail(id){
+  const { error } = await sb.rpc('admin_reenviar_email', { p_queue_id: id });
+  if(error){ notif('⚠️ Erro: '+error.message); return; }
+  const e = allEmailQueue.find(x=>x.id===id);
+  if(e){ e.status='pendente'; e.tentativas=0; e.erro_msg=null; }
+  filterEmailQueue();
+  notif('✅ Email colocado de volta na fila');
+}
+
+// ── IA Uso ────────────────────────────────────────────────
+let allIaUso = [];
+async function loadIaUso(){
+  const wrap = el('ia-table-wrap');
+  if(wrap) wrap.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>';
+  const { data, error } = await sb.rpc('admin_get_ia_uso');
+  if(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
+  allIaUso = data||[];
+  if(!allIaUso.length){ wrap.innerHTML='<div class="tbl-empty">Nenhum uso de IA registrado ainda</div>'; return; }
+  const featureIcon = {'ia-orcamento':'💰','ia-mensagem':'💬','ia-diagnostico':'🔍','ia-preco':'📊','ia-laudo':'📋','ia-resumo-cliente':'👤','ia-followup':'📩','ia-posts':'📸','ia-patologia':'🔬'};
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Usuário</th><th>Plano</th><th>Feature</th><th>Usos</th><th>Tokens</th><th>Erros</th><th>Último uso</th></tr></thead>
+    <tbody>${allIaUso.map(r=>`<tr>
+      <td><div>${r.nome||'—'}</div><div style="font-size:11px;color:var(--text3)">${r.email||''}</div></td>
+      <td><span class="badge ${PLANO_BADGE[r.plano]||'b-gray'}">${PLANO_LABEL[r.plano]||r.plano||'—'}</span></td>
+      <td>${featureIcon[r.feature]||'🤖'} ${r.feature}</td>
+      <td style="text-align:center;font-weight:700;color:var(--acc)">${r.total_usos}</td>
+      <td style="text-align:center;font-family:'DM Mono',monospace;font-size:12px">${Number(r.total_tokens||0).toLocaleString('pt-BR')}</td>
+      <td style="text-align:center;color:${Number(r.erros)>0?'var(--red)':'var(--green)'}">${r.erros}</td>
+      <td style="font-size:12px">${fmtDate(r.ultimo_uso)}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ── Audit Log ─────────────────────────────────────────────
+let allAudit = [];
+async function loadAuditLog(){
+  const wrap = el('audit-table-wrap');
+  if(wrap) wrap.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>';
+  const { data, error } = await sb.rpc('admin_get_audit_log');
+  if(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
+  allAudit = data||[];
+  if(!allAudit.length){ wrap.innerHTML='<div class="tbl-empty">Nenhuma entrada no audit log</div>'; return; }
+  const actionBadge = {INSERT:'b-green',UPDATE:'b-amber',DELETE:'b-red'};
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Ação</th><th>Tabela</th><th>Usuário</th><th>Data/hora</th><th>Diff</th></tr></thead>
+    <tbody>${allAudit.map(a=>`<tr>
+      <td><span class="badge ${actionBadge[a.action]||'b-gray'}">${a.action}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${a.tabela}</td>
+      <td>${a.actor_nome||'—'}</td>
+      <td style="font-size:12px">${fmtHora(a.created_at)}</td>
+      <td><button class="btn btn-sm btn-ghost" onclick="verDiffAudit(${a.id})">Ver diff</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function verDiffAudit(id){
+  const a = allAudit.find(x=>x.id===id); if(!a) return;
+  document.getElementById('modal-usr-title').textContent = `Audit: ${a.action} em ${a.tabela}`;
+  document.getElementById('modal-usr-body').innerHTML = `
+    <div style="margin-bottom:12px"><span class="badge ${a.action==='INSERT'?'b-green':a.action==='UPDATE'?'b-amber':'b-red'}">${a.action}</span> <code style="font-size:12px;color:var(--text2);margin-left:6px">${a.tabela}</code><span style="font-size:11px;color:var(--text3);margin-left:8px">${fmtHora(a.created_at)}</span></div>
+    ${a.old_data?`<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Antes</div><pre style="background:var(--surf2);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;overflow-x:auto;white-space:pre-wrap;max-height:200px">${JSON.stringify(a.old_data,null,2)}</pre></div>`:''}
+    ${a.new_data?`<div><div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Depois</div><pre style="background:var(--surf2);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;overflow-x:auto;white-space:pre-wrap;max-height:200px">${JSON.stringify(a.new_data,null,2)}</pre></div>`:''}`;
+  openModal('modal-usr');
+}
+
+// ── CSV Export ────────────────────────────────────────────
+function exportCSV(data, filename){
+  if(!data?.length){ notif('Sem dados para exportar'); return; }
+  const headers = Object.keys(data[0]);
+  const rows = data.map(r=>headers.map(h=>{
+    const v=r[h]; if(v===null||v===undefined) return '';
+    if(typeof v==='object') return `"${JSON.stringify(v).replace(/"/g,'""')}"`;
+    const s=String(v); return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`  :s;
+  }).join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download=filename; a.click();
+  notif(`✅ ${filename} exportado`);
+}
 
 // ── Verificar sessão ──────────────────────────────────────
 applyTheme();
