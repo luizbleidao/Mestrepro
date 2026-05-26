@@ -141,7 +141,7 @@ async function init() {
 
   const cfg = window.PP_CONFIG || window.PP || {};
   const url = cfg.supabaseUrl || cfg.SUPABASE_URL;
-  const key = cfg.supabaseAnonKey || cfg.SUPABASE_ANON_KEY;
+  const key = cfg.supabaseAnonKey || cfg.SUPABASE_ANON_KEY || cfg.supabaseKey;
   if (!url || !key) { showErro('Configuração ausente', 'Erro interno.'); return; }
   _sb = window.supabase.createClient(url, key);
 
@@ -404,9 +404,15 @@ async function enviarMensagem() {
     ml.scrollTop = ml.scrollHeight;
   }
 
-  // Persiste no Supabase
+  // Persiste via RPC pública (SECURITY DEFINER — não requer auth)
   try {
-    await _sb.from('orcamentos').update({ portal_mensagens: _msgs }).eq('id', _portalData.id);
+    const { data: rpcData, error } = await _sb.rpc('enviar_mensagem_portal_cliente', {
+      p_token: _portalToken,
+      p_texto: texto
+    });
+    if (error || (rpcData && !rpcData.success)) {
+      console.warn('[MestrePro] Erro ao salvar mensagem:', error || rpcData?.error);
+    }
   } catch(e) { console.warn('[MestrePro] Erro ao salvar mensagem:', e); }
 
   if(btn){ btn.disabled = false; btn.textContent = 'Enviar'; }

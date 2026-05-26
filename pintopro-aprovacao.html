@@ -169,7 +169,7 @@ async function init() {
   // Init Supabase (config vem de pp-config.js)
   const cfg = window.PP_CONFIG || window.PP || {};
   const url = cfg.supabaseUrl || cfg.SUPABASE_URL;
-  const key = cfg.supabaseAnonKey || cfg.SUPABASE_ANON_KEY;
+  const key = cfg.supabaseAnonKey || cfg.SUPABASE_ANON_KEY || cfg.supabaseKey;
   if (!url || !key) { showErro('Configuração ausente', 'Erro interno. Tente novamente mais tarde.'); return; }
   _sb = window.supabase.createClient(url, key);
 
@@ -264,16 +264,27 @@ function renderOrcamento(o) {
   if (desconto > 0) totHtml += `<div class="total-row"><span class="total-label">Desconto</span><span class="total-val red">− R$ ${fmt(desconto)}</span></div>`;
   totHtml += `<div class="total-row"><span class="total-label">Total</span><span class="total-val grand">R$ ${fmt(total)}</span></div>`;
 
-  // Validade
+  // Validade — pode ser nº de dias (ex: "15") ou data ISO (ex: "2026-06-05")
   let validadeHtml = '';
   if (validade) {
-    const vd = new Date(validade+'T12:00:00');
-    const hoje = new Date();
-    const diff = Math.ceil((vd-hoje)/(1000*60*60*24));
-    if (diff < 0) {
-      validadeHtml = `<div class="validade-bar">⚠️ Esta proposta expirou em ${fmtDate(validade)}. Solicite uma atualização ao profissional.</div>`;
+    let vd;
+    const validadeNum = parseInt(validade, 10);
+    if (!isNaN(validadeNum) && String(validadeNum) === String(validade).trim()) {
+      // É um número de dias — calcula a partir da data do orçamento
+      const dataBase = dc.data || o.data || new Date().toISOString().slice(0,10);
+      vd = new Date(dataBase + 'T12:00:00');
+      vd.setDate(vd.getDate() + validadeNum);
     } else {
-      validadeHtml = `<div class="validade-bar">📅 Proposta válida até <strong>${fmtDate(validade)}</strong> (${diff} dia${diff!==1?'s':''})</div>`;
+      // É uma data ISO
+      vd = new Date(validade + (validade.includes('T') ? '' : 'T12:00:00'));
+    }
+    const hoje = new Date();
+    const diff = Math.ceil((vd - hoje) / (1000 * 60 * 60 * 24));
+    const vdStr = vd.toLocaleDateString('pt-BR');
+    if (diff < 0) {
+      validadeHtml = `<div class="validade-bar">⚠️ Esta proposta expirou em ${vdStr}. Solicite uma atualização ao profissional.</div>`;
+    } else {
+      validadeHtml = `<div class="validade-bar">📅 Proposta válida até <strong>${vdStr}</strong> (${diff} dia${diff !== 1 ? 's' : ''})</div>`;
     }
   }
 
@@ -352,13 +363,16 @@ async function confirmarAprovacao() {
   const btn = document.querySelector('#modal-aprovar .btn-conf');
   btn.disabled = true; btn.textContent = '⏳ Salvando...';
 
-  const { error } = await _sb.from('orcamentos').update({
-    aprov_status: 'aprovado',
-    aprov_at: new Date().toISOString(),
-    status: 'aprovado',
-  }).eq('id', _orcId);
+  const { data: rpcData, error } = await _sb.rpc('registrar_aprovacao_orcamento', {
+    p_token: _apToken,
+    p_status: 'aprovado',
+    p_motivo: null
+  });
 
-  if (error) { btn.disabled=false; btn.textContent='✅ Confirmar aprovação'; alert('Erro ao registrar. Tente novamente.'); return; }
+  if (error || (rpcData && !rpcData.success)) {
+    btn.disabled=false; btn.textContent='✅ Confirmar aprovação';
+    alert('Erro ao registrar aprovação. Tente novamente.'); return;
+  }
 
   fecharModal();
   const dc = _orc?.data_completa || {};
@@ -394,14 +408,16 @@ async function confirmarRecusa() {
   const btn = document.querySelector('#modal-recusar .btn-conf');
   btn.disabled = true; btn.textContent = '⏳ Salvando...';
 
-  const { error } = await _sb.from('orcamentos').update({
-    aprov_status: 'recusado',
-    aprov_at: new Date().toISOString(),
-    aprov_motivo: motivo,
-    status: 'recusado',
-  }).eq('id', _orcId);
+  const { data: rpcData, error } = await _sb.rpc('registrar_aprovacao_orcamento', {
+    p_token: _apToken,
+    p_status: 'recusado',
+    p_motivo: motivo || null
+  });
 
-  if (error) { btn.disabled=false; btn.textContent='Recusar'; alert('Erro ao registrar. Tente novamente.'); return; }
+  if (error || (rpcData && !rpcData.success)) {
+    btn.disabled=false; btn.textContent='Recusar';
+    alert('Erro ao registrar recusa. Tente novamente.'); return;
+  }
 
   fecharModal();
   const dc = _orc?.data_completa || {};
