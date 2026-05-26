@@ -1,12 +1,9 @@
-// MestrePro — Edge Function: email-sender
+// MestrePro — Edge Function: email-sender v17
 // Processa a fila email_queue e envia via Resend
 //
 // Chamado por:
 //   - pg_cron: todo dia às 9h e 12h UTC
-//   - Admin manual: POST /email-sender  (com service_role key)
-//
-// A função lê itens com status='pendente', envia via Resend
-// e atualiza status para 'enviado' ou 'erro'.
+//   - Admin manual: POST /email-sender  (sem JWT — verify_jwt: false)
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -16,7 +13,6 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ── Templates ─────────────────────────────────────────────
 const CTA = 'display:inline-block;background:#185FA5;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700';
 
 function baseTemplate(content: string): string {
@@ -33,6 +29,7 @@ function baseTemplate(content: string): string {
 const APP_URL = Deno.env.get('APP_URL') || 'https://mestrepro.space';
 
 const TEMPLATES: Record<string, (d: Record<string, string>) => { subject: string; html: string }> = {
+
   boas_vindas: (d) => ({
     subject: `Bem-vindo ao MestrePro, ${d.nome}! 🎨`,
     html: baseTemplate(`
@@ -49,6 +46,7 @@ const TEMPLATES: Record<string, (d: Record<string, string>) => { subject: string
       <a href="${APP_URL}/pintopro-app.html" style="${CTA}">Acessar minha conta →</a>
     `),
   }),
+
   engajamento_d3: (d) => ({
     subject: `${d.nome}, já criou seu primeiro orçamento? 📋`,
     html: baseTemplate(`
@@ -57,6 +55,19 @@ const TEMPLATES: Record<string, (d: Record<string, string>) => { subject: string
       <a href="${APP_URL}/pintopro-app.html" style="${CTA}">Criar meu primeiro orçamento →</a>
     `),
   }),
+
+  dica_d3: (d) => ({
+    subject: `${d.nome}, uma dica para turbinar seus orçamentos 💡`,
+    html: baseTemplate(`
+      <h1 style="color:#185FA5;font-size:20px;margin-bottom:8px">Dica do MestrePro para você, ${d.nome}!</h1>
+      <p style="font-size:15px;line-height:1.7;margin-bottom:16px">Sabia que pintores que usam orçamentos detalhados fecham <strong>3x mais serviços</strong>? Com o MestrePro você cria propostas profissionais em minutos.</p>
+      <div style="background:#f0f7ff;border-radius:10px;padding:16px;margin-bottom:20px">
+        <p style="font-size:14px;line-height:1.7;margin:0;color:#374151">✅ Calculadora de tinta inclusa<br>✅ Contrato e recibo automáticos<br>✅ Link de aprovação para o cliente</p>
+      </div>
+      <a href="${APP_URL}/pintopro-app.html" style="${CTA}">Experimentar agora →</a>
+    `),
+  }),
+
   trial_expirando: (d) => ({
     subject: `⚠️ Seu período grátis acaba em breve, ${d.nome}`,
     html: baseTemplate(`
@@ -65,6 +76,31 @@ const TEMPLATES: Record<string, (d: Record<string, string>) => { subject: string
       <a href="${APP_URL}/pintopro-planos.html" style="${CTA}">Ver planos e preços →</a>
     `),
   }),
+
+  trial_d10: (d) => ({
+    subject: `${d.nome}, como está indo? Seu trial termina em breve 🕐`,
+    html: baseTemplate(`
+      <h1 style="color:#d97706;font-size:20px;margin-bottom:8px">Olá, ${d.nome}!</h1>
+      <p style="font-size:15px;line-height:1.7;margin-bottom:16px">Você já está há 10 dias no MestrePro. Seu período gratuito está quase no fim — não perca o acesso às suas ferramentas!</p>
+      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:16px;margin-bottom:20px">
+        <p style="font-size:14px;margin:0;color:#92400e">🎯 Assine agora e mantenha todos os seus orçamentos, contratos e clientes salvos.</p>
+      </div>
+      <a href="${APP_URL}/pintopro-planos.html" style="${CTA}">Garantir minha conta →</a>
+    `),
+  }),
+
+  ultima_chance_d14: (d) => ({
+    subject: `🚨 Última chance! Seu trial expira hoje, ${d.nome}`,
+    html: baseTemplate(`
+      <h1 style="color:#dc2626;font-size:20px;margin-bottom:8px">🚨 Hoje é o último dia, ${d.nome}!</h1>
+      <p style="font-size:15px;line-height:1.7;margin-bottom:16px">Seu período gratuito expira hoje. Assine agora para não perder o acesso aos seus dados e ferramentas.</p>
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:16px;margin-bottom:20px">
+        <p style="font-size:14px;margin:0;color:#7f1d1d">💳 Plano Pintor Pro por apenas <strong>R$ 29,90/mês</strong>. Cancele quando quiser.</p>
+      </div>
+      <a href="${APP_URL}/pintopro-planos.html" style="${CTA}">Assinar agora →</a>
+    `),
+  }),
+
   confirmacao_assinatura: (d) => ({
     subject: `✅ Assinatura confirmada! Bem-vindo ao plano ${d.plano_nome || 'Pro'}`,
     html: baseTemplate(`
@@ -79,9 +115,9 @@ const TEMPLATES: Record<string, (d: Record<string, string>) => { subject: string
       <a href="${APP_URL}/pintopro-app.html" style="${CTA}">Acessar minha conta →</a>
     `),
   }),
+
 };
 
-// ── Handler ───────────────────────────────────────────────
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
@@ -99,7 +135,7 @@ serve(async (req: Request) => {
 
   const sb = createClient(supabaseUrl, serviceKey);
 
-  // Busca itens pendentes (máx 50 por execução para não sobrecarregar)
+  // Busca itens pendentes (máx 50 por execução)
   const { data: fila, error: filaErr } = await sb
     .from('email_queue')
     .select('*')
@@ -141,7 +177,7 @@ serve(async (req: Request) => {
       }
 
       const dados = item.dados || {};
-      const { subject, html } = template({ nome: item.nome, ...dados });
+      const { subject, html } = template({ nome: item.nome || item.email.split('@')[0], ...dados });
 
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -161,14 +197,19 @@ serve(async (req: Request) => {
           erro_msg: null,
         }).eq('id', item.id);
 
-        // Registra no email_log também
-        await sb.from('email_log').insert({
-          tipo: item.tipo,
-          email: item.email,
-          nome: item.nome,
-          resend_id: result.id,
-          enviado_em: new Date().toISOString(),
-        }).catch(() => {/* silencioso */});
+        // Registra no email_log — try/catch (não usar .catch() no QueryBuilder)
+        try {
+          await sb.from('email_log').insert({
+            tipo: item.tipo,
+            email: item.email,
+            nome: item.nome,
+            resend_id: result.id,
+            enviado_em: new Date().toISOString(),
+          });
+        } catch (_logErr) {
+          // Log falhou mas email foi enviado — não reverter
+          console.warn('[email-sender] email_log insert falhou (não crítico)');
+        }
 
         enviados++;
       } else {
