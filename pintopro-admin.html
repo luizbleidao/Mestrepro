@@ -196,11 +196,11 @@ tbody td:first-child{color:var(--text);font-weight:500;}
     <button class="tab active" onclick="showTab('visao-geral',this)">📊 Visão Geral</button>
     <button class="tab" onclick="showTab('usuarios',this)">👥 Usuários</button>
     <button class="tab" onclick="showTab('pagamentos',this)">💳 Pagamentos</button>
-    <button class="tab" onclick="showTab('metricas',this)">📈 Métricas</button>
+    <button class="tab" onclick="showTab('assinaturas',this)">🔄 Assinaturas</button>
     <button class="tab" onclick="showTab('indicacoes',this)">🤝 Indicações</button>
-    <button class="tab" onclick="showTab('email-queue',this)">📧 Emails</button>
+    <button class="tab" onclick="showTab('retencao',this)">📡 Retenção</button>
     <button class="tab" onclick="showTab('ia-uso',this)">🤖 IA Uso</button>
-    <button class="tab" onclick="showTab('audit',this)">📋 Auditoria</button>
+    <button class="tab" onclick="showTab('metricas',this)">📈 Métricas</button>
   </div>
 
   <div class="content">
@@ -370,29 +370,65 @@ tbody td:first-child{color:var(--text);font-weight:500;}
       </div>
     </div>
 
-    <!-- EMAIL QUEUE -->
-    <div class="section" id="sec-email-queue">
+    <!-- ASSINATURAS -->
+    <div class="section" id="sec-assinaturas">
       <div class="stats-grid" style="margin-bottom:16px">
-        <div class="stat"><div class="lb">Total na fila</div><div class="vl" id="eq-total">—</div></div>
-        <div class="stat"><div class="lb">Pendentes</div><div class="vl" id="eq-pend" style="color:var(--acc)">—</div><div class="sub">aguardando envio</div></div>
-        <div class="stat"><div class="lb">Enviados</div><div class="vl" id="eq-ok" style="color:var(--green)">—</div></div>
-        <div class="stat"><div class="lb">Com erro</div><div class="vl" id="eq-err" style="color:var(--red)">—</div></div>
+        <div class="stat"><div class="lb">Ativas pagas</div><div class="vl" id="ass-ativas" style="color:var(--green)">—</div><div class="sub">planos pagos</div></div>
+        <div class="stat"><div class="lb">Gratuitas</div><div class="vl" id="ass-gratis" style="color:var(--acc2)">—</div><div class="sub">free/trial</div></div>
+        <div class="stat"><div class="lb">Canceladas (30d)</div><div class="vl" id="ass-cancel" style="color:var(--red)">—</div><div class="sub">último mês</div></div>
+        <div class="stat"><div class="lb">MRR em risco</div><div class="vl" id="ass-risco" style="color:var(--gold)">—</div><div class="sub">planos expirando</div></div>
       </div>
       <div class="card">
         <div class="card-header">
-          <div class="card-title">Fila de e-mails transacionais</div>
+          <div class="card-title">Todas as assinaturas</div>
           <div style="display:flex;gap:8px;align-items:center">
-            <select class="filter-select" id="eq-filter" onchange="filterEmailQueue()">
-              <option value="">Todos os status</option>
-              <option value="pendente">Pendentes</option>
-              <option value="enviado">Enviados</option>
-              <option value="erro">Com erro</option>
+            <select class="filter-select" id="ass-filter" onchange="filterAssinaturas()">
+              <option value="">Todos os planos</option>
+              <option value="pro">Pro</option>
+              <option value="equipe">Equipe</option>
+              <option value="ia-pro">IA Pro</option>
+              <option value="ia_pro">IA Pro (slug alt.)</option>
+              <option value="gratuito">Gratuito</option>
             </select>
-            <button class="btn btn-sm btn-ghost" onclick="loadEmailQueue()">↻ Atualizar</button>
+            <button class="btn btn-sm btn-ghost" onclick="loadAssinaturas()">↻ Atualizar</button>
+            <button class="btn btn-sm btn-ghost" onclick="exportCSV(allAssinaturas,'assinaturas.csv')">⬇ CSV</button>
           </div>
         </div>
-        <div class="card-body tbl-wrap" id="eq-table-wrap">
+        <div class="card-body tbl-wrap" id="ass-table-wrap">
           <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RETENÇÃO / MÉTRICAS EM TEMPO REAL -->
+    <div class="section" id="sec-retencao">
+      <div class="stats-grid" style="margin-bottom:16px">
+        <div class="stat"><div class="lb">Ativos hoje</div><div class="vl" id="ret-hoje" style="color:var(--green)">—</div><div class="sub">logins nas últimas 24h</div></div>
+        <div class="stat"><div class="lb">Ativos 7d</div><div class="vl" id="ret-7d" style="color:var(--acc)">—</div><div class="sub">usuários únicos</div></div>
+        <div class="stat"><div class="lb">Inativos 30d+</div><div class="vl" id="ret-inativos" style="color:var(--red)">—</div><div class="sub">risco de churn</div></div>
+        <div class="stat"><div class="lb">Orç. criados hoje</div><div class="vl" id="ret-orcs-hoje" style="color:var(--acc)">—</div><div class="sub">tempo real</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚠️ Churn Risk — pagos inativos 14d+</div><button class="btn btn-sm btn-ghost" onclick="loadRetencao()">↻</button></div>
+          <div class="card-body tbl-wrap" id="ret-churn-wrap">
+            <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🆕 Novos esta semana</div></div>
+          <div class="card-body tbl-wrap" id="ret-novos-wrap">
+            <div class="loading-full"><div class="spin"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📊 Orçamentos criados — últimos 7 dias (por dia)</div>
+          <button class="btn btn-sm btn-ghost" onclick="loadRetencao()">↻ Atualizar</button>
+        </div>
+        <div class="card-body" style="padding:16px" id="ret-atividade-wrap">
+          <div class="loading-full"><div class="spin"></div></div>
         </div>
       </div>
     </div>
@@ -408,19 +444,6 @@ tbody td:first-child{color:var(--text);font-weight:500;}
           </div>
         </div>
         <div class="card-body tbl-wrap" id="ia-table-wrap">
-          <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- AUDITORIA -->
-    <div class="section" id="sec-audit">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Log de auditoria do banco de dados</div>
-          <button class="btn btn-sm btn-ghost" onclick="loadAuditLog()">↻ Atualizar</button>
-        </div>
-        <div class="card-body tbl-wrap" id="audit-table-wrap">
           <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
         </div>
       </div>
@@ -955,11 +978,12 @@ function showTab(id, el){
   if(sec) sec.classList.add('active');
   const btn = el ? el.closest('.tab')||el : null;
   if(btn) btn.classList.add('active');
-  // Lazy load abas novas
-  if(id==='indicacoes')  loadIndicacoes();
-  if(id==='email-queue') loadEmailQueue();
-  if(id==='ia-uso')      loadIaUso();
-  if(id==='audit')       loadAuditLog();
+  // Lazy load abas
+  if(id==='indicacoes')   loadIndicacoes();
+  if(id==='assinaturas')  loadAssinaturas();
+  if(id==='retencao')     loadRetencao();
+  if(id==='ia-uso')       loadIaUso();
+  if(id==='metricas')     loadMetricas();
 }
 
 // ── Modais ────────────────────────────────────────────────
@@ -1032,55 +1056,88 @@ function renderIndicacoesTable(list){
   </table>`;
 }
 
-// ── Email Queue ───────────────────────────────────────────
-let allEmailQueue = [];
-async function loadEmailQueue(){
-  const wrap = el('eq-table-wrap');
+// ── Assinaturas ───────────────────────────────────────────
+let allAssinaturas = [];
+async function loadAssinaturas(){
+  const wrap = el('ass-table-wrap');
   if(wrap) wrap.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>';
-  const { data, error } = await sb.rpc('admin_get_email_queue');
+  const { data, error } = await sb.from('assinaturas')
+    .select('id, user_id, plano, status, criado_em, atualizado_em')
+    .order('criado_em',{ascending:false}).limit(300);
   if(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
-  allEmailQueue = data||[];
-  el('eq-total').textContent = allEmailQueue.length;
-  el('eq-pend').textContent  = allEmailQueue.filter(e=>e.status==='pendente').length;
-  el('eq-ok').textContent    = allEmailQueue.filter(e=>e.status==='enviado').length;
-  el('eq-err').textContent   = allEmailQueue.filter(e=>e.status==='erro').length;
-  filterEmailQueue();
+  allAssinaturas = data||[];
+  const pagos  = allAssinaturas.filter(a=>['pro','equipe','ia-pro','ia_pro'].includes(a.plano));
+  const gratis = allAssinaturas.filter(a=>!['pro','equipe','ia-pro','ia_pro'].includes(a.plano));
+  const umMes  = new Date(Date.now()-30*24*60*60*1000).toISOString();
+  const cancel = allAssinaturas.filter(a=>a.status==='cancelado'&&(a.atualizado_em||'')>umMes);
+  if(el('ass-ativas')) el('ass-ativas').textContent = pagos.length;
+  if(el('ass-gratis')) el('ass-gratis').textContent = gratis.length;
+  if(el('ass-cancel')) el('ass-cancel').textContent = cancel.length;
+  if(el('ass-risco'))  el('ass-risco').textContent  = '—';
+  filterAssinaturas();
 }
-
-function filterEmailQueue(){
-  const f = el('eq-filter')?.value;
-  renderEmailQueueTable(f ? allEmailQueue.filter(e=>e.status===f) : allEmailQueue);
+function filterAssinaturas(){
+  const f = el('ass-filter')?.value;
+  renderAssinaturasTable(f ? allAssinaturas.filter(a=>a.plano===f) : allAssinaturas);
 }
-
-function renderEmailQueueTable(list){
-  const wrap = el('eq-table-wrap');
-  if(!list.length){ wrap.innerHTML='<div class="tbl-empty">Nenhum email neste filtro</div>'; return; }
-  const stBadge = {pendente:'b-amber',enviado:'b-green',erro:'b-red',processando:'b-blue'};
+function renderAssinaturasTable(list){
+  const wrap = el('ass-table-wrap');
+  if(!list?.length){ wrap.innerHTML='<div class="tbl-empty">Nenhuma assinatura encontrada</div>'; return; }
   wrap.innerHTML=`<table>
-    <thead><tr><th>Email</th><th>Nome</th><th>Template</th><th>Status</th><th>Agendado para</th><th>Enviado em</th><th>Tentativas</th><th>Ações</th></tr></thead>
-    <tbody>${list.map(e=>`<tr>
-      <td style="font-size:12px">${e.email}</td>
-      <td>${e.nome||'—'}</td>
-      <td><span class="badge b-blue">${e.template}</span></td>
-      <td>
-        <span class="badge ${stBadge[e.status]||'b-gray'}">${e.status}</span>
-        ${e.erro_msg?`<div style="font-size:10px;color:#f87171;margin-top:2px" title="${e.erro_msg}">⚠️ ${e.erro_msg.slice(0,40)}</div>`:''}
+    <thead><tr><th>User ID</th><th>Plano</th><th>Status</th><th>Criado em</th><th>Atualizado em</th><th>Ações</th></tr></thead>
+    <tbody>${list.map(r=>`<tr>
+      <td style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3)">${r.user_id}</td>
+      <td><span class="badge ${['pro','equipe','ia-pro','ia_pro'].includes(r.plano)?'b-green':'b-amber'}">${r.plano||'gratuito'}</span></td>
+      <td><span class="badge ${r.status==='ativo'||r.status==='pago'?'b-green':r.status==='cancelado'?'b-red':'b-amber'}">${r.status||'—'}</span></td>
+      <td style="font-size:11px">${fmtHora(r.criado_em)}</td>
+      <td style="font-size:11px">${fmtHora(r.atualizado_em)}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-ghost" onclick="abrirAlterarPlano('${r.user_id}','${r.plano}','${r.id}')">✏️ Alterar plano</button>
+        ${r.status!=='cancelado'?`<button class="btn btn-sm btn-red" onclick="cancelarAssinatura('${r.id}','${r.user_id}')">✕ Cancelar</button>`:''}
       </td>
-      <td style="font-size:12px">${fmtHora(e.agendado_para)}</td>
-      <td style="font-size:12px">${e.enviado_em?fmtHora(e.enviado_em):'—'}</td>
-      <td style="text-align:center">${e.tentativas}</td>
-      <td>${e.status!=='enviado'?`<button class="btn btn-sm btn-blue" onclick="reenviarEmail('${e.id}')">↻ Reenviar</button>`:'—'}</td>
     </tr>`).join('')}</tbody>
   </table>`;
 }
-
-async function reenviarEmail(id){
-  const { error } = await sb.rpc('admin_reenviar_email', { p_queue_id: id });
-  if(error){ notif('⚠️ Erro: '+error.message); return; }
-  const e = allEmailQueue.find(x=>x.id===id);
-  if(e){ e.status='pendente'; e.tentativas=0; e.erro_msg=null; }
-  filterEmailQueue();
-  notif('✅ Email colocado de volta na fila');
+function abrirAlterarPlano(userId, planoAtual, assId){
+  document.getElementById('modal-usr-title').textContent = 'Alterar plano do usuário';
+  document.getElementById('modal-usr-body').innerHTML = `
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Plano atual: <strong>${planoAtual||'gratuito'}</strong></p>
+    <div class="field" style="margin-bottom:14px">
+      <label>Novo plano</label>
+      <select id="novo-plano-sel" style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+        <option value="gratuito">Gratuito</option>
+        <option value="pro">Pintor Pro</option>
+        <option value="equipe">Equipe</option>
+        <option value="ia_pro">IA Pro</option>
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Motivo (opcional)</label>
+      <input id="novo-plano-motivo" type="text" placeholder="Ex: Reembolso solicitado, ajuste manual..." style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="confirmarAlterarPlano('${userId}','${assId}')">✓ Confirmar alteração</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-usr')">Cancelar</button>
+    </div>`;
+  openModal('modal-usr');
+}
+async function confirmarAlterarPlano(userId, assId){
+  const novoPlano = el('novo-plano-sel')?.value;
+  if(!novoPlano){ notif('⚠️ Selecione o plano'); return; }
+  const { error } = await sb.from('assinaturas').update({ plano: novoPlano, status: novoPlano==='gratuito'?'inativo':'ativo', atualizado_em: new Date().toISOString() }).eq('id', assId);
+  if(error){ notif('❌ Erro: '+error.message); return; }
+  await sb.from('profiles').update({ plano: novoPlano }).eq('id', userId);
+  closeModal('modal-usr');
+  notif('✅ Plano alterado para '+novoPlano);
+  loadAssinaturas();
+}
+async function cancelarAssinatura(assId, userId){
+  if(!confirm('Cancelar esta assinatura? O usuário será rebaixado para o plano gratuito.')) return;
+  const { error } = await sb.from('assinaturas').update({ plano: 'gratuito', status: 'cancelado', atualizado_em: new Date().toISOString() }).eq('id', assId);
+  if(error){ notif('❌ Erro: '+error.message); return; }
+  await sb.from('profiles').update({ plano: 'gratuito' }).eq('id', userId);
+  notif('✅ Assinatura cancelada — plano rebaixado para gratuito');
+  loadAssinaturas();
 }
 
 // ── IA Uso ────────────────────────────────────────────────
@@ -1107,36 +1164,83 @@ async function loadIaUso(){
   </table>`;
 }
 
-// ── Audit Log ─────────────────────────────────────────────
-let allAudit = [];
-async function loadAuditLog(){
-  const wrap = el('audit-table-wrap');
-  if(wrap) wrap.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>';
-  const { data, error } = await sb.rpc('admin_get_audit_log');
-  if(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
-  allAudit = data||[];
-  if(!allAudit.length){ wrap.innerHTML='<div class="tbl-empty">Nenhuma entrada no audit log</div>'; return; }
-  const actionBadge = {INSERT:'b-green',UPDATE:'b-amber',DELETE:'b-red'};
-  wrap.innerHTML=`<table>
-    <thead><tr><th>Ação</th><th>Tabela</th><th>Usuário</th><th>Data/hora</th><th>Diff</th></tr></thead>
-    <tbody>${allAudit.map(a=>`<tr>
-      <td><span class="badge ${actionBadge[a.action]||'b-gray'}">${a.action}</span></td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px">${a.tabela}</td>
-      <td>${a.actor_nome||'—'}</td>
-      <td style="font-size:12px">${fmtHora(a.created_at)}</td>
-      <td><button class="btn btn-sm btn-ghost" onclick="verDiffAudit(${a.id})">Ver diff</button></td>
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
+// ── Retenção / Métricas em tempo real ─────────────────────
+async function loadRetencao(){
+  const wraps = ['ret-churn-wrap','ret-novos-wrap','ret-atividade-wrap'];
+  wraps.forEach(id=>{ const w=el(id); if(w) w.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>'; });
+  const agora = new Date();
+  const h24 = new Date(agora-24*60*60*1000).toISOString();
+  const d7  = new Date(agora-7*24*60*60*1000).toISOString();
+  const d14 = new Date(agora-14*24*60*60*1000).toISOString();
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
 
-function verDiffAudit(id){
-  const a = allAudit.find(x=>x.id===id); if(!a) return;
-  document.getElementById('modal-usr-title').textContent = `Audit: ${a.action} em ${a.tabela}`;
-  document.getElementById('modal-usr-body').innerHTML = `
-    <div style="margin-bottom:12px"><span class="badge ${a.action==='INSERT'?'b-green':a.action==='UPDATE'?'b-amber':'b-red'}">${a.action}</span> <code style="font-size:12px;color:var(--text2);margin-left:6px">${a.tabela}</code><span style="font-size:11px;color:var(--text3);margin-left:8px">${fmtHora(a.created_at)}</span></div>
-    ${a.old_data?`<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Antes</div><pre style="background:var(--surf2);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;overflow-x:auto;white-space:pre-wrap;max-height:200px">${JSON.stringify(a.old_data,null,2)}</pre></div>`:''}
-    ${a.new_data?`<div><div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Depois</div><pre style="background:var(--surf2);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;overflow-x:auto;white-space:pre-wrap;max-height:200px">${JSON.stringify(a.new_data,null,2)}</pre></div>`:''}`;
-  openModal('modal-usr');
+  // Orçamentos hoje
+  const { count: orcsHoje } = await sb.from('orcamentos').select('*',{count:'exact',head:true}).gte('criado_em',hoje.toISOString());
+  if(el('ret-orcs-hoje')) el('ret-orcs-hoje').textContent = orcsHoje??'—';
+
+  // Usuários ativos (via profiles.updated_at como proxy)
+  const { count: ativosHoje } = await sb.from('profiles').select('*',{count:'exact',head:true}).gte('updated_at',h24);
+  const { count: ativos7d   } = await sb.from('profiles').select('*',{count:'exact',head:true}).gte('updated_at',d7);
+  if(el('ret-hoje')) el('ret-hoje').textContent = ativosHoje??'—';
+  if(el('ret-7d'))   el('ret-7d').textContent   = ativos7d??'—';
+
+  // Churn risk: pagos sem atividade há 14d+
+  const { data: churnRisk } = await sb.from('profiles')
+    .select('id,nome,plano,updated_at')
+    .in('plano',['pro','equipe','ia-pro','ia_pro'])
+    .lt('updated_at',d14)
+    .order('updated_at',{ascending:true}).limit(50);
+  if(el('ret-inativos')) el('ret-inativos').textContent = churnRisk?.length??'—';
+  const churnWrap = el('ret-churn-wrap');
+  if(churnWrap){
+    if(!churnRisk?.length){
+      churnWrap.innerHTML='<div class="tbl-empty">✅ Nenhum usuário pago inativo há 14+ dias</div>';
+    } else {
+      churnWrap.innerHTML=`<table><thead><tr><th>Nome</th><th>Plano</th><th>Última atividade</th><th>Ação</th></tr></thead><tbody>${churnRisk.map(r=>`<tr>
+        <td>${r.nome||'—'}</td>
+        <td><span class="badge b-green">${r.plano}</span></td>
+        <td style="font-size:11px;color:var(--red)">${fmtHora(r.updated_at)}</td>
+        <td><button class="btn btn-sm btn-ghost" onclick="verUsuario('${r.id}')">👁 Ver</button></td>
+      </tr>`).join('')}</tbody></table>`;
+    }
+  }
+
+  // Novos esta semana
+  const { data: novos } = await sb.from('profiles')
+    .select('id,nome,plano,criado_em').gte('criado_em',d7)
+    .order('criado_em',{ascending:false}).limit(20);
+  const novosWrap = el('ret-novos-wrap');
+  if(novosWrap){
+    if(!novos?.length){
+      novosWrap.innerHTML='<div class="tbl-empty">Nenhum novo cadastro nesta semana</div>';
+    } else {
+      novosWrap.innerHTML=`<table><thead><tr><th>Nome</th><th>Plano</th><th>Cadastrado em</th></tr></thead><tbody>${novos.map(r=>`<tr>
+        <td>${r.nome||'—'}</td>
+        <td><span class="badge ${['pro','equipe','ia-pro','ia_pro'].includes(r.plano)?'b-green':'b-amber'}">${r.plano||'gratuito'}</span></td>
+        <td style="font-size:11px">${fmtHora(r.criado_em)}</td>
+      </tr>`).join('')}</tbody></table>`;
+    }
+  }
+
+  // Atividade últimos 7 dias — orçamentos por dia
+  const atividadeWrap = el('ret-atividade-wrap');
+  if(atividadeWrap){
+    const { data: orcsDias } = await sb.from('orcamentos').select('criado_em').gte('criado_em',d7);
+    if(orcsDias?.length){
+      const cnt = {};
+      orcsDias.forEach(o=>{ const d=o.criado_em.slice(0,10); cnt[d]=(cnt[d]||0)+1; });
+      const dias = Object.keys(cnt).sort();
+      const max  = Math.max(...Object.values(cnt),1);
+      atividadeWrap.innerHTML=`<div class="chart-bar-wrap">${dias.map(d=>`
+        <div class="chart-bar-item">
+          <div class="chart-bar-label">${d.slice(5)}</div>
+          <div class="chart-bar"><div class="chart-bar-fill" style="width:${Math.round(cnt[d]/max*100)}%"></div></div>
+          <div class="chart-bar-val">${cnt[d]}</div>
+        </div>`).join('')}</div>`;
+    } else {
+      atividadeWrap.innerHTML='<div class="tbl-empty">Nenhum orçamento nos últimos 7 dias</div>';
+    }
+  }
 }
 
 // ── CSV Export ────────────────────────────────────────────

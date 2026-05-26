@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,10 +8,16 @@
 <script src="pp-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{
+[data-theme="dark"]{
   --bg:#0b0f1a;--bg2:#111827;--bg3:#1c2537;--border:#2a3550;
-  --acc:#5b7fff;--acc2:#7b9fff;--acc-dim:rgba(91,127,255,.12);--acc-glow:rgba(91,127,255,.25);
   --text:#e8ecf4;--text2:#94a3b8;--text3:#64748b;
+}
+[data-theme="light"]{
+  --bg:#f0f4ff;--bg2:#ffffff;--bg3:#e8edf8;--border:#c0cfec;
+  --text:#0f1629;--text2:#4a5a80;--text3:#8899bb;
+}
+:root{
+  --acc:#5b7fff;--acc2:#7b9fff;--acc-dim:rgba(91,127,255,.12);--acc-glow:rgba(91,127,255,.25);
   --green:#10b981;--red:#ef4444;--purple:#8b5cf6;--gold:#f59e0b;
   --r:10px;--r2:16px;
 }
@@ -399,7 +405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     .eq('id', USER.id)
     .single();
 
-  if (perfil?.plano !== 'ia-pro') {
+  if (!['ia-pro', 'ia_pro'].includes(perfil?.plano)) {
     mostrarLock(perfil?.plano);
     return;
   }
@@ -707,6 +713,28 @@ async function executarResumoCliente() {
     ${data.mensagem_sugerida ? `<div style="font-size:.75rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Mensagem Sugerida</div><div class="mensagem-box" style="font-size:.85rem">${data.mensagem_sugerida}</div><button class="copy-btn" onclick="copiar(${JSON.stringify(data.mensagem_sugerida)})">📋 Copiar</button>` : ''}
     ${data.alerta ? `<div class="alerta" style="margin-top:10px">⚠️ ${data.alerta}</div>` : ''}
   `);
+}
+
+// ── TEMA ──────────────────────────────────────────────────────────────────
+window.addEventListener('message', (e) => {
+  if (!e.data || e.data.type !== 'pp_cmd') return;
+  if (e.data.cmd === 'syncTheme') {
+    document.documentElement.setAttribute('data-theme', e.data.theme || 'dark');
+  }
+});
+
+// ── NOTIFICAÇÃO ───────────────────────────────────────────────────────────
+function notif(msg) {
+  const n = document.createElement('div');
+  n.textContent = msg;
+  Object.assign(n.style, {
+    position:'fixed',bottom:'20px',right:'20px',background:'var(--bg2)',
+    border:'1px solid var(--border)',borderRadius:'10px',padding:'12px 18px',
+    fontSize:'.85rem',color:'var(--text)',boxShadow:'0 4px 20px rgba(0,0,0,.3)',
+    zIndex:'9999',maxWidth:'300px',transition:'opacity .3s',
+  });
+  document.body.appendChild(n);
+  setTimeout(() => { n.style.opacity='0'; setTimeout(() => n.remove(), 300); }, 3000);
 }
 
 // ── FOLLOW-UP ─────────────────────────────────────────────────────────────
