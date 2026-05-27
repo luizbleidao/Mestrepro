@@ -524,7 +524,29 @@ async function cadastrar(){
     if(error) throw error;
 
     if(signUpData?.user && !signUpData?.session){
-      showMsg('ec','Este e-mail já está cadastrado. Faça login ou recupere sua senha.','err');
+      // Supabase retorna user+session=null em dois cenários:
+      // 1) Email confirmation ATIVADO + novo usuário → identities tem itens
+      // 2) Email já cadastrado (duplicado) → identities é vazio
+      const emailJaCadastrado = !signUpData.user.identities || signUpData.user.identities.length === 0;
+      if(emailJaCadastrado){
+        showMsg('ec','Este e-mail já está cadastrado. Faça login ou recupere sua senha.','err');
+        setBtn('btn-cad','Criar conta e escolher plano', false);
+        return;
+      }
+      // Novo usuário — e-mail de confirmação enviado pelo Supabase
+      // O trigger on_auth_user_created já criou o perfil básico; completamos com CPF e plano
+      if(signUpData?.user?.id){
+        const { error: profErr } = await sb.from('profiles').upsert({
+          id: signUpData.user.id,
+          nome, tel, cidade, perfil,
+          cpf: cpfLimpo,
+          cpf_verificado: true,
+          plano: 'trial',
+          ativo: true,
+        }, { onConflict: 'id' });
+        if(profErr) console.warn('[MestrePro] upsert profiles (pré-confirmação):', profErr.message);
+      }
+      showMsg('ec','✅ Conta criada! Verifique seu e-mail para confirmar o cadastro e depois faça login.','ok');
       setBtn('btn-cad','Criar conta e escolher plano', false);
       return;
     }
