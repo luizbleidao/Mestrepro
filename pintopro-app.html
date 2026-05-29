@@ -1686,12 +1686,15 @@ function loadSettings() {
     if (el_cidade) el_cidade.value = PROFILE.cidade || '';
   }
 
-  // Usar empresa_data do Supabase como fonte de verdade; localStorage como fallback offline
+  // Usar empresa_data do Supabase como fonte de verdade
+  // Se o usuário não tem dados salvos, limpar localStorage para não herdar dados de outro usuário
   const empRemoto = PROFILE?.empresa_data;
-  const empLocal  = JSON.parse(localStorage.getItem('empresaSalva') || '{}');
-  const emp = empRemoto || empLocal;
-  // Sincronizar localStorage com dados do servidor para que PDFs usem dados atualizados
-  if (empRemoto) localStorage.setItem('empresaSalva', JSON.stringify(empRemoto));
+  if (!empRemoto) {
+    localStorage.removeItem('empresaSalva');
+  } else {
+    localStorage.setItem('empresaSalva', JSON.stringify(empRemoto));
+  }
+  const emp = empRemoto || {};
   const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
   _s('cfg-emp-nome', emp.nome);
   _s('cfg-emp-doc', emp.doc);

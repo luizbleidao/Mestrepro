@@ -404,6 +404,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
           </select>
         </div>
         <div class="field"><label>Prazo de execução</label><input id="prazoExec" placeholder="Ex: 5 dias úteis após aprovação"></div>
+        <div class="field"><label>Data prevista de conclusão</label><input id="dataConclusaoPrevista" type="date" title="Data estimada de término do serviço após aprovação"></div>
       </div>
       <div class="field" style="margin-bottom:16px" id="condBlock">
         <label>Condição de Pagamento</label>
@@ -417,6 +418,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div class="form-grid c1">
         <div class="field"><label>Observações / Garantia / Exclusões</label>
           <textarea id="obsGeral" rows="3" placeholder="Ex: Garantia de 1 ano para pintura. Não inclui reparos estruturais..."></textarea>
+        </div>
+        <div class="field"><label>Observações adicionais do prazo</label>
+          <textarea id="obsPrazo" rows="2" placeholder="Ex: Prazo sujeito a alteração em caso de chuvas. Trabalho iniciará após aprovação e sinal."></textarea>
         </div>
       </div>
       <div class="divider"></div>
@@ -799,13 +803,13 @@ function editarOrcamento(id){
   s('empNome',o.empNome);s('empDoc',o.empDoc);s('empTel',o.empTel);s('empEmail',o.empEmail);s('empCidade',o.empCidade);s('empReg',o.empReg);
   s('cliNome',o.cliente);s('cliDoc',o.cliDoc);s('cliTel',o.cliTel);s('cliEmail',o.cliEmail);s('cliEnd',o.endereco);
   s('orcNum',o.numero);s('orcData',o.data);s('orcValidade',o.validade);
-  s('orcStatus',o.status);s('prazoExec',o.prazoExec);s('obsGeral',o.obs);
+  s('orcStatus',o.status);s('prazoExec',o.prazoExec);s('dataConclusaoPrevista',o.dataConclusaoPrevista);s('obsGeral',o.obs);s('obsPrazo',o.obsPrazo);
   if(o.condPag){const r=document.querySelector(`input[name=cond][value="${o.condPag}"]`);if(r)r.checked=true;}
   if(logoBase64){const img=document.getElementById('logoPreview');img.src=logoBase64;img.style.display='block';}
   setMode(o.mode||'prod'); goStep(1); showPage('pageWizard');
 }
 function limparCampos(){
-  ['empNome','empDoc','empTel','empEmail','empCidade','empReg','cliNome','cliDoc','cliTel','cliEmail','cliEnd','prazoExec','obsGeral'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['empNome','empDoc','empTel','empEmail','empCidade','empReg','cliNome','cliDoc','cliTel','cliEmail','cliEnd','prazoExec','dataConclusaoPrevista','obsGeral','obsPrazo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('logoPreview').style.display='none';
   document.getElementById('logoPreview').src='';
   document.getElementById('logoFile').value='';
@@ -1235,9 +1239,12 @@ function renderPreview(){
     if(T.outros>0)html+=`<div class="pv-row"><span class="pv-key">Outros Custos</span><span class="pv-val">R$ ${fmt(T.outros)}</span></div>`;
     if(T.descPct>0)html+=`<div class="pv-row"><span class="pv-key">Desconto (${T.descPct}%)</span><span class="pv-val" style="color:var(--red)">− R$ ${fmt(T.descVal)}</span></div>`;
     html+=`</div>`;
-    html+=`<div class="pv-section"><div class="pv-section-title">Pagamento</div>
+    html+=`<div class="pv-section"><div class="pv-section-title">Pagamento e Prazo</div>
       <div class="pv-row"><span class="pv-key">Condição</span><span class="pv-val">${condLbl}</span></div>
       <div class="pv-row"><span class="pv-key">Validade</span><span class="pv-val">${gv('orcValidade')} dias (até ${venc})</span></div>
+      ${gv('prazoExec')?`<div class="pv-row"><span class="pv-key">Prazo de execução</span><span class="pv-val">${gv('prazoExec')}</span></div>`:''}
+      ${gv('dataConclusaoPrevista')?`<div class="pv-row"><span class="pv-key">Conclusão prevista</span><span class="pv-val">${fmtDate(gv('dataConclusaoPrevista'))}</span></div>`:''}
+      ${gv('obsPrazo')?`<div class="pv-row" style="flex-direction:column;gap:4px"><span class="pv-key">Obs. do prazo</span><span style="font-size:.82rem;color:var(--text2);line-height:1.5">${gv('obsPrazo')}</span></div>`:''}
     </div>`;
     html+=`<div class="pv-total-bar"><span class="pv-total-label">TOTAL DO ORÇAMENTO</span><span class="pv-total-val">R$ ${fmt(T.total)}</span></div>`;
   }
@@ -1263,7 +1270,7 @@ async function salvarOrcamento(){
     itensManual:JSON.parse(JSON.stringify(itensManual)),
     relacao:JSON.parse(JSON.stringify(relacao)),
     descPct:_nv('descPct',0),outrosCusto:_nv('outrosCusto',0),
-    prazoExec:gv('prazoExec'),obs:gv('obsGeral'),
+    prazoExec:gv('prazoExec'),dataConclusaoPrevista:gv('dataConclusaoPrevista'),obs:gv('obsGeral'),obsPrazo:gv('obsPrazo'),
     condPag:document.querySelector('input[name=cond]:checked')?.value||'50_50',
     total:T.total||0,
     logoBase64
@@ -1559,7 +1566,9 @@ async function gerarPDF(){
     doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(45,55,75);
     doc.text('Pagamento: '+cl,M,Y);Y+=5;
     if(gv('prazoExec')){doc.text('Prazo de execução: '+gv('prazoExec'),M,Y);Y+=5;}
-    doc.text('Validade desta proposta: '+gv('orcValidade')+' dias (até '+calcVenc()+')',M,Y);Y+=6;
+    if(gv('dataConclusaoPrevista')){doc.text('Conclusão prevista: '+fmtDate(gv('dataConclusaoPrevista')),M,Y);Y+=5;}
+    doc.text('Validade desta proposta: '+gv('orcValidade')+' dias (até '+calcVenc()+')',M,Y);Y+=5;
+    if(gv('obsPrazo')){const ls=doc.splitTextToSize('Obs. prazo: '+gv('obsPrazo'),CW);doc.setFontSize(7.5);doc.setFont('helvetica','italic');doc.setTextColor(80,95,115);doc.text(ls,M,Y);Y+=ls.length*4.2+2;}
 
     // FOTOS DE PATOLOGIA
     if(temFotos){

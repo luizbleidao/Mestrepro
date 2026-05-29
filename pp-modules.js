@@ -1152,4 +1152,45 @@ function agendarServicoDe(orc) {
 
 // ──────────────────────────────────────────────────────────────
 // MODAL COMPARTILHADO (módulos)
-// ───────────────────────�
+// ──────────────────────────────────────────────────────────────
+let _mmCb = null;
+
+function openModuleModal(titulo, htmlBody, onConfirm) {
+  _mmCb = onConfirm || null;
+  let wrap = document.getElementById('pp-mm-wrap');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'pp-mm-wrap';
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:7000;display:flex;align-items:center;justify-content:center;padding:16px;';
+    wrap.innerHTML = `
+      <div class="mm-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(3px);z-index:-1;"></div>
+      <div class="mm-box">
+        <div class="mm-header">
+          <div class="mm-title" id="pp-mm-title"></div>
+          <button class="mm-close" onclick="closeModuleModal()">✕</button>
+        </div>
+        <div class="mm-body" id="pp-mm-body"></div>
+        <div class="mm-footer">
+          <button onclick="closeModuleModal()" style="padding:9px 18px;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs,7px);color:var(--text2);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+          <button onclick="_ppMmSave()" style="padding:9px 18px;background:var(--acc,#5b7fff);border:none;border-radius:var(--rs,7px);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">✓ Salvar</button>
+        </div>
+      </div>`;
+    wrap.addEventListener('click', e => { if (e.target === wrap || e.target.classList.contains('mm-overlay')) closeModuleModal(); });
+    document.body.appendChild(wrap);
+  }
+  document.getElementById('pp-mm-title').textContent = titulo;
+  document.getElementById('pp-mm-body').innerHTML = htmlBody;
+  wrap.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function _ppMmSave() {
+  if (typeof _mmCb === 'function') _mmCb();
+}
+
+function closeModuleModal() {
+  const wrap = document.getElementById('pp-mm-wrap');
+  if (wrap) wrap.style.display = 'none';
+  document.body.style.overflow = '';
+  _mmCb = null;
+}�

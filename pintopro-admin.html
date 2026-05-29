@@ -1124,18 +1124,23 @@ function abrirAlterarPlano(userId, planoAtual, assId){
 async function confirmarAlterarPlano(userId, assId){
   const novoPlano = el('novo-plano-sel')?.value;
   if(!novoPlano){ notif('⚠️ Selecione o plano'); return; }
-  const { error } = await sb.from('assinaturas').update({ plano: novoPlano, status: novoPlano==='gratuito'?'inativo':'ativo', atualizado_em: new Date().toISOString() }).eq('id', assId);
-  if(error){ notif('❌ Erro: '+error.message); return; }
-  await sb.from('profiles').update({ plano: novoPlano }).eq('id', userId);
+  // profiles.plano é a fonte de verdade — atualizar primeiro
+  const { error: ePro } = await sb.from('profiles').update({ plano: novoPlano }).eq('id', userId);
+  if(ePro){ notif('❌ Erro ao atualizar plano: '+ePro.message); return; }
+  // Tentar atualizar assinaturas se a tabela existir (ignora erro se não existir)
+  if(assId) await sb.from('assinaturas').update({ plano: novoPlano, status: novoPlano==='gratuito'?'inativo':'ativo', atualizado_em: new Date().toISOString() }).eq('id', assId).then(()=>{}).catch(()=>{});
+  // Atualizar array em memória imediatamente
+  const u = allUsers.find(x=>x.id===userId); if(u) u.plano=novoPlano;
   closeModal('modal-usr');
   notif('✅ Plano alterado para '+novoPlano);
   loadAssinaturas();
 }
 async function cancelarAssinatura(assId, userId){
   if(!confirm('Cancelar esta assinatura? O usuário será rebaixado para o plano gratuito.')) return;
-  const { error } = await sb.from('assinaturas').update({ plano: 'gratuito', status: 'cancelado', atualizado_em: new Date().toISOString() }).eq('id', assId);
-  if(error){ notif('❌ Erro: '+error.message); return; }
-  await sb.from('profiles').update({ plano: 'gratuito' }).eq('id', userId);
+  const { error: ePro } = await sb.from('profiles').update({ plano: 'gratuito' }).eq('id', userId);
+  if(ePro){ notif('❌ Erro ao cancelar: '+ePro.message); return; }
+  if(assId) await sb.from('assinaturas').update({ plano: 'gratuito', status: 'cancelado', atualizado_em: new Date().toISOString() }).eq('id', assId).then(()=>{}).catch(()=>{});
+  const u = allUsers.find(x=>x.id===userId); if(u) u.plano='gratuito';
   notif('✅ Assinatura cancelada — plano rebaixado para gratuito');
   loadAssinaturas();
 }
