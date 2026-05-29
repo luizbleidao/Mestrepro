@@ -1285,15 +1285,26 @@ async function renderObras() {
 
   const uid = USER?.id;
   let orcas = [];
+
+  // 1. Tenta Supabase
   if (uid && uid !== 'demo') {
     try {
       const { data, error } = await sb.from('orcamentos')
-        .select('id,numero,cliente,endereco,total,status,data')
+        .select('id,numero,cliente,endereco,total,status,data,data_completa')
         .eq('user_id', uid)
         .neq('status', 'rascunho')
         .order('criado_em', { ascending: false });
-      if (!error) orcas = data || [];
-    } catch(e) { console.warn('[Financeiro] loadObras:', e.message); }
+      if (!error && data?.length) orcas = data;
+    } catch(e) { console.warn('[Financeiro] loadObras Supabase:', e.message); }
+  }
+
+  // 2. Fallback: localStorage (orçamentos que ainda não sincronizaram)
+  if (!orcas.length) {
+    const localKey = 'orcamentos_' + (uid || 'anon');
+    try {
+      const local = JSON.parse(localStorage.getItem(localKey) || '[]');
+      orcas = local.filter(o => o.status && o.status !== 'rascunho');
+    } catch(e) {}
   }
 
   // Garantir que contratos e recibos estão carregados
@@ -1451,4 +1462,4 @@ function openNovaTransacaoModal() {
     const footer = document.querySelector('#pp-mm-wrap .mm-footer');
     if (footer) footer.style.display = 'none';
   }, 0);
-}�
+}
