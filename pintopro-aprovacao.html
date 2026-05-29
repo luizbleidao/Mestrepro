@@ -430,8 +430,9 @@ async function confirmarRecusa() {
     <div class="feedback" style="padding:48px 20px">
       <div class="ic">📩</div>
       <h2>Recusa registrada</h2>
-      <p>Sua recusa foi registrada${motivo?` com o motivo: <em>"${motivo}"</em>`:''}.
+      <p>Sua recusa foi registrada${motivo?' com o motivo indicado':''}.
       O profissional foi informado e poderá ajustar a proposta.</p>
+      ${motivo?`<p style="margin-top:8px;font-style:italic;color:var(--text2)" id="motivo-display"></p>`:''}
       ${wppLink ? `
       <div style="margin-top:20px">
         <a href="${wppLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#25d366;color:#fff;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:700;text-decoration:none;">
@@ -442,6 +443,10 @@ async function confirmarRecusa() {
     </div>
     <div class="footer">Proposta gerada via <a href="https://mestrepro.space" target="_blank">MestrePro</a></div>
   `;
+  if (motivo) {
+    const el = document.getElementById('motivo-display');
+    if (el) el.textContent = `"${motivo}"`;
+  }
 }
 
 function showErro(titulo, msg) {

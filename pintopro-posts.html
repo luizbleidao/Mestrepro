@@ -228,7 +228,7 @@ function _getUserPlano(){ return sessionStorage.getItem('pp_user_plano') || 'gra
 window.addEventListener('DOMContentLoaded', () => {
   // Sinaliza ao pai que o iframe está pronto — pai responde com syncUser
   if (window.self !== window.top) {
-    window.parent.postMessage({ type: 'pp_iframe_ready', src: 'posts' }, '*');
+    window.parent.postMessage({ type: 'pp_iframe_ready', src: 'posts' }, window.location.origin);
   }
 
   // Pré-preencher cidade e empresa dos dados salvos

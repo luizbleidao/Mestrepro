@@ -361,7 +361,13 @@ function appendNewMessages(msgs){
   msgs.forEach(m => {
     const el = document.createElement('div');
     el.className = 'msg pintor';
-    el.innerHTML = `<div>${m.texto}</div><div class="msg-meta">Profissional · ${fmtDateTime(m.em)}</div>`;
+    const txtDiv = document.createElement('div');
+    txtDiv.textContent = m.texto;
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'msg-meta';
+    metaDiv.textContent = `Profissional · ${fmtDateTime(m.em)}`;
+    el.appendChild(txtDiv);
+    el.appendChild(metaDiv);
     ml.appendChild(el);
   });
   ml.scrollTop = ml.scrollHeight;
@@ -399,7 +405,13 @@ async function enviarMensagem() {
   if (ml) {
     const el = document.createElement('div');
     el.className = 'msg cliente';
-    el.innerHTML = `<div>${texto}</div><div class="msg-meta">Você · agora</div>`;
+    const txtDiv2 = document.createElement('div');
+    txtDiv2.textContent = texto;
+    const metaDiv2 = document.createElement('div');
+    metaDiv2.className = 'msg-meta';
+    metaDiv2.textContent = 'Você · agora';
+    el.appendChild(txtDiv2);
+    el.appendChild(metaDiv2);
     ml.appendChild(el);
     ml.scrollTop = ml.scrollHeight;
   }
