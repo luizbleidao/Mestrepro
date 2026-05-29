@@ -221,6 +221,30 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 .list-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;transition:.15s;}
 .list-card:hover{border-color:var(--acc);transform:translateY(-1px);}
 
+/* ── MÓDULO FINANCEIRO ── */
+.fin-tab-bar{display:flex;gap:2px;padding:12px 12px 0;border-bottom:1px solid var(--border);background:var(--surf);position:sticky;top:0;z-index:10;}
+.fin-tab{flex:1;padding:10px 4px;border:none;background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border-bottom:2px solid transparent;transition:.15s;border-radius:6px 6px 0 0;}
+.fin-tab:hover{color:var(--text);}
+.fin-tab.active{color:var(--acc);border-bottom-color:var(--acc);background:rgba(91,127,255,.06);}
+.fin-resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;margin-bottom:4px;}
+.fin-stat{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;}
+.obra-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);margin:0 12px 10px;overflow:hidden;transition:.15s;}
+.obra-card:hover{border-color:var(--acc);}
+.obra-header{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 14px 0;}
+.obra-fin{padding:8px 14px 0;}
+.obra-prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.obra-bar{height:6px;background:var(--surf3);border-radius:3px;overflow:hidden;}
+.obra-bar-fill{height:100%;border-radius:3px;transition:width .5s;}
+.obra-fin-row{display:flex;justify-content:space-between;margin-top:8px;}
+.obra-fin-item{display:flex;flex-direction:column;gap:2px;}
+.obra-actions{display:flex;gap:6px;padding:10px 14px 12px;flex-wrap:wrap;border-top:1px solid var(--border);margin-top:10px;}
+.obra-btn{padding:6px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif;transition:.15s;white-space:nowrap;}
+.obra-btn:hover{border-color:var(--acc);color:var(--acc);}
+.fin-saldo-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:var(--rs);padding:10px 14px;margin-bottom:14px;}
+.fin-fab{position:fixed;bottom:80px;right:16px;z-index:500;padding:12px 20px;background:var(--acc);color:#fff;border:none;border-radius:99px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 18px rgba(91,127,255,.45);font-family:'Syne',sans-serif;transition:.15s;}
+.fin-fab:hover{background:#4a6fee;transform:translateY(-2px);}
+@media(max-width:600px){.fin-resumo{grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px;}.obra-card{margin:0 8px 10px;}.fin-stat{padding:10px;}.fin-stat>div:last-child{font-size:16px!important;}}
+
 /* ── CALENDAR / AGENDA ── */
 .ag-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surf);}
 .ag-month{font-size:14px;font-weight:800;font-family:'Syne',sans-serif;}
@@ -411,20 +435,16 @@ window._IFRAME_LOADED={};
         </div>
       </div>
 
-      <!-- CONTRATOS -->
-      <div class="screen" id="s-contratos">
-        <div style="text-align:center;padding:60px 20px;color:var(--text2)">
-          <div style="font-size:48px;margin-bottom:12px">📋</div>
-          <div style="font-size:14px">Carregando contratos...</div>
+      <!-- FINANCEIRO (Obras + Contratos + Recibos unificados) -->
+      <div class="screen" id="s-financeiro">
+        <div class="fin-tab-bar" id="fin-tab-bar">
+          <button class="fin-tab active" id="fin-t-obras"     onclick="loadFinanceiro('obras')">📊 Obras</button>
+          <button class="fin-tab"        id="fin-t-contratos" onclick="loadFinanceiro('contratos')">📋 Contratos</button>
+          <button class="fin-tab"        id="fin-t-recibos"   onclick="loadFinanceiro('recibos')">🧾 Recibos</button>
         </div>
-      </div>
-
-      <!-- RECIBOS -->
-      <div class="screen" id="s-recibos">
-        <div style="text-align:center;padding:60px 20px;color:var(--text2)">
-          <div style="font-size:48px;margin-bottom:12px">🧾</div>
-          <div style="font-size:14px">Carregando recibos...</div>
-        </div>
+        <div id="fin-obras-content"  style="padding-bottom:90px"></div>
+        <div id="s-contratos"        style="display:none;padding:12px;padding-bottom:90px"></div>
+        <div id="s-recibos"          style="display:none;padding:12px;padding-bottom:90px"></div>
       </div>
 
       <!-- AGENDA -->
@@ -807,35 +827,35 @@ const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
 const CFG = {
   gratuito: {
     label:'🆓 Gratuito',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','indicacao','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','financeiro','agenda','indicacao','configuracoes'],
     orcLim:5, laudoLim:2, pdfMarca:true, multiUser:false, ia:false,
   },
   trial: {
     label:'🕐 Trial 7 dias',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','indicacao','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','financeiro','agenda','indicacao','configuracoes'],
     orcLim:9999, laudoLim:9999, pdfMarca:false, multiUser:false, ia:false,
   },
   basico: {
     label:'⭐ Básico',
-    telas:['dashboard','orcamentos','contratos','recibos','agenda','indicacao','configuracoes'],
+    telas:['dashboard','orcamentos','financeiro','agenda','indicacao','configuracoes'],
     orcLim:9999, laudoLim:3, pdfMarca:false, multiUser:false, ia:false,
     _alias:['pintor-std'],
   },
   pro: {
     label:'🚀 Pro',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','indicacao','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','financeiro','agenda','indicacao','configuracoes'],
     orcLim:9999, laudoLim:9999, pdfMarca:false, multiUser:false, ia:false,
     _alias:['pintor-pro'],
   },
   equipe: {
     label:'👥 Equipe',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','indicacao','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','financeiro','agenda','indicacao','configuracoes'],
     orcLim:9999, laudoLim:9999, pdfMarca:false, multiUser:true, multiUserLim:5, ia:false,
     _alias:['lojista'],
   },
   'ia-pro': {
     label:'🤖 IA Pro',
-    telas:['dashboard','orcamentos','laudos','contratos','recibos','agenda','posts','ia_pro','indicacao','configuracoes'],
+    telas:['dashboard','orcamentos','laudos','financeiro','agenda','posts','ia_pro','indicacao','configuracoes'],
     orcLim:9999, laudoLim:9999, pdfMarca:false, multiUser:true, multiUserLim:9999, ia:true,
     _alias:['ia_pro','ia-pro'],
   },
@@ -853,16 +873,15 @@ const NAV = [
   {id:'dashboard',     ic:'📊', lb:'Dashboard'},
   {id:'orcamentos',    ic:'📝', lb:'Orçamentos'},
   {id:'laudos',        ic:'🔬', lb:'Laudos Técnicos'},
-  {id:'contratos',     ic:'📄', lb:'Contratos'},
-  {id:'recibos',       ic:'🧾', lb:'Recibos'},
+  {id:'financeiro',    ic:'💰', lb:'Financeiro'},
   {id:'agenda',        ic:'📅', lb:'Agenda'},
   {id:'posts',         ic:'✨', lb:'Gerador de Posts IA'},
   {id:'ia_pro',        ic:'🤖', lb:'IA Pro', plano:'ia-pro'},
   {id:'indicacao',     ic:'🤝', lb:'Indicar & Ganhar'},
   {id:'configuracoes', ic:'⚙️', lb:'Configurações'},
 ];
-const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',contratos:'Contratos',recibos:'Recibos',agenda:'Agenda',ia_pro:'IA Pro',indicacao:'Indicar & Ganhar',configuracoes:'Configurações'};
-const BTNS   = {dashboard:'+ Nova ação',orcamentos:'+ Novo orçamento',laudos:'+ Novo laudo',contratos:'+ Novo contrato',recibos:'+ Novo recibo',agenda:'+ Agendar',ia_pro:'Explorar IA',indicacao:'Compartilhar link',configuracoes:'Salvar'};
+const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',financeiro:'Financeiro',agenda:'Agenda',ia_pro:'IA Pro',indicacao:'Indicar & Ganhar',configuracoes:'Configurações'};
+const BTNS   = {dashboard:'+ Nova ação',orcamentos:'+ Novo orçamento',laudos:'+ Novo laudo',financeiro:'+ Nova transação',agenda:'+ Agendar',ia_pro:'Explorar IA',indicacao:'Compartilhar link',configuracoes:'Salvar'};
 
 let USER=null, PROFILE=null, PLANO='gratuito', cfg=CFG.gratuito;
 
@@ -1176,8 +1195,7 @@ function ir(id){
 
     document.getElementById('pg-title').textContent = TITLES[id]||id;
     if(id==='configuracoes'){loadSettings();setTimeout(initProfSigPad,50);}
-    if(id==='contratos')loadContratos();
-    if(id==='recibos')loadRecibos();
+    if(id==='financeiro')loadFinanceiro();
     if(id==='agenda')loadAgenda();
     if(id==='indicacao')loadIndicacao();
     document.getElementById('top-btn').textContent = BTNS[id]||'+ Nova ação';
@@ -1214,8 +1232,7 @@ function topAction(){
     else{notif('🔬 Aguardando carregamento...');}
   }
   else if(t==='Configurações')saveAllSettings();
-  else if(t==='Contratos')openContratoModal();
-  else if(t==='Recibos')openReciboModal();
+  else if(t==='Financeiro')openNovaTransacaoModal();
   else if(t==='Agenda')openEventoModal();
   else if(t==='Indicar & Ganhar')compartilharLinkIndicacao();
   else notif('✅ Ação executada!');

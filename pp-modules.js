@@ -316,6 +316,7 @@ async function salvarContrato(existingId) {
 
   closeModuleModal();
   renderContratos();
+  if (_finAba === 'obras') setTimeout(() => renderObras(), 200);
   notif('📋 Contrato salvo!');
 }
 
@@ -665,15 +666,37 @@ function renderRecibos() {
   el.innerHTML = rows;
 }
 
-function openReciboModal(id, contratoPreFill) {
+function openReciboModal(id, contratoPreFill, _orcIdPre, _orcClientePre, _totalOrcadoPre, _totalRecebidoPre) {
   const existing = id ? _recibos.find(r => r.id === id) : null;
   const ct = contratoPreFill || null;
+  const orcIdPre       = _orcIdPre       || null;
+  const totalOrcadoPre = Number(_totalOrcadoPre  || 0);
+  const totalRecPre    = Number(_totalRecebidoPre || 0);
+  const saldoPre       = totalOrcadoPre > 0 ? (totalOrcadoPre - totalRecPre) : 0;
+  const fmtR = v => Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+
+  const saldoBox = orcIdPre && totalOrcadoPre > 0 ? `
+    <div class="fin-saldo-box" id="recibo-saldo-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px">Obra vinculada</div>
+          <div style="font-size:13px;font-weight:700;margin-top:2px">${_orcClientePre||''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--text3)">Total orçado: <strong>R$ ${fmtR(totalOrcadoPre)}</strong></div>
+          <div style="font-size:10px;color:var(--text3)">Já recebido: <strong style="color:#22c55e">R$ ${fmtR(totalRecPre)}</strong></div>
+          <div style="font-size:12px;font-weight:700;color:#f59e0b;margin-top:2px" id="recibo-saldo-live">Saldo: R$ ${fmtR(saldoPre)}</div>
+        </div>
+      </div>
+    </div>` : '';
 
   openModuleModal('Recibo de Pagamento', `
+    ${saldoBox}
+    <input type="hidden" id="mr-orc-id" value="${orcIdPre || existing?.orc_id || ''}">
     <div class="mf-grid">
       <div class="mf-field">
         <label>Cliente *</label>
-        <input id="mr-cliente" type="text" value="${ct?.cliente || existing?.cliente || ''}" placeholder="Nome completo do cliente">
+        <input id="mr-cliente" type="text" value="${ct?.cliente || existing?.cliente || _orcClientePre || ''}" placeholder="Nome completo do cliente">
       </div>
       <div class="mf-field">
         <label>CPF / CNPJ do cliente</label>
@@ -706,10 +729,25 @@ function openReciboModal(id, contratoPreFill) {
         <input id="mr-obs" type="text" value="${existing?.observacao || ''}" placeholder="Opcional — ex: pagamento referente à obra da Rua das Flores">
       </div>
     </div>
-  `, () => salvarRecibo(existing?.id, ct?.id));
+  `, () => salvarRecibo(existing?.id, ct?.id, document.getElementById('mr-orc-id')?.value || null));
+
+  // Atualiza saldo em tempo real conforme o valor digitado
+  if (orcIdPre && totalOrcadoPre > 0) {
+    setTimeout(() => {
+      const valorInput = document.getElementById('mr-valor');
+      const saldoLive  = document.getElementById('recibo-saldo-live');
+      if (!valorInput || !saldoLive) return;
+      valorInput.addEventListener('input', () => {
+        const digitado = parseFloat(valorInput.value) || 0;
+        const novoSaldo = Math.max(saldoPre - digitado, 0);
+        saldoLive.textContent = `Saldo após este recibo: R$ ${fmtR(novoSaldo)}`;
+        saldoLive.style.color = novoSaldo === 0 ? '#22c55e' : '#f59e0b';
+      });
+    }, 80);
+  }
 }
 
-async function salvarRecibo(existingId, contratoId) {
+async function salvarRecibo(existingId, contratoId, orcamentoId) {
   const cliente = document.getElementById('mr-cliente')?.value?.trim();
   const valor = parseFloat(document.getElementById('mr-valor')?.value) || 0;
   if (!cliente || !valor) { notif('⚠️ Preencha cliente e valor'); return; }
@@ -726,6 +764,7 @@ async function salvarRecibo(existingId, contratoId) {
     descricao: document.getElementById('mr-desc')?.value?.trim() || '',
     observacao: document.getElementById('mr-obs')?.value?.trim() || '',
     contrato_id: contratoId || null,
+    orc_id: orcamentoId || document.getElementById('mr-orc-id')?.value || null,
     dados: { empresa: (typeof PROFILE !== 'undefined' && PROFILE?.empresa_data) ? PROFILE.empresa_data : JSON.parse(localStorage.getItem('empresaSalva') || '{}') },
     criado_em: new Date().toISOString(),
   };
@@ -750,6 +789,8 @@ async function salvarRecibo(existingId, contratoId) {
 
   closeModuleModal();
   if (document.getElementById('s-recibos')) renderRecibos();
+  // Se vier da aba Obras, recarregar para atualizar saldos
+  if (_finAba === 'obras' || _finAba === 'recibos') setTimeout(() => renderObras(), 200);
   notif('🧾 Recibo salvo!');
 }
 
@@ -1193,4 +1234,221 @@ function closeModuleModal() {
   if (wrap) wrap.style.display = 'none';
   document.body.style.overflow = '';
   _mmCb = null;
+}
+
+// ──────────────────────────────────────────────────────────────
+// MÓDULO FINANCEIRO — Obras / Contratos / Recibos unificados
+// ──────────────────────────────────────────────────────────────
+let _finAba = 'obras';
+
+async function loadFinanceiro(aba) {
+  _finAba = aba || _finAba || 'obras';
+
+  // Atualiza abas ativas
+  ['obras','contratos','recibos'].forEach(t => {
+    const el = document.getElementById('fin-t-' + t);
+    if (el) el.classList.toggle('active', t === _finAba);
+  });
+
+  // Mostra/esconde painéis
+  const elObras = document.getElementById('fin-obras-content');
+  const elContr = document.getElementById('s-contratos');
+  const elRecib = document.getElementById('s-recibos');
+  if (elObras) elObras.style.display = _finAba === 'obras'     ? '' : 'none';
+  if (elContr) elContr.style.display = _finAba === 'contratos' ? '' : 'none';
+  if (elRecib) elRecib.style.display = _finAba === 'recibos'   ? '' : 'none';
+
+  // FAB flutuante para mobile
+  document.getElementById('fin-fab')?.remove();
+  const fab = document.createElement('button');
+  fab.id = 'fin-fab';
+  fab.className = 'fin-fab';
+  const fabLabels = { obras:'+ Nova transação', contratos:'+ Contrato', recibos:'+ Recibo' };
+  fab.textContent = fabLabels[_finAba] || '+ Nova';
+  fab.onclick = () => {
+    if (_finAba === 'contratos') openContratoModal();
+    else if (_finAba === 'recibos') openReciboModal();
+    else openNovaTransacaoModal();
+  };
+  document.getElementById('s-financeiro')?.appendChild(fab);
+
+  if (_finAba === 'obras')     await renderObras();
+  if (_finAba === 'contratos') await loadContratos();
+  if (_finAba === 'recibos')   await loadRecibos();
+}
+
+// ── Tela Obras: resumo financeiro por orçamento ───────────────
+async function renderObras() {
+  const wrap = document.getElementById('fin-obras-content');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)">Carregando...</div>';
+
+  const uid = USER?.id;
+  let orcas = [];
+  if (uid && uid !== 'demo') {
+    try {
+      const { data, error } = await sb.from('orcamentos')
+        .select('id,numero,cliente,endereco,total,status,data')
+        .eq('user_id', uid)
+        .neq('status', 'rascunho')
+        .order('criado_em', { ascending: false });
+      if (!error) orcas = data || [];
+    } catch(e) { console.warn('[Financeiro] loadObras:', e.message); }
+  }
+
+  // Garantir que contratos e recibos estão carregados
+  if (!_contratos.length) await loadContratos();
+  if (!_recibos.length)   await loadRecibos();
+
+  if (!orcas.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text2)">
+      <div style="font-size:48px;margin-bottom:12px">💰</div>
+      <div style="font-size:14px;font-weight:600">Nenhuma obra ativa</div>
+      <div style="font-size:12px;margin-top:6px;color:var(--text3)">Orçamentos enviados ou aprovados com ≥ 1 contrato ou recibo aparecem aqui.</div>
+    </div>`;
+    return;
+  }
+
+  const fmtR = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits:2 });
+  const stColor = { enviado:'#5b7fff', aprovado:'#22c55e', recusado:'#ef4444' };
+  const stLabel = { enviado:'Enviado',  aprovado:'Aprovado',  recusado:'Recusado' };
+
+  // Totais gerais
+  let totalGeral = 0, recebidoGeral = 0;
+
+  const cards = orcas.map(orc => {
+    const totalOrc = Number(orc.total || 0);
+    const contratoOrc = _contratos.find(c => c.orcamento_id === orc.id);
+    // Recibos vinculados diretamente ao orçamento ou ao contrato dele
+    const recibosOrc = _recibos.filter(r =>
+      r.orc_id === orc.id ||
+      (contratoOrc && r.contrato_id === contratoOrc.id)
+    );
+    const totalRec = recibosOrc.reduce((s, r) => s + Number(r.valor || 0), 0);
+    const saldo    = totalOrc - totalRec;
+    const pct      = totalOrc > 0 ? Math.min(Math.round(totalRec / totalOrc * 100), 100) : 0;
+
+    totalGeral    += totalOrc;
+    recebidoGeral += totalRec;
+
+    let finStatus, finColor;
+    if (pct >= 100)   { finStatus = '✅ Quitado';  finColor = '#22c55e'; }
+    else if (pct > 0) { finStatus = '⚡ Parcial';  finColor = '#f59e0b'; }
+    else              { finStatus = '⏳ Pendente'; finColor = '#5b7fff'; }
+
+    const barColor = pct >= 100 ? '#22c55e' : pct > 0 ? '#f59e0b' : 'var(--surf3)';
+
+    const recibosHtml = recibosOrc.length
+      ? `<div style="font-size:11px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.7">
+          ${recibosOrc.map(r => `🧾 ${r.parcela||'Pagamento'} · <strong>R$ ${fmtR(r.valor)}</strong> · ${({pix:'PIX',dinheiro:'Dinheiro',transferencia:'Transf.',cartao:'Cartão',cheque:'Cheque'}[r.forma_pgto]||r.forma_pgto||'—')}`).join('<br>')}
+        </div>`
+      : '';
+
+    const orcEscaped = (orc.id || '').replace(/'/g,"\\'");
+    const cliEscaped = (orc.cliente || '').replace(/'/g,"\\'");
+
+    return `<div class="obra-card">
+      <div class="obra-header">
+        <div style="min-width:0">
+          <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--acc)">#${orc.numero}</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${orc.cliente||'—'}</div>
+          ${orc.endereco ? `<div style="font-size:11px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📍 ${orc.endereco}</div>` : ''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:10px">
+          <div style="font-size:17px;font-weight:800">R$ ${fmtR(totalOrc)}</div>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${stColor[orc.status]||'#888'}22;color:${stColor[orc.status]||'#888'};display:inline-block;margin-top:3px">${stLabel[orc.status]||orc.status}</span>
+        </div>
+      </div>
+
+      <div class="obra-fin">
+        <div class="obra-prog-row">
+          <span style="font-size:11px;color:${finColor};font-weight:700">${finStatus}</span>
+          <span style="font-size:11px;color:var(--text3)">${pct}% recebido</span>
+        </div>
+        <div class="obra-bar"><div class="obra-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+        <div class="obra-fin-row">
+          <div class="obra-fin-item">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px">Recebido</div>
+            <div style="font-size:14px;font-weight:800;color:#22c55e">R$ ${fmtR(totalRec)}</div>
+          </div>
+          <div class="obra-fin-item" style="text-align:right">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px">Saldo a receber</div>
+            <div style="font-size:14px;font-weight:800;color:${saldo > 0 ? '#f59e0b' : 'var(--text3)'}">R$ ${fmtR(Math.max(saldo, 0))}</div>
+          </div>
+        </div>
+        ${recibosHtml}
+      </div>
+
+      <div class="obra-actions">
+        ${contratoOrc
+          ? `<button class="obra-btn" onclick="editContrato('${contratoOrc.id}')">📋 Contrato <span style="color:${contratoOrc.status==='ativo'?'#22c55e':'#f59e0b'}">${contratoOrc.status==='ativo'?'✅':'📝'}</span></button>`
+          : `<button class="obra-btn" onclick="_finNovoContrato('${orcEscaped}')">📋 + Contrato</button>`
+        }
+        <button class="obra-btn" onclick="_finNovoRecibo('${orcEscaped}','${cliEscaped}',${totalOrc},${totalRec})">🧾 + Recibo</button>
+        ${recibosOrc.length ? `<button class="obra-btn" onclick="gerarPDFRecibo('${recibosOrc[recibosOrc.length-1].id}')">📄 PDF recibo</button>` : ''}
+      </div>
+    </div>`;
+  });
+
+  const saldoGeral = totalGeral - recebidoGeral;
+
+  wrap.innerHTML = `
+    <div class="fin-resumo">
+      <div class="fin-stat">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Total obras</div>
+        <div style="font-size:18px;font-weight:800">R$ ${fmtR(totalGeral)}</div>
+      </div>
+      <div class="fin-stat">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Recebido</div>
+        <div style="font-size:18px;font-weight:800;color:#22c55e">R$ ${fmtR(recebidoGeral)}</div>
+      </div>
+      <div class="fin-stat">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">A receber</div>
+        <div style="font-size:18px;font-weight:800;color:#f59e0b">R$ ${fmtR(Math.max(saldoGeral,0))}</div>
+      </div>
+    </div>
+    ${cards.join('')}`;
+}
+
+// ── Helpers de ação rápida das obras ─────────────────────────
+function _finNovoContrato(orcId) {
+  loadFinanceiro('contratos').then(() => {
+    openContratoModal();
+    setTimeout(() => {
+      const sel = document.getElementById('mc-orc');
+      if (sel) { sel.value = orcId; sel.dispatchEvent(new Event('change')); }
+    }, 120);
+  });
+}
+
+function _finNovoRecibo(orcId, orcCliente, totalOrcado, totalRecebido) {
+  loadFinanceiro('recibos').then(() => {
+    openReciboModal(null, null, orcId, orcCliente, totalOrcado, totalRecebido);
+  });
+}
+
+// ── Modal escolha rápida: contrato ou recibo ──────────────────
+function openNovaTransacaoModal() {
+  openModuleModal('Nova transação', `
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">O que deseja criar?</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <button onclick="closeModuleModal();loadFinanceiro('contratos').then(()=>openContratoModal())"
+        style="padding:22px 10px;background:var(--surf2);border:1px solid var(--border);border-radius:12px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;text-align:center;transition:.15s">
+        <div style="font-size:32px;margin-bottom:8px">📋</div>
+        <div style="font-weight:700;font-size:14px">Contrato</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Formalizar serviço</div>
+      </button>
+      <button onclick="closeModuleModal();loadFinanceiro('recibos').then(()=>openReciboModal())"
+        style="padding:22px 10px;background:var(--surf2);border:1px solid var(--border);border-radius:12px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;text-align:center;transition:.15s">
+        <div style="font-size:32px;margin-bottom:8px">🧾</div>
+        <div style="font-weight:700;font-size:14px">Recibo</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Registrar pagamento</div>
+      </button>
+    </div>
+  `, null);
+  // Ocultar o footer (sem botão Salvar neste modal de escolha)
+  setTimeout(() => {
+    const footer = document.querySelector('#pp-mm-wrap .mm-footer');
+    if (footer) footer.style.display = 'none';
+  }, 0);
 }�
