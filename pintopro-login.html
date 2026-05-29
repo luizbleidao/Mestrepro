@@ -523,7 +523,9 @@ async function cadastrar(){
     });
     if(error) throw error;
 
-    if(signUpData?.user && !signUpData?.session){
+    // Supabase retorna user.identities=[] para e-mail duplicado (sem revelar que existe).
+    // user+sem session com identities populado = novo usuário aguardando confirmação de e-mail.
+    if(signUpData?.user && (signUpData.user.identities?.length === 0)){
       showMsg('ec','Este e-mail já está cadastrado. Faça login ou recupere sua senha.','err');
       setBtn('btn-cad','Criar conta e escolher plano', false);
       return;
