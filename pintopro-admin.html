@@ -255,14 +255,9 @@ tbody td:first-child{color:var(--text);font-weight:500;}
           <select class="filter-select" id="usr-filter-plano" onchange="filterUsers()">
             <option value="">Todos os planos</option>
             <option value="gratuito">Gratuito</option>
-            <option value="basico">Básico</option>
             <option value="pro">Pro</option>
             <option value="equipe">Equipe</option>
             <option value="ia-pro">IA Pro</option>
-            <option value="trial">Trial</option>
-            <option value="pintor-std">Pintor Standard (legado)</option>
-            <option value="pintor-pro">Pintor Pro (legado)</option>
-            <option value="lojista">Lojista (legado)</option>
             <option value="trial">Trial</option>
           </select>
           <select class="filter-select" id="usr-filter-perfil" onchange="filterUsers()">
@@ -477,13 +472,9 @@ tbody td:first-child{color:var(--text);font-weight:500;}
     <div class="field">
       <label>Plano a ativar</label>
       <select id="pag-plano-sel" style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
-        <option value="basico">Básico — R$49/mês</option>
         <option value="pro">Pro — R$99/mês</option>
         <option value="equipe">Equipe — R$179/mês</option>
         <option value="ia-pro">IA Pro — R$249/mês</option>
-        <option value="pintor-std">Pintor Standard — R$69/mês (legado)</option>
-        <option value="pintor-pro">Pintor Pro — R$99/mês (legado)</option>
-        <option value="lojista">Lojista — R$99/mês (legado)</option>
       </select>
     </div>
     <div class="field">
@@ -511,9 +502,9 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 const { createClient } = supabase;
 const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
 
-const PLANO_LABEL = { gratuito:'Gratuito', basico:'Básico', pro:'Pro', equipe:'Equipe', 'ia-pro':'IA Pro', trial:'Trial', 'pintor-std':'Pintor Standard', 'pintor-pro':'Pintor Pro', lojista:'Lojista' };
-const PLANO_VALOR = { basico:49, pro:99, equipe:179, 'ia-pro':249, 'pintor-std':69, 'pintor-pro':99, lojista:99 };
-const PLANO_BADGE = { gratuito:'b-gray', basico:'b-blue', pro:'b-purple', equipe:'b-green', 'ia-pro':'b-rose', trial:'b-amber', 'pintor-std':'b-blue', 'pintor-pro':'b-purple', lojista:'b-amber' };
+const PLANO_LABEL = { gratuito:'Gratuito', pro:'Pro', equipe:'Equipe', 'ia-pro':'IA Pro', ia_pro:'IA Pro', trial:'Trial' };
+const PLANO_VALOR = { pro:99, equipe:179, 'ia-pro':249, ia_pro:249 };
+const PLANO_BADGE = { gratuito:'b-gray', pro:'b-purple', equipe:'b-green', 'ia-pro':'b-blue', ia_pro:'b-blue', trial:'b-amber' };
 const PERFIL_BADGE= { pintor:'b-blue', lojista:'b-amber' };
 
 let allUsers=[], allPags=[], adminUser=null;
@@ -706,7 +697,7 @@ async function deletarConta(id, nome){
 function openChangePlan(id){
   const u = allUsers.find(x=>x.id===id); if(!u) return;
   document.getElementById('modal-usr-title').textContent = `Alterar plano — ${u.nome||'Usuário'}`;
-  const planos = ['gratuito','basico','pro','equipe','ia-pro','trial','pintor-std','pintor-pro','lojista'];
+  const planos = ['gratuito','trial','pro','equipe','ia-pro'];
   document.getElementById('modal-usr-body').innerHTML = `
     <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Plano atual: <span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano}</span></p>
     <div class="field"><label>Novo plano</label>
@@ -864,7 +855,7 @@ async function salvarPagamento(){
 function updateStats(){
   const nonAdmins = allUsers.filter(u=>!u.is_admin);
   const total   = nonAdmins.length;
-  const pagos   = nonAdmins.filter(u=>['basico','pro','equipe','ia-pro','pintor-std','pintor-pro','lojista'].includes(u.plano)).length;
+  const pagos   = nonAdmins.filter(u=>['pro','equipe','ia-pro','ia_pro'].includes(u.plano)).length;
   const gratis  = nonAdmins.filter(u=>u.plano==='gratuito'||u.plano==='trial').length;
   const pends   = allPags.filter(p=>p.status==='pendente');
   const receita = nonAdmins.reduce((s,u)=>{return s+(PLANO_VALOR[u.plano]||0);},0);
@@ -889,7 +880,7 @@ async function loadMetricas(){
 
   const total = allUsers.length;
   const pagos = allUsers.filter(u =>
-    ['basico','pro','equipe','ia-pro','pintor-std','pintor-pro','lojista'].includes(u.plano)
+    ['pro','equipe','ia-pro','ia_pro'].includes(u.plano)
   ).length;
   document.getElementById('mt-conv').textContent = total > 0 ? Math.round(pagos/total*100)+'%' : '—';
 
@@ -1106,9 +1097,9 @@ function abrirAlterarPlano(userId, planoAtual, assId){
       <label>Novo plano</label>
       <select id="novo-plano-sel" style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
         <option value="gratuito">Gratuito</option>
-        <option value="pro">Pintor Pro</option>
+        <option value="pro">Pro</option>
         <option value="equipe">Equipe</option>
-        <option value="ia_pro">IA Pro</option>
+        <option value="ia-pro">IA Pro</option>
       </select>
     </div>
     <div class="field" style="margin-bottom:14px">
