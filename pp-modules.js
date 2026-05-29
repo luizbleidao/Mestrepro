@@ -771,7 +771,7 @@ async function salvarRecibo(existingId, contratoId, orcamentoId) {
 
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
-    const { error } = await sb.from('recibos').upsert({ ...obj, user_id: uid, orc_id: null, data: new Date().toISOString().split('T')[0] }, { onConflict: 'id' });
+    const { error } = await sb.from('recibos').upsert({ ...obj, user_id: uid, data: new Date().toISOString().split('T')[0] }, { onConflict: 'id' });
     if (error) { console.error('[MestrePro] Erro ao salvar recibo:', error.message); notif('❌ Erro ao salvar recibo. Tente novamente.'); return; }
   }
 
