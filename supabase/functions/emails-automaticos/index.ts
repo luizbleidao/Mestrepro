@@ -168,16 +168,11 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
-  // Auth: apenas service_role pode chamar (via trigger ou cron)
-  const authHeader = req.headers.get('Authorization') || '';
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-  if (!authHeader.includes(serviceKey.slice(0,16)) && !authHeader.includes('Bearer')) {
-    // Verifica se é chamada interna via anon key + verificação de origem
-    const origin = req.headers.get('origin') || req.headers.get('x-forwarded-host') || '';
-    const appUrl = Deno.env.get('APP_URL') || '';
-    if (appUrl && !origin.includes(new URL(appUrl).hostname)) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...CORS, 'Content-Type': 'application/json' } });
-    }
+  // Auth: INTERNAL_SECRET obrigatório (mesmo padrão de pagar-comissao)
+  const internalSecret = Deno.env.get('INTERNAL_SECRET') || '';
+  const providedSecret = req.headers.get('x-internal-secret') || '';
+  if (!internalSecret || providedSecret !== internalSecret) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...CORS, 'Content-Type': 'application/json' } });
   }
 
   let body: EmailData;

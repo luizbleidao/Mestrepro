@@ -38,6 +38,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers });
 
+  // OTP_SECRET obrigatório — sem fallback inseguro
+  const secret = Deno.env.get('OTP_SECRET');
+  if (!secret) {
+    console.error('[wpp-otp-verify] OTP_SECRET não configurada');
+    return new Response(JSON.stringify({ erro: 'configuracao_ausente' }), { status: 500, headers });
+  }
+
   try {
     const { telefone, codigo } = await req.json();
     if (!telefone || !codigo) {
@@ -86,11 +93,9 @@ Deno.serve(async (req) => {
     }
 
     // Validar hash
-    const secret = Deno.env.get('OTP_SECRET') || 'mestrepro-otp-fallback-secret';
     const hashEsperado = await hmacSHA256(codigoLimpo + telNorm, secret);
 
     if (hashEsperado !== otp.codigo_hash) {
-      // Incrementar tentativas
       await sb.from('otp_verificacoes').update({ tentativas: otp.tentativas + 1 }).eq('id', otp.id);
       const restantes = 4 - otp.tentativas;
       return new Response(
@@ -102,8 +107,7 @@ Deno.serve(async (req) => {
     // Código correto — marcar como usado
     await sb.from('otp_verificacoes').update({ usado: true }).eq('id', otp.id);
 
-    // Gerar token de verificação de curta duração (JWT simples via Supabase)
-    // Armazenamos no banco como prova de verificação por 30 min
+    // Token de verificação com expiração de 30 min
     const tokenPayload = {
       telefone: telNorm,
       verificado_em: new Date().toISOString(),

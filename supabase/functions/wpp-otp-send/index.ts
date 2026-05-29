@@ -15,7 +15,6 @@ function corsHeaders(origin: string) {
   };
 }
 
-// Normaliza número brasileiro para formato internacional (55XXXXXXXXXXX)
 function normalizarTelefone(tel: string): string {
   const digits = tel.replace(/\D/g, '');
   if (digits.startsWith('55') && digits.length >= 12) return digits;
@@ -23,7 +22,6 @@ function normalizarTelefone(tel: string): string {
   return digits;
 }
 
-// Gera HMAC-SHA256 do código + telefone + secret
 async function hmacSHA256(message: string, secret: string): Promise<string> {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -40,6 +38,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers });
 
+  // OTP_SECRET obrigatório — sem fallback inseguro
+  const secret = Deno.env.get('OTP_SECRET');
+  if (!secret) {
+    console.error('[wpp-otp-send] OTP_SECRET não configurada');
+    return new Response(JSON.stringify({ erro: 'configuracao_ausente' }), { status: 500, headers });
+  }
+
   try {
     const { telefone } = await req.json();
     if (!telefone) return new Response(JSON.stringify({ erro: 'telefone_obrigatorio' }), { status: 400, headers });
@@ -54,7 +59,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Rate limit: max 3 OTPs por número nos últimos 60 min
+    // Rate limit por telefone: max 3 OTPs nos últimos 60 min
     const { count } = await sb
       .from('otp_verificacoes')
       .select('*', { count: 'exact', head: true })
@@ -72,7 +77,7 @@ Deno.serve(async (req) => {
     const { data: contaExistente } = await sb
       .from('profiles')
       .select('id, plano')
-      .eq('whatsapp', telNorm.replace(/^55/, ''))  // armazena sem código do país
+      .eq('whatsapp', telNorm.replace(/^55/, ''))
       .eq('whatsapp_verificado', true)
       .maybeSingle();
 
@@ -85,7 +90,6 @@ Deno.serve(async (req) => {
 
     // Gerar código de 6 dígitos
     const codigo = String(Math.floor(100000 + Math.random() * 900000));
-    const secret = Deno.env.get('OTP_SECRET') || 'mestrepro-otp-fallback-secret';
     const hash = await hmacSHA256(codigo + telNorm, secret);
 
     // Salvar OTP no banco (expira em 10 min)

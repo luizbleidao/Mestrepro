@@ -1,4 +1,4 @@
-// MestrePro — Edge Function: email-sender v17
+// MestrePro — Edge Function: email-sender v18
 // Processa a fila email_queue e envia via Resend
 //
 // Chamado por:
@@ -121,6 +121,15 @@ const TEMPLATES: Record<string, (d: Record<string, string>) => { subject: string
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
+  // Auth: INTERNAL_SECRET — chamada apenas por pg_cron ou admin autorizado
+  const internalSecret = Deno.env.get('INTERNAL_SECRET') || '';
+  const providedSecret = req.headers.get('x-internal-secret') || '';
+  if (!internalSecret || providedSecret !== internalSecret) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
+  }
+
   const resendKey = Deno.env.get('RESEND_API_KEY');
   const fromEmail = Deno.env.get('EMAIL_FROM') || 'MestrePro <noreply@mestrepro.space>';
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -185,7 +194,7 @@ serve(async (req: Request) => {
           'Authorization': `Bearer ${resendKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ from: fromEmail, to: [item.email], subject, html }),
+        body: JSON.stringify({ from: fromEmail, to: [item.email], subject, html, reply_to: Deno.env.get('EMAIL_REPLY_TO') || fromEmail }),
       });
 
       if (res.ok) {

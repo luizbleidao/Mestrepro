@@ -56,6 +56,11 @@ serve(async (req: Request) => {
       return erroResponse('Campos obrigatórios: tipo_superficie, condicao_atual, servico_recomendado', 400, req);
     }
 
+    // Validar superfície contra lista permitida
+    if (!SUPERFICIES_VALIDAS.includes(tipo_superficie)) {
+      return erroResponse(`Superfície inválida. Valores aceitos: ${SUPERFICIES_VALIDAS.join(', ')}`, 400, req);
+    }
+
     const userMessage = `
 Preciso de texto técnico para laudo de pintura:
 

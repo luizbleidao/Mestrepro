@@ -53,7 +53,7 @@ serve(async (req: Request) => {
       .from('orcamentos')
       .select('status, total, criado_em')
       .eq('user_id', userId)
-      .ilike('cliente', `%${clienteNome.replace(/[%_]/g, '')}%`) // remove wildcards maliciosos
+      .ilike('cliente', `%${clienteNome.replace(/[%_\\]/g, '\\$&')}%`) // escapa wildcards SQL
       .order('criado_em', { ascending: false })
       .limit(50);
 

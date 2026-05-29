@@ -18,24 +18,29 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { hmac } from 'https://deno.land/x/hmac@v2.0.1/mod.ts';
+
+// HMAC-SHA256 usando a crypto API nativa do Deno (sem dependências externas)
+async function hmacSHA256hex(secret: string, message: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 // ── Validação de assinatura HMAC do Mercado Pago ───────────────────────────
-// Docs: https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
 async function validarAssinaturaMP(req: Request, rawBody: string): Promise<boolean> {
   const secret = Deno.env.get('MP_WEBHOOK_SECRET');
   if (!secret) {
-    // Se a variável não foi configurada, bloqueia por segurança (fail-closed)
     console.error('[webhook-mp] MP_WEBHOOK_SECRET não configurada — requisição rejeitada.');
     return false;
   }
 
-  // O MP envia: x-signature: ts=<timestamp>,v1=<hash>
   const xSignature = req.headers.get('x-signature') || '';
   const xRequestId = req.headers.get('x-request-id') || '';
   const dataId     = new URL(req.url).searchParams.get('data.id') || '';
 
-  // Extrair ts e v1 do header
   const parts: Record<string, string> = {};
   for (const part of xSignature.split(',')) {
     const [k, v] = part.split('=');
@@ -47,21 +52,16 @@ async function validarAssinaturaMP(req: Request, rawBody: string): Promise<boole
     return false;
   }
 
-  // Montar o template exato que o MP assina: id:dataId;request-id:xRequestId;ts:ts;
   const template = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
-
-  // Calcular HMAC-SHA256
-  const calculado = hmac('sha256', secret, template, 'utf8', 'hex') as string;
+  const calculado = await hmacSHA256hex(secret, template);
 
   if (calculado !== v1) {
     console.error('[webhook-mp] Assinatura HMAC inválida. Possível requisição forjada.');
     return false;
   }
 
-  // Proteção anti-replay: rejeitar notificações com timestamp > 5 minutos de diferença
   const agora = Math.floor(Date.now() / 1000);
-  const tsNum = parseInt(ts, 10);
-  if (Math.abs(agora - tsNum) > 300) {
+  if (Math.abs(agora - parseInt(ts, 10)) > 300) {
     console.error('[webhook-mp] Timestamp fora da janela de 5 min — possível replay attack.');
     return false;
   }
@@ -137,6 +137,22 @@ serve(async (req: Request) => {
     const payment = await mpRes.json();
     console.log('[webhook-mp] payment status:', payment.status, 'external_ref:', payment.external_reference);
 
+    // ── Idempotency: checar se payment_id já foi processado ──────────────
+    const sbIdempotent = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+    const { data: pagamentoExistente } = await sbIdempotent
+      .from('pagamentos')
+      .select('id, status')
+      .eq('mp_payment_id', String(paymentId))
+      .maybeSingle();
+
+    if (pagamentoExistente) {
+      console.log(`[webhook-mp] Payment ${paymentId} já processado (status: ${pagamentoExistente.status}) — ignorando duplicata`);
+      return new Response('Já processado', { status: 200 });
+    }
+
     // ── Só processa pagamentos aprovados ──────────────────────────────────
     if (payment.status !== 'approved') {
       // Cancela plano se for recusa de recorrente / chargeback
@@ -195,6 +211,47 @@ serve(async (req: Request) => {
     }
 
     console.log(`[webhook-mp] ✅ Plano ${planoInfo.plano} ativado para user ${userId} até ${fim.toISOString()}`);
+
+    // ── Creditar comissão de indicação (se houver referrer) ───────────────
+    try {
+      const { data: comissaoData, error: comissaoErr } = await sb.rpc('creditar_comissao', {
+        p_indicado_id: userId,
+        p_valor_pago:  payment.transaction_amount,
+        p_plano:       planoInfo.plano,
+      });
+      if (comissaoErr) {
+        // Não falha o webhook — ausência de indicação é o caso mais comum
+        console.warn('[webhook-mp] creditar_comissao() aviso:', comissaoErr.message);
+      } else if (comissaoData?.ok) {
+        console.log(`[webhook-mp] 💰 Comissão R$ ${comissaoData.comissao_brl} creditada para referrer ${comissaoData.referrer_id}`);
+
+        // ── Disparar PIX automático para o referrer ───────────────────────
+        // Fire-and-forget: não bloqueia o webhook, falhas são registradas no banco
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+        const internalSecret = Deno.env.get('INTERNAL_SECRET') ?? '';
+        fetch(`${supabaseUrl}/functions/v1/pagar-comissao`, {
+          method: 'POST',
+          headers: {
+            'Content-Type':      'application/json',
+            'Authorization':     `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''}`,
+            'x-internal-secret': internalSecret,
+          },
+          body: JSON.stringify({
+            indicacao_id: comissaoData.indicacao_id,
+            referrer_id:  comissaoData.referrer_id,
+            comissao_brl: comissaoData.comissao_brl,
+          }),
+        }).then(r => r.json())
+          .then(r => console.log('[webhook-mp] pagar-comissao response:', JSON.stringify(r)))
+          .catch(e => console.warn('[webhook-mp] pagar-comissao falhou (não crítico):', String(e)));
+
+      } else {
+        console.log('[webhook-mp] creditar_comissao: sem indicação ativa para este usuário.');
+      }
+    } catch (comissaoEx) {
+      // Nunca derrubar o webhook por causa de comissão — é não-crítico
+      console.warn('[webhook-mp] creditar_comissao exception (não crítico):', String(comissaoEx));
+    }
 
     // ── Registrar pagamento na tabela pagamentos ───────────────────────────
     await sb.from('pagamentos').upsert({

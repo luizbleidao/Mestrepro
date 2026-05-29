@@ -59,6 +59,7 @@ function valorExtenso(n) {
 // CONTRATOS
 // ──────────────────────────────────────────────────────────────
 let _contratos = [];
+let _orcasCache = null; // cache de orçamentos para evitar N+1 no modal de contratos
 
 async function loadContratos() {
   const el = document.getElementById('s-contratos');
@@ -111,21 +112,24 @@ function renderContratos() {
 async function openContratoModal(contratoId) {
   const existing = contratoId ? _contratos.find(c => c.id === contratoId) : null;
 
-  // Buscar orçamentos do Supabase (ou localStorage apenas no modo demo)
+  // Usar cache para evitar N+1: busca orçamentos apenas na primeira abertura do modal
   let _orcasParaContrato = [];
   const _uid = USER?.id;
   if (_uid && _uid !== 'demo') {
-    try {
-      const { data, error } = await sb.from('orcamentos')
-        .select('id, numero, cliente, total, endereco, dados')
-        .eq('user_id', _uid)
-        .order('criado_em', { ascending: false })
-        .limit(50);
-      if (!error && data) _orcasParaContrato = data;
-      else if (error) console.warn('[MestrePro] openContratoModal: erro ao buscar orçamentos:', error.message);
-    } catch (e) {
-      console.warn('[MestrePro] openContratoModal: exceção ao buscar orçamentos:', String(e));
+    if (!_orcasCache) {
+      try {
+        const { data, error } = await sb.from('orcamentos')
+          .select('id, numero, cliente, total, endereco, dados')
+          .eq('user_id', _uid)
+          .order('criado_em', { ascending: false })
+          .limit(50);
+        if (!error && data) _orcasCache = data;
+        else if (error) console.warn('[MestrePro] openContratoModal: erro ao buscar orçamentos:', error.message);
+      } catch (e) {
+        console.warn('[MestrePro] openContratoModal: exceção ao buscar orçamentos:', String(e));
+      }
     }
+    _orcasParaContrato = _orcasCache || [];
   } else {
     try {
       _orcasParaContrato = JSON.parse(localStorage.getItem('orcamentos_' + (_uid || 'demo')) || '[]');
