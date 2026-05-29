@@ -480,10 +480,17 @@ function _saveLocalCache(){
 }
 
 // Grava orçamento no Supabase (fonte da verdade) e atualiza cache
+// Retorna true se sincronizou com sucesso, false se ficou só local
 async function _syncOrcSupabase(obj){
-  const userId=_getUserId(); if(!userId)return;
+  const userId=_getUserId(); if(!userId)return false;
   try{
-    await _sb.from('orcamentos').upsert({
+    // Garantir que o cliente tem sessão ativa antes de tentar salvar
+    const { data: sessionData } = await _sb.auth.getSession();
+    if(!sessionData?.session){
+      console.warn('[MestrePro] _syncOrcSupabase: sem sessão ativa');
+      _saveLocalCache(); return false;
+    }
+    const { error } = await _sb.from('orcamentos').upsert({
       id:obj.id, user_id:userId, platform:'pintorpro',
       numero:obj.numero, cliente:obj.cliente||'', endereco:obj.endereco||'',
       status:obj.status||'rascunho', total:obj.total||0, mode:obj.mode||'prod',
@@ -491,12 +498,11 @@ async function _syncOrcSupabase(obj){
       data_completa:obj,
       atualizado_em:new Date().toISOString()
     },{onConflict:'id'});
-    // Atualiza cache local após sucesso no Supabase
-    _saveLocalCache();
+    if(error){ console.warn('[MestrePro] upsert error:', error.message); _saveLocalCache(); return false; }
+    _saveLocalCache(); return true;
   }catch(e){
-    console.warn('Sync Supabase falhou — dado salvo localmente:', e.message);
-    // Mesmo sem Supabase, o dado já está em _orcas (não perde nada)
-    _saveLocalCache();
+    console.warn('[MestrePro] Sync Supabase falhou:', e.message);
+    _saveLocalCache(); return false;
   }
 }
 
@@ -1288,10 +1294,13 @@ async function salvarOrcamento(){
     _orcas.push(obj);
   }
   currentId=obj.id;
-  // Supabase é a escrita primária; localStorage é atualizado dentro de _syncOrcSupabase
-  await _syncOrcSupabase(obj);
+  const syncOk = await _syncOrcSupabase(obj);
   _notifyParent('pp_orc_updated');
-  alert('✅ Orçamento #'+obj.numero+' salvo!');
+  if(syncOk){
+    alert('✅ Orçamento #'+obj.numero+' salvo e sincronizado!');
+  } else {
+    alert('⚠️ Orçamento #'+obj.numero+' salvo localmente.\n\nNÃO FOI SINCRONIZADO com a nuvem — não aparecerá em outros dispositivos.\n\nVerifique sua conexão ou faça login novamente e salve de novo.');
+  }
 }
 
 
