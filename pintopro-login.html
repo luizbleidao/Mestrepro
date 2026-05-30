@@ -246,6 +246,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
           <label>Senha</label>
           <input id="cs" type="password" placeholder="Mínimo 6 caracteres">
         </div>
+        <div style="margin:12px 0 4px;display:flex;flex-direction:column;gap:10px;">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:12px;color:var(--text2);line-height:1.5;">
+            <input type="checkbox" id="chk-termos" style="margin-top:2px;accent-color:var(--acc);flex-shrink:0;">
+            <span>Li e aceito os <a href="termos.html" target="_blank" style="color:var(--acc);text-decoration:none;font-weight:600;">Termos de Uso</a> e a <a href="termos.html" target="_blank" style="color:var(--acc);text-decoration:none;font-weight:600;">Política de Privacidade</a> do MestrePro. <span style="color:#ef4444;">*</span></span>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:12px;color:var(--text2);line-height:1.5;">
+            <input type="checkbox" id="chk-marketing" style="margin-top:2px;accent-color:var(--acc);flex-shrink:0;" checked>
+            <span>Aceito receber dicas, novidades e comunicações de marketing do MestrePro por e-mail. Posso cancelar a qualquer momento.</span>
+          </label>
+        </div>
         <button class="btn btn-acc" id="btn-cad" onclick="cadastrar()">Criar conta e escolher plano</button>
       </div>
     </div>
@@ -504,6 +514,9 @@ async function cadastrar(){
   const perfil = document.getElementById('cp').value || 'pintor';
   hideMsg('ec');
 
+  if(!document.getElementById('chk-termos').checked){
+    showMsg('ec','Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar uma conta.','err'); return;
+  }
   if(!nome || !email || !cpfRaw || !senha || senha.length < 6){
     showMsg('ec','Preencha todos os campos (senha mín. 6 caracteres).','err'); return;
   }
@@ -539,6 +552,7 @@ async function cadastrar(){
     }
 
     if(signUpData?.user?.id){
+      const aceitouMarketing = document.getElementById('chk-marketing').checked;
       const { error: profErr } = await sb.from('profiles').upsert({
         id: signUpData.user.id,
         nome, tel, cidade, perfil,
@@ -547,6 +561,10 @@ async function cadastrar(){
         plano: 'trial',
         ativo: true,
         criado_em: new Date().toISOString(),
+        consentimento_termos_em: new Date().toISOString(),
+        consentimento_termos_ip: null,
+        consentimento_marketing: aceitouMarketing,
+        consentimento_marketing_em: aceitouMarketing ? new Date().toISOString() : null,
       }, { onConflict: 'id' });
       if(profErr) console.warn('[MestrePro] upsert profiles:', profErr.message);
       sessionStorage.setItem('pp_user_id', signUpData.user.id);
