@@ -705,6 +705,16 @@ function openChangePlan(id){
         ${planos.map(p=>`<option value="${p}" ${p===u.plano?'selected':''}>${PLANO_LABEL[p]||p}</option>`).join('')}
       </select>
     </div>
+    <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:12px 14px;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text)">
+        <input type="checkbox" id="plano-brinde-chk" style="width:16px;height:16px;accent-color:#f59e0b;cursor:pointer">
+        🎁 Brinde / Cortesia — não conta no faturamento
+      </label>
+      <p style="font-size:11px;color:var(--text3);margin:6px 0 0 26px">Acesso liberado sem pagamento. Não aparece no MRR.</p>
+    </div>
+    <div class="field"><label>Motivo / observação interna (opcional)</label>
+      <input id="plano-motivo" type="text" placeholder="Ex: Parceiro, influencer, teste, presente..." style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+    </div>
     <div class="modal-actions">
       <button class="btn btn-acc" onclick="confirmarPlano('${id}')">✓ Confirmar alteração</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-usr')">Cancelar</button>
@@ -714,13 +724,17 @@ function openChangePlan(id){
 
 async function confirmarPlano(id){
   const novoPlano = document.getElementById('novo-plano-sel').value;
-  const { data, error } = await sb.rpc('admin_alterar_plano', { p_user_id: id, p_plano: novoPlano });
+  const isBrinde  = document.getElementById('plano-brinde-chk')?.checked || false;
+  const motivo    = document.getElementById('plano-motivo')?.value?.trim() || null;
+  const { error } = await sb.rpc('admin_alterar_plano', {
+    p_user_id: id, p_plano: novoPlano, p_brinde: isBrinde, p_motivo: motivo
+  });
   if(error){ notif('❌ ' + error.message); return; }
   const u = allUsers.find(x=>x.id===id); if(u) u.plano=novoPlano;
   closeModal('modal-usr');
   renderUsersTable(allUsers);
   updateStats();
-  notif(`✅ Plano alterado para ${PLANO_LABEL[novoPlano]||novoPlano}!`);
+  notif(`${isBrinde?'🎁':'✅'} Plano ${PLANO_LABEL[novoPlano]||novoPlano} ativado${isBrinde?' como brinde':''} para ${u?.nome||'usuário'}!`);
 }
 
 // ── Pagamentos ────────────────────────────────────────────
@@ -1102,9 +1116,15 @@ function abrirAlterarPlano(userId, planoAtual, assId){
         <option value="ia-pro">IA Pro</option>
       </select>
     </div>
+    <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:12px 14px;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text)">
+        <input type="checkbox" id="ass-brinde-chk" style="width:16px;height:16px;accent-color:#f59e0b;cursor:pointer">
+        🎁 Brinde / Cortesia — não conta no faturamento
+      </label>
+    </div>
     <div class="field" style="margin-bottom:14px">
-      <label>Motivo (opcional)</label>
-      <input id="novo-plano-motivo" type="text" placeholder="Ex: Reembolso solicitado, ajuste manual..." style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+      <label>Motivo / observação interna (opcional)</label>
+      <input id="novo-plano-motivo" type="text" placeholder="Ex: Parceiro, influencer, teste, presente..." style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="confirmarAlterarPlano('${userId}','${assId}')">✓ Confirmar alteração</button>
@@ -1115,7 +1135,9 @@ function abrirAlterarPlano(userId, planoAtual, assId){
 async function confirmarAlterarPlano(userId, assId){
   const novoPlano = el('novo-plano-sel')?.value;
   if(!novoPlano){ notif('⚠️ Selecione o plano'); return; }
-  const { error } = await sb.rpc('admin_alterar_plano', { p_user_id: userId, p_plano: novoPlano });
+  const isBrinde = el('ass-brinde-chk')?.checked || false;
+  const motivo   = el('novo-plano-motivo')?.value?.trim() || null;
+  const { error } = await sb.rpc('admin_alterar_plano', { p_user_id: userId, p_plano: novoPlano, p_brinde: isBrinde, p_motivo: motivo });
   if(error){ notif('❌ ' + error.message); return; }
   const u = allUsers.find(x=>x.id===userId); if(u) u.plano=novoPlano;
   closeModal('modal-usr');
