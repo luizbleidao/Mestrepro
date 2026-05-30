@@ -1,8 +1,7 @@
 /**
- * MestrePro — criar-preferencia-mp v3
- * verify_jwt: false — auth manual via getUser() (igual às funções IA)
- * Preços lidos da tabela planos_config (editável pelo admin).
- * Aplica desconto percentual se promoção ativa.
+ * MestrePro — criar-preferencia-mp v4
+ * Auth: sbAdmin.auth.getUser(token) — igual ao padrão robusto do Supabase
+ * verify_jwt: false — validação manual
  */
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
@@ -50,25 +49,29 @@ serve(async (req: Request) => {
 
   try {
     const sbUrl  = Deno.env.get('SUPABASE_URL') ?? '';
-    const sbAnon = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const sbSvc  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // ── Auth manual (verify_jwt: false — igual às funções IA) ──────────────────
-    const authHeader = req.headers.get('authorization') ?? '';
-    if (!authHeader.startsWith('Bearer ')) {
+    // ── Auth: extrair token do header ─────────────────────────────────────────
+    const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorization') ?? '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    if (!token) {
+      console.warn('[criar-preferencia-mp] Token ausente no header Authorization');
       return json({ error: 'Não autenticado. Faça login para assinar.' }, 401);
     }
 
-    const sbUser = createClient(sbUrl, sbAnon, {
-      global: { headers: { authorization: authHeader } },
-    });
-    const { data: { user }, error: authErr } = await sbUser.auth.getUser();
+    // ── Validar token com sbAdmin.auth.getUser(token) ──────────────────────────
+    const sbAdmin = createClient(sbUrl, sbSvc);
+    const { data: { user }, error: authErr } = await sbAdmin.auth.getUser(token);
+
     if (authErr || !user) {
-      console.warn('[criar-preferencia-mp] Auth falhou:', authErr?.message);
+      console.warn('[criar-preferencia-mp] Token inválido:', authErr?.message ?? 'user null');
       return json({ error: 'Não autenticado. Faça login para assinar.' }, 401);
     }
 
-    // ── Validar body ────────────────────────────────────────────────────────────
+    console.log(`[criar-preferencia-mp] Usuário autenticado: ${user.email}`);
+
+    // ── Validar body ──────────────────────────────────────────────────────────
     let body: { plano_id?: string; periodo?: string };
     try { body = await req.json(); }
     catch { return json({ error: 'Body inválido.' }, 400); }
@@ -77,13 +80,12 @@ serve(async (req: Request) => {
     const periodo = (body.periodo ?? 'mensal').toLowerCase().trim();
 
     if (!planoId) return json({ error: 'plano_id é obrigatório.' }, 422);
-    if (!['mensal', 'anual'].includes(periodo)) return json({ error: 'Período inválido. Use: mensal ou anual' }, 422);
+    if (!['mensal', 'anual'].includes(periodo)) return json({ error: 'Período inválido.' }, 422);
 
     const keys = PLANO_KEY[planoId];
     if (!keys) return json({ error: `Plano inválido: "${planoId}"` }, 422);
 
-    // ── Buscar preços do banco ──────────────────────────────────────────────────
-    const sbAdmin = createClient(sbUrl, sbSvc);
+    // ── Buscar preços do banco ────────────────────────────────────────────────
     const { data: planosData, error: dbErr } = await sbAdmin.rpc('get_planos_config');
 
     let nomePlano: string;
@@ -91,48 +93,29 @@ serve(async (req: Request) => {
     let valorFinal: number;
 
     if (dbErr || !planosData) {
-      console.warn('[criar-preferencia-mp] DB indisponível, usando fallback:', dbErr?.message);
+      console.warn('[criar-preferencia-mp] DB fallback:', dbErr?.message);
       const fb = PLANOS_FALLBACK[planoId];
       if (!fb) return json({ error: `Plano não encontrado: "${planoId}"` }, 422);
-      nomePlano  = fb.nome;
-      descricao  = fb.descricao;
+      nomePlano = fb.nome; descricao = fb.descricao;
       valorFinal = periodo === 'anual' ? fb.anual : fb.mensal;
     } else {
-      const plano = (planosData as Array<Record<string, unknown>>).find(
-        (p) => p.id === planoId && p.ativo
-      );
-      if (!plano) return json({ error: `Plano inativo ou não encontrado: "${planoId}"` }, 422);
-
-      nomePlano  = String(plano.nome);
-      descricao  = String(plano.descricao || plano.nome);
-      valorFinal = periodo === 'anual'
-        ? Number(plano.preco_anual_final)
-        : Number(plano.preco_mensal_final);
-
-      if (plano.tem_promo && plano.promo_label) {
-        nomePlano = `${plano.nome} — ${plano.promo_label}`;
-      }
+      const plano = (planosData as Array<Record<string, unknown>>).find(p => p.id === planoId && p.ativo);
+      if (!plano) return json({ error: `Plano inativo: "${planoId}"` }, 422);
+      nomePlano = String(plano.nome);
+      descricao = String(plano.descricao || plano.nome);
+      valorFinal = periodo === 'anual' ? Number(plano.preco_anual_final) : Number(plano.preco_mensal_final);
+      if (plano.tem_promo && plano.promo_label) nomePlano = `${plano.nome} — ${plano.promo_label}`;
     }
 
     const planoKey = periodo === 'anual' ? keys.anual : keys.mensal;
     const mpToken  = Deno.env.get('MP_ACCESS_TOKEN') ?? '';
-    if (!mpToken) {
-      console.error('[criar-preferencia-mp] MP_ACCESS_TOKEN não configurado.');
-      return json({ error: 'Configuração de pagamento indisponível.' }, 500);
-    }
+    if (!mpToken) return json({ error: 'Configuração de pagamento indisponível.' }, 500);
 
     const appUrl = Deno.env.get('APP_URL') ?? 'https://mestrepro.space';
     const extRef = `${user.id}:${planoKey}`;
 
     const preference = {
-      items: [{
-        id: planoKey,
-        title: nomePlano,
-        description: descricao,
-        quantity: 1,
-        unit_price: valorFinal,
-        currency_id: 'BRL',
-      }],
+      items: [{ id: planoKey, title: nomePlano, description: descricao, quantity: 1, unit_price: valorFinal, currency_id: 'BRL' }],
       external_reference: extRef,
       payer: { email: user.email ?? '' },
       back_urls: {
@@ -155,23 +138,17 @@ serve(async (req: Request) => {
 
     if (!mpRes.ok) {
       const mpErr = await mpRes.text();
-      console.error('[criar-preferencia-mp] MP API error:', mpRes.status, mpErr);
+      console.error('[criar-preferencia-mp] MP error:', mpRes.status, mpErr);
       return json({ error: 'Erro ao criar preferência de pagamento.' }, 502);
     }
 
     const mpData = await mpRes.json();
-    console.log(`[criar-preferencia-mp] ✅ ${mpData.id} | user:${user.id} | plano:${planoKey} | valor:${valorFinal}`);
+    console.log(`[criar-preferencia-mp] ✅ ${mpData.id} | ${user.email} | ${planoKey} | R$${valorFinal}`);
 
-    return json({
-      preference_id: mpData.id,
-      init_point: mpData.init_point,
-      sandbox_init_point: mpData.sandbox_init_point,
-      plano_key: planoKey,
-      valor: valorFinal,
-    });
+    return json({ preference_id: mpData.id, init_point: mpData.init_point, sandbox_init_point: mpData.sandbox_init_point, plano_key: planoKey, valor: valorFinal });
 
   } catch (err) {
-    console.error('[criar-preferencia-mp] Erro inesperado:', err);
+    console.error('[criar-preferencia-mp] Erro:', err);
     return json({ error: 'Erro interno. Tente novamente.' }, 500);
   }
 });
