@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MestrePro — Admin</title>
+<link rel="manifest" href="/manifest-admin.json">
+<meta name="theme-color" content="#5b7fff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Admin">
+<link rel="apple-touch-icon" href="/meta-app-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -187,6 +194,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
       <span style="font-size:12px;color:var(--text3)" id="adm-nome-top"></span>
     </div>
     <div class="topbar-r">
+      <button id="btn-instalar-app" class="btn btn-sm" onclick="instalarApp()" style="display:none;gap:6px;background:var(--acc);color:#fff;border:none">⬇ Instalar App</button>
       <button class="theme-t" onclick="toggleTheme()" id="thm-btn">🌙 Escuro</button>
       <button class="btn btn-sm btn-ghost" onclick="adminLogout()">↩ Sair</button>
     </div>
@@ -1474,6 +1482,30 @@ async function salvarPlanoConfig(id, btn){
   closeModal('modal-usr');
   renderPlanosConfig();
   notif('✅ Plano atualizado! Próximo checkout já usa o novo preço.','ok');
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// Botão de instalação do PWA
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('btn-instalar-app');
+  if (btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('btn-instalar-app');
+  if (btn) btn.style.display = 'none';
+  deferredPrompt = null;
+});
+function instalarApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
 }
 </script>
 </body>
