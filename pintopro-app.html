@@ -1519,34 +1519,56 @@ function renderPlanosGrid(){
   }).join('');
 }
 
-function abrirModalPlanos(){
+async function abrirModalPlanos(){
   document.getElementById('up-modal').classList.add('open');
+  // Atualizar preços do banco antes de renderizar
+  try {
+    const { data } = await supabase.rpc('get_planos_config');
+    if(data && data.length) {
+      data.filter(c=>c.ativo).forEach(c => {
+        const p = PLANOS_CONFIG.find(x=>x.id===c.id);
+        if(p){
+          p.preco      = Number(c.preco_mensal_final);
+          p.precoAnual = Number(c.preco_anual_final);
+          p.temPromo   = c.tem_promo;
+          p.promoLabel = c.promo_label || (c.desconto_pct+'% OFF');
+          p.nome       = c.nome;
+        }
+      });
+    }
+  } catch{}
   renderPlanosGrid();
 }
 function fecharModalPlanos(){
   document.getElementById('up-modal').classList.remove('open');
 }
 
-function irCheckout(planoId, anual){
+async function irCheckout(planoId, anual){
   try { localStorage.setItem('mp_checkout_intencao', JSON.stringify({planoId, anual, userId: USER?.id, email: USER?.email, ts: Date.now()})); } catch{}
-  const links = {
-    basico:  anual ? window.PP?.mpBasicoAnual  || '' : window.PP?.mpBasico  || '',
-    pro:     anual ? window.PP?.mpProAnual     || '' : window.PP?.mpPro     || '',
-    equipe:  anual ? window.PP?.mpEquipeAnual  || '' : window.PP?.mpEquipe  || '',
-    'ia-pro':anual ? window.PP?.mpIaProAnual   || '' : window.PP?.mpIaPro   || '',
-  };
-  let link = links[planoId];
-  if (link && USER?.id) {
-    const idNormalizado = planoId.replace('-', '');
-    const periodo       = anual ? 'anual' : 'mensal';
-    const planoKey      = `mestrepro_${idNormalizado}_${periodo}`;
-    link = `${link}?external_reference=${encodeURIComponent(USER.id + ':' + planoKey)}`;
+
+  // Mostrar feedback no botão clicado
+  const btn = event?.target;
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Gerando checkout...'; }
+
+  try {
+    const { data:{ session } } = await supabase.auth.getSession();
+    if(!session) throw new Error('sem sessão');
+
+    const res = await fetch(`${window.PP.supabaseUrl}/functions/v1/criar-preferencia-mp`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${session.access_token}` },
+      body: JSON.stringify({ plano_id: planoId, periodo: anual ? 'anual' : 'mensal' }),
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.init_point) throw new Error(data.error || 'sem init_point');
+
+    fecharModalPlanos();
+    window.location.href = data.init_point;
+  } catch(e) {
+    if(btn){ btn.disabled = false; btn.textContent = `Assinar ${planoId} →`; }
+    notif('❌ Erro ao gerar checkout: ' + e.message, 'err');
   }
-  if (link) { window.open(link, '_blank', 'noopener,noreferrer'); }
-  else {
-    window.location.href = 'pintopro-planos.html?plano=' + planoId + (anual ? '&periodo=anual' : '');
-  }
-  fecharModalPlanos();
 }
 
 // ══ ONBOARDING CHECKLIST ══
