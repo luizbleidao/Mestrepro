@@ -104,177 +104,186 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="notif" id="notif"></div>
 
 <script>
-// Links e preços vêm de pp-config.js — fonte única de verdade
-const _PP = window.PP;
-const PLANOS = [
-  {
-    id: 'basico',
-    nome: 'Básico',
-    desc: 'Para quem está começando',
-    mensal: _PP.precos.basico.mensal, anual: _PP.precos.basico.eq, totalAnual: _PP.precos.basico.anual,
-    mpMensal: _PP.mpBasico,
-    mpAnual:  _PP.mpBasicoAnual,
+// Preços e checkout via edge function — não dependem de links estáticos do MP
+const PLANOS_META = {
+  basico: {
     pop: false,
+    aviso: null,
     feats: [
-      'Orçamentos ilimitados',
-      '10 laudos por mês',
-      'Contratos e recibos',
-      'Agenda de visitas',
-      'Assinatura digital',
-      {t:'IA para orçamentos', off:true},
-      {t:'WhatsApp automático', off:true},
+      'Orçamentos ilimitados','10 laudos por mês','Contratos e recibos',
+      'Agenda de visitas','Assinatura digital',
+      {t:'IA para orçamentos',off:true},{t:'WhatsApp automático',off:true},
     ]
   },
-  {
-    id: 'pro',
-    nome: 'Pro',
-    desc: 'Para quem quer crescer',
-    mensal: _PP.precos.pro.mensal, anual: _PP.precos.pro.eq, totalAnual: _PP.precos.pro.anual,
-    mpMensal: _PP.mpPro,
-    mpAnual:  _PP.mpProAnual,
+  pro: {
     pop: true,
+    aviso: null,
     feats: [
-      'Tudo do Básico',
-      'Laudos técnicos ilimitados',
-      'PDF com sua marca',
-      'Dashboard financeiro',
-      'Histórico de clientes',
-      'Envio por WhatsApp',
-      {t:'IA gera orçamento (em breve)', off:true},
+      'Tudo do Básico','Laudos técnicos ilimitados','PDF com sua marca',
+      'Dashboard financeiro','Histórico de clientes','Envio por WhatsApp',
+      {t:'IA gera orçamento (em breve)',off:true},
     ]
   },
-  {
-    // ⚠️  Plano Equipe: funcionalidades multi-usuário ainda em desenvolvimento.
-    // Assinar este plano garante acesso antecipado quando forem lançadas.
-    id: 'equipe',
-    nome: 'Equipe',
-    desc: 'Multi-usuário — funcionalidades em desenvolvimento',
-    mensal: _PP.precos.equipe.mensal, anual: _PP.precos.equipe.eq, totalAnual: _PP.precos.equipe.anual,
-    mpMensal: _PP.mpEquipe,
-    mpAnual:  _PP.mpEquipeAnual,
+  equipe: {
     pop: false,
     aviso: '⚠️ Funcionalidades multi-usuário em desenvolvimento. Você terá acesso ao plano Pro completo até o lançamento.',
     feats: [
-      'Tudo do Pro (disponível agora)',
-      'Suporte prioritário',
-      {t:'Até 5 usuários — em desenvolvimento', off:true},
-      {t:'Painéis por técnico — em desenvolvimento', off:true},
-      {t:'Relatórios por equipe — em desenvolvimento', off:true},
-      {t:'IA gerador de conteúdo — em desenvolvimento', off:true},
+      'Tudo do Pro (disponível agora)','Suporte prioritário',
+      {t:'Até 5 usuários — em desenvolvimento',off:true},
+      {t:'Painéis por técnico — em desenvolvimento',off:true},
+      {t:'Relatórios por equipe — em desenvolvimento',off:true},
     ]
   },
-  {
-    // ⚠️  Plano IA Pro: todos os recursos de IA ainda em desenvolvimento.
-    // É um plano de acesso antecipado — garante o menor preço no lançamento.
-    id: 'ia-pro',
-    nome: 'IA Pro',
-    desc: 'Acesso antecipado — preço travado no lançamento da IA',
-    mensal: _PP.precos['ia-pro'].mensal, anual: _PP.precos['ia-pro'].eq, totalAnual: _PP.precos['ia-pro'].anual,
-    mpMensal: _PP.mpIaPro,
-    mpAnual:  _PP.mpIaProAnual,
+  'ia-pro': {
     pop: false,
-    aviso: '⚠️ Este é um plano de acesso antecipado (early access). Todos os recursos de IA estão em desenvolvimento. Ao assinar, você trava o preço atual e tem acesso ao plano Equipe até o lançamento completo.',
+    aviso: '⚠️ Plano de acesso antecipado. Recursos de IA em desenvolvimento. Ao assinar, você trava o preço e tem acesso ao plano Equipe até o lançamento.',
     feats: [
       'Tudo do Equipe (disponível agora)',
       '🔒 Preço travado — sem reajuste no lançamento',
-      {t:'IA gera orçamentos — em desenvolvimento', off:true},
-      {t:'IA analisa foto de patologia — em desenvolvimento', off:true},
-      {t:'IA responde clientes via WhatsApp — em desenvolvimento', off:true},
-      {t:'Painel de afiliados 30% — em desenvolvimento', off:true},
-      {t:'Gerador de posts/anúncios — em desenvolvimento', off:true},
+      {t:'IA gera orçamentos — em desenvolvimento',off:true},
+      {t:'IA analisa foto de patologia — em desenvolvimento',off:true},
+      {t:'IA responde clientes — em desenvolvimento',off:true},
     ]
   },
-];
+};
 
+// Dados dinâmicos do banco (preenchidos em init())
+let PLANOS = [];
 let anual = false;
 let planoAtual = '';
 let userId = '';
+let sbClient = null;
 
-// Pega dados do usuário logado
 try {
   planoAtual = sessionStorage.getItem('pp_user_plano') || '';
   userId     = sessionStorage.getItem('pp_user_id')   || '';
 } catch {}
 
-// Se não tiver userId no sessionStorage, tenta buscar do Supabase Auth
-async function carregarUserId() {
-  if (userId) return;
-  try {
-    const sb = window.supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user?.id) {
-      userId = session.user.id;
-      sessionStorage.setItem('pp_user_id', userId);
-    }
-  } catch {}
-  renderPlans(); // re-renderiza com userId preenchido
-}
-carregarUserId();
+async function init() {
+  sbClient = window.supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
 
-/**
- * Constrói a URL de checkout do MP com external_reference no formato userId:planoKey
- * O webhook espera exatamente esse formato para ativar o plano correto.
- */
-function buildMpLink(baseLink, planoId, isAnual) {
-  if (!baseLink) return '#';
-  // Se ainda não temos o userId, o checkout é bloqueado no clique (ver onclick abaixo)
-  // Não retornamos o link sem external_reference — sem ele o webhook não ativa o plano
-  if (!userId) return '#';
-  // ia-pro → iapro  (sem hífen, conforme PLANO_MAP da edge function)
-  const idNormalizado = planoId.replace('-', '');
-  const periodo       = isAnual ? 'anual' : 'mensal';
-  const planoKey      = `mestrepro_${idNormalizado}_${periodo}`;
-  const extRef        = encodeURIComponent(`${userId}:${planoKey}`);
-  return `${baseLink}?external_reference=${extRef}`;
+  // Buscar userId se não estiver em sessão
+  if (!userId) {
+    try {
+      const { data: { session } } = await sbClient.auth.getSession();
+      if (session?.user?.id) {
+        userId = session.user.id;
+        sessionStorage.setItem('pp_user_id', userId);
+      }
+    } catch {}
+  }
+
+  // Buscar preços do banco
+  const { data: configData, error } = await sbClient.rpc('get_planos_config');
+
+  if (configData && !error) {
+    PLANOS = configData
+      .filter(c => c.ativo)
+      .map(c => {
+        const meta = PLANOS_META[c.id] || { pop: false, aviso: null, feats: [] };
+        return {
+          id:         c.id,
+          nome:       c.nome,
+          desc:       c.descricao || '',
+          mensal:     Number(c.preco_mensal_final),
+          anualEq:    Math.round(Number(c.preco_anual_final) / 12),
+          totalAnual: Number(c.preco_anual_final),
+          mensal_orig:c.tem_promo ? Number(c.preco_mensal) : null,
+          anualEq_orig:c.tem_promo ? Math.round(Number(c.preco_anual)/12) : null,
+          temPromo:   c.tem_promo,
+          promoLabel: c.promo_label || (c.desconto_pct + '% OFF'),
+          ...meta,
+        };
+      });
+  } else {
+    // Fallback com preços do pp-config.js
+    const _PP = window.PP;
+    PLANOS = [
+      { id:'basico',  nome:'Básico',  desc:'Para quem está começando',  mensal:_PP.precos.basico.mensal,   anualEq:_PP.precos.basico.eq,   totalAnual:_PP.precos.basico.anual,   temPromo:false, ...PLANOS_META.basico },
+      { id:'pro',     nome:'Pro',     desc:'Para quem quer crescer',     mensal:_PP.precos.pro.mensal,      anualEq:_PP.precos.pro.eq,      totalAnual:_PP.precos.pro.anual,      temPromo:false, ...PLANOS_META.pro },
+      { id:'equipe',  nome:'Equipe',  desc:'Multi-usuário',              mensal:_PP.precos.equipe.mensal,   anualEq:_PP.precos.equipe.eq,   totalAnual:_PP.precos.equipe.anual,   temPromo:false, ...PLANOS_META.equipe },
+      { id:'ia-pro',  nome:'IA Pro',  desc:'IA completa',                mensal:_PP.precos['ia-pro'].mensal,anualEq:_PP.precos['ia-pro'].eq,totalAnual:_PP.precos['ia-pro'].anual,temPromo:false, ...PLANOS_META['ia-pro'] },
+    ];
+  }
+
+  renderPlans();
+
+  const params = new URLSearchParams(location.search);
+  if (params.get('anual') === '1') {
+    anual = true;
+    document.getElementById('cyc-toggle').classList.add('on');
+    renderPlans();
+  }
 }
 
-// ── Analytics helper ─────────────────────────────────────────────────────────
+init();
+
+// ── Analytics ────────────────────────────────────────────────────────────────
 function _track(event, params={}){
   try{ if(typeof gtag!=='undefined') gtag('event', event, params); } catch(e){}
   try{ if(typeof fbq !=='undefined') fbq('track', event, params);  } catch(e){}
 }
 
-// Intercepta cliques em links de checkout quando userId ainda não carregou
-function handleCheckoutClick(evt, planoId, isAnual) {
-  const precos={basico:49,pro:99,equipe:179,'ia-pro':249};
+// ── Checkout via Edge Function ───────────────────────────────────────────────
+async function handleCheckoutClick(evt, planoId, isAnualClick) {
+  evt.preventDefault();
+
+  const p = PLANOS.find(x=>x.id===planoId);
   _track('InitiateCheckout', {
-    content_name: `${planoId}_${isAnual?'anual':'mensal'}`,
+    content_name: `${planoId}_${isAnualClick?'anual':'mensal'}`,
     currency: 'BRL',
-    value: precos[planoId] || 0
+    value: isAnualClick ? (p?.totalAnual||0) : (p?.mensal||0),
   });
+
   if (!userId) {
-    evt.preventDefault();
-    notifPlanos('⏳ Aguarde — identificando sua conta...');
-    // Aguardar até 3s por carregarUserId() e tentar de novo
+    notifPlanos('⏳ Identificando sua conta...');
     let tentativas = 0;
-    const espera = setInterval(() => {
+    const espera = setInterval(async () => {
       tentativas++;
-      if (userId) {
-        clearInterval(espera);
-        const link = buildMpLink(isAnual ? PLANOS.find(p=>p.id===planoId)?.mpAnual : PLANOS.find(p=>p.id===planoId)?.mpMensal, planoId, isAnual);
-        if (link && link !== '#') window.open(link, '_blank');
-      } else if (tentativas >= 6) {
-        clearInterval(espera);
-        notifPlanos('❌ Não foi possível identificar sua conta. Faça login novamente.');
-      }
+      if (userId) { clearInterval(espera); await irParaCheckout(planoId, isAnualClick); }
+      else if (tentativas >= 6) { clearInterval(espera); notifPlanos('❌ Faça login para assinar.'); }
     }, 500);
     return;
   }
-  // userId disponível — deixa o link href funcionar normalmente
+
+  await irParaCheckout(planoId, isAnualClick);
+}
+
+async function irParaCheckout(planoId, isAnualClick) {
+  notifPlanos('⏳ Preparando checkout...');
+
+  try {
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (!session) { notifPlanos('❌ Faça login novamente.'); return; }
+
+    const res = await fetch(`${window.PP.supabaseUrl}/functions/v1/criar-preferencia-mp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ plano_id: planoId, periodo: isAnualClick ? 'anual' : 'mensal' }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.init_point) {
+      notifPlanos('❌ ' + (data.error || 'Erro ao gerar checkout.'));
+      return;
+    }
+
+    window.location.href = data.init_point;
+  } catch (e) {
+    notifPlanos('❌ Erro de conexão. Tente novamente.');
+  }
 }
 
 function notifPlanos(msg) {
-  let n = document.getElementById('notif-planos');
-  if (!n) {
-    n = document.createElement('div');
-    n.id = 'notif-planos';
-    n.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a18;border:1px solid #2a2a26;padding:10px 20px;border-radius:99px;font-size:13px;color:#f2ede6;z-index:9999;transition:.3s;';
-    document.body.appendChild(n);
-  }
+  let n = document.getElementById('notif');
+  if (!n) return;
   n.textContent = msg;
-  n.style.opacity = '1';
+  n.classList.add('show');
   clearTimeout(n._t);
-  n._t = setTimeout(() => { n.style.opacity = '0'; }, 3000);
+  n._t = setTimeout(() => n.classList.remove('show'), 4000);
 }
 
 function renderPlans() {
@@ -282,42 +291,43 @@ function renderPlans() {
   document.getElementById('lbl-anual').style.color  = anual ? 'var(--text)' : 'var(--text2)';
 
   document.getElementById('plans-grid').innerHTML = PLANOS.map(p => {
-    const preco = anual ? p.anual : p.mensal;
-    const nota  = anual ? `cobrado R$${p.totalAnual.toLocaleString('pt-BR')}/ano` : '&nbsp;';
-    const link  = buildMpLink(anual ? p.mpAnual : p.mpMensal, p.id, anual);
-    const isAtual = planoAtual === p.id;
+    const preco     = anual ? p.anualEq    : p.mensal;
+    const precoOrig = anual ? p.anualEq_orig : p.mensal_orig;
+    const nota      = anual ? `cobrado R$${p.totalAnual.toLocaleString('pt-BR')}/ano` : '&nbsp;';
+    const isAtual   = planoAtual === p.id;
 
-    const feats = p.feats.map(f => {
+    const feats = (p.feats||[]).map(f => {
       const off = typeof f === 'object' && f.off;
       const txt = typeof f === 'object' ? f.t : f;
       return `<li class="${off?'off':''}">${txt}</li>`;
     }).join('');
 
-    const btnLabel = isAtual
-      ? '✓ Plano atual'
-      : p.pop
-        ? '🚀 Começar 7 dias grátis'
-        : 'Assinar agora';
+    const promoBadge = p.temPromo
+      ? `<div style="display:inline-block;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#f59e0b;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:8px">${p.promoLabel}</div>`
+      : '';
+
+    const btnLabel = isAtual ? '✓ Plano atual' : p.pop ? '🚀 Começar agora' : 'Assinar agora';
 
     return `
     <div class="plan${p.pop?' pop':''}">
       ${p.pop ? '<div class="pop-tag">⭐ Mais popular</div>' : ''}
       ${isAtual ? '<div class="curr-badge">✓ Seu plano atual</div>' : ''}
       ${p.aviso ? `<div class="plan-aviso">${p.aviso}</div>` : ''}
+      ${promoBadge}
       <div class="p-name">${p.nome}</div>
       <div class="p-desc">${p.desc}</div>
       <div class="p-price">
+        ${precoOrig ? `<div style="font-size:13px;color:var(--text2);text-decoration:line-through;margin-bottom:2px">R$${precoOrig}/mês</div>` : ''}
         <span class="curr">R$</span><span class="amt">${preco}</span><span class="per">/mês</span>
         <div class="note">${nota}</div>
       </div>
       <div class="p-div"></div>
       <ul class="p-feats">${feats}</ul>
-      <a href="${isAtual ? '#' : link}"
-         class="p-btn ${p.pop?'solid':'ghost'}"
-         ${isAtual
-           ? 'onclick="notif(\'Você já está neste plano ✓\');return false;"'
-           : `onclick="handleCheckoutClick(event,'${p.id}',${anual})" target="_blank" rel="noopener"`}
-      >${btnLabel}</a>
+      <button class="p-btn ${p.pop?'solid':'ghost'}"
+        ${isAtual
+          ? `onclick="notifPlanos('Você já está neste plano ✓')" style="cursor:default;opacity:.6"`
+          : `onclick="handleCheckoutClick(event,'${p.id}',${anual})"`}
+      >${btnLabel}</button>
     </div>`;
   }).join('');
 }
@@ -328,24 +338,7 @@ function setCiclo(el) {
   renderPlans();
 }
 
-function notif(msg) {
-  const el = document.getElementById('notif');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// Init
-renderPlans();
-
-// Pre-seleciona plano se vier da URL (?plano=pro)
-const params = new URLSearchParams(location.search);
-if (params.get('anual') === '1') {
-  anual = true;
-  document.getElementById('cyc-toggle').classList.add('on');
-  renderPlans();
-}
+function notif(msg) { notifPlanos(msg); }
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 <script defer src="/_vercel/speed-insights/script.js"></script>
