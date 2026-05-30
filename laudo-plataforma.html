@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>Laudos Técnicos — MestrePro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#111827;--blue:#1A56A0;--blue2:#2563EB;--sky:#EEF3FA;--sky2:#DDE8F7;
+  --green:#16A34A;--amber:#D97706;--red:#DC2626;--purple:#9333EA;
+  --txt:#1E2A3A;--sub:#5A6A7E;--border:#C8D8EE;--white:#fff;
+  --r:10px;--r2:6px;--sh:0 2px 12px rgba(13,46,107,.10);
+  --font:'DM Sans',sans-serif;--hfont:'Rajdhani',sans-serif;
+}
+html,body{height:100%;background:var(--sky);font-family:var(--font);color:var(--txt);font-size:14px;line-height:1.5}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none}
+input,textarea,select{font-family:var(--font);outline:none}
+
+/* LAYOUT */
+.shell{display:flex;flex-direction:column;min-height:100vh}
+.hdr{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;padding:13px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.hdr-logo{font-family:var(--hfont);font-size:22px;font-weight:700;letter-spacing:.5px;flex:1}
+.hdr-logo span{opacity:.65;font-size:12px;font-weight:500;display:block}
+.hdr-nav{display:flex;gap:4px}
+.hdr-nav button{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:6px;padding:6px 13px;font-size:12px;font-weight:600;transition:.2s;letter-spacing:.3px}
+.hdr-nav button:hover,.hdr-nav button.active{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.35)}
+.main{flex:1;padding:20px;max-width:800px;width:100%;margin:0 auto}
+
+/* CARD */
+.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);padding:18px;margin-bottom:14px;box-shadow:var(--sh)}
+.card-title{font-family:var(--hfont);font-size:18px;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title .ico{width:30px;height:30px;border-radius:6px;background:var(--sky2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+
+/* FORM */
+.lbl{font-size:10px;font-weight:700;letter-spacing:.7px;color:var(--sub);text-transform:uppercase;margin-bottom:4px;display:block}
+.inp{width:100%;border:1.5px solid var(--border);border-radius:var(--r2);padding:9px 12px;font-size:14px;color:var(--txt);transition:.2s;background:#fff}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,160,.1)}
+textarea.inp{resize:vertical;min-height:80px;line-height:1.6}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field{margin-bottom:12px}
+select.inp{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235A6A7E'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+.divider{border:none;border-top:1px solid var(--sky2);margin:16px 0}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--r2);padding:10px 18px;font-size:13px;font-weight:600;transition:.2s;cursor:pointer;border:none}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--navy));color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-sec{background:#fff;color:var(--blue);border:1.5px solid var(--border)}
+.btn-sec:hover{background:var(--sky)}
+.btn-green{background:linear-gradient(135deg,#15803D,var(--green));color:#fff}
+.btn-green:hover{opacity:.9}
+.btn-red{background:#FEE2E2;color:var(--red);border:1px solid #FECACA}
+.btn-red:hover{background:#FCA5A5;color:#fff}
+.btn-sm{padding:6px 12px;font-size:11px}
+.btn-full{width:100%}
+
+/* STEPS */
+.steps{display:flex;margin-bottom:20px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:#fff}
+.step-item{flex:1;text-align:center;padding:10px 6px;font-size:11px;font-weight:600;color:var(--sub);transition:.2s;border-right:1px solid var(--border);cursor:default}
+.step-item:last-child{border-right:none}
+.step-item.active{background:var(--blue);color:#fff}
+.step-item.done{background:var(--sky2);color:var(--blue)}
+.step-item .sn{display:block;font-family:var(--hfont);font-size:16px;font-weight:700}
+
+/* PATOLOGIA CARD */
+.pat-card{border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;background:#fff;transition:.2s;overflow:hidden}
+.pat-card.sel{border-color:var(--blue);background:#FAFCFF}
+.pat-head{padding:11px 14px;cursor:pointer;display:flex;align-items:center;gap:10px}
+.pat-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;transition:.2s}
+.pat-card.sel .pat-check{background:var(--blue);border-color:var(--blue);color:#fff}
+.pat-info{flex:1}
+.pat-nome{font-weight:600;font-size:13.5px}
+.pat-cat-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.3px}
+.pat-body{display:none;padding:0 14px 14px}
+.pat-card.open .pat-body{display:block}
+.pat-own{background:#EEF4FB;border:1px solid #C3D9F0;border-radius:6px;padding:9px 11px;font-size:12px;color:var(--blue);line-height:1.6;margin-bottom:10px}
+.pat-own strong{display:block;font-size:9px;font-weight:700;letter-spacing:.6px;color:#1A56A0;margin-bottom:3px;text-transform:uppercase}
+.grav-row{display:flex;gap:6px;margin-bottom:10px}
+.gbtn{flex:1;border:1.5px solid var(--border);background:#fff;border-radius:20px;padding:7px 0;font-size:12px;font-weight:600;color:var(--sub);transition:.2s}
+.gbtn.lv.on{border-color:var(--green);background:#DCFCE7;color:var(--green)}
+.gbtn.mo.on{border-color:var(--amber);background:#FEF3C7;color:var(--amber)}
+.gbtn.gr.on{border-color:var(--red);background:#FEE2E2;color:var(--red)}
+.nota-inp{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--txt);background:#fff;transition:.2s;margin-bottom:10px}
+.nota-inp:focus{border-color:var(--blue)}
+
+/* PASSOS */
+.passos-box{background:#F0F7FF;border:1px solid #BFDBFE;border-radius:6px;padding:10px;margin-bottom:10px}
+.passos-title{font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--blue);margin-bottom:8px;text-transform:uppercase}
+.passo-item{display:flex;gap:8px;margin-bottom:6px;align-items:flex-start;font-size:12px;color:var(--txt);line-height:1.5}
+.passo-num{width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* PRODS */
+.prods-box{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:6px;padding:10px}
+.prods-title{font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--green);margin-bottom:8px;text-transform:uppercase}
+.prods-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prod-marca{font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--green);margin-bottom:5px;text-transform:uppercase}
+.prod-item{font-size:11px;color:var(--txt);padding:3px 0;border-bottom:1px solid #D1FAE5;line-height:1.4}
+.prod-item:last-child{border-bottom:none}
+
+/* HOME LIST */
+.laudo-item{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.2s;box-shadow:var(--sh)}
+.laudo-item:hover{border-color:var(--blue);transform:translateY(-1px)}
+.laudo-icon{width:42px;height:42px;border-radius:8px;background:var(--sky2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.laudo-info{flex:1;min-width:0}
+.laudo-num{font-family:var(--hfont);font-size:16px;font-weight:700;color:var(--navy)}
+.laudo-cli{font-size:12px;color:var(--sub);margin-top:1px}
+.laudo-meta{display:flex;gap:6px;margin-top:5px;align-items:center;flex-wrap:wrap}
+.badge{font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px}
+.badge-blue{background:var(--sky2);color:var(--blue)}
+.badge-green{background:#DCFCE7;color:var(--green)}
+.badge-amber{background:#FEF3C7;color:var(--amber)}
+.badge-red{background:#FEE2E2;color:var(--red)}
+.badge-purple{background:#F3E8FF;color:var(--purple)}
+.badge-gray{background:#F1F5F9;color:var(--sub)}
+.empty{text-align:center;padding:48px 20px;color:var(--sub)}
+.empty .ico{font-size:48px;margin-bottom:12px}
+.empty p{font-size:14px}
+
+/* STATS BANNER */
+.stats-banner{background:linear-gradient(135deg,var(--navy),var(--blue));border-radius:var(--r);padding:16px;margin-bottom:16px;color:#fff}
+.stats-banner h2{font-family:var(--hfont);font-size:22px;font-weight:700;margin-bottom:12px}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat-box{background:rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center}
+.stat-num{font-family:var(--hfont);font-size:22px;font-weight:700}
+.stat-lbl{font-size:9px;font-weight:600;letter-spacing:.5px;opacity:.7;text-transform:uppercase;margin-top:2px}
+
+/* CONSULTA */
+.cq-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.cq-fbtn{border:1.5px solid var(--border);background:#fff;color:var(--sub);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:600;transition:.2s}
+.cq-fbtn.on{border-color:var(--blue);background:var(--sky2);color:var(--blue)}
+.search-wrap{position:relative;margin-bottom:14px}
+.search-wrap input{width:100%;border:1.5px solid var(--border);border-radius:24px;padding:10px 16px 10px 40px;font-size:14px;background:#fff;transition:.2s}
+.search-wrap input:focus{border-color:var(--blue)}
+.search-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--sub)}
+
+/* PREVIEW LAUDO */
+.prev-sec{margin-bottom:14px}
+.prev-head{background:var(--navy);color:#fff;padding:7px 13px;border-radius:6px 6px 0 0;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+.prev-body{border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;padding:12px;font-size:12px;line-height:1.8;color:var(--txt);white-space:pre-line;background:#fff}
+
+/* CRIT BADGE */
+.crit-badge{display:inline-block;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700;letter-spacing:.5px}
+.crit-CRÍTICO{background:#FEE2E2;color:var(--red)}
+.crit-RELEVANTE{background:#FEF3C7;color:var(--amber)}
+.crit-MODERADO{background:#DCFCE7;color:var(--green)}
+
+/* ASSINATURA */
+.sig-wrap{border:1.5px solid var(--border);border-radius:6px;background:#fff;overflow:hidden;position:relative}
+#sig-canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
+.sig-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--sub);pointer-events:none}
+
+/* NAV BOTTONS */
+.form-nav{display:flex;gap:10px;padding-top:8px;padding-bottom:24px}
+
+/* NBR ITEMS */
+.nbr-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;transition:.2s;font-size:11px;color:var(--sub);background:#fff;margin-bottom:5px}
+.nbr-item.on{border-color:var(--blue);background:var(--sky2);color:var(--blue)}
+.nbr-check{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;transition:.2s}
+.nbr-item.on .nbr-check{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* TOAST */
+#toast-box{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.toast{background:var(--navy);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.25);animation:toastIn .25s ease;pointer-events:none}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* TOGGLE GROUP */
+.tog-group{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.tog{border:1.5px solid var(--border);background:#fff;color:var(--sub);border-radius:20px;padding:6px 13px;font-size:12px;font-weight:500;transition:.2s}
+.tog.on{border-color:var(--blue);background:var(--sky2);color:var(--blue);font-weight:700}
+
+/* CUSTO */
+.custo-row{display:flex;align-items:center;gap:8px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:6px;padding:7px 10px;margin-bottom:10px}
+.custo-lbl{font-size:10px;font-weight:700;letter-spacing:.4px;color:var(--green);text-transform:uppercase;white-space:nowrap}
+.custo-inp{flex:1;border:none;background:transparent;font-size:13px;color:var(--txt);padding:2px 4px}
+
+/* INFO / WARN */
+.info-box{background:var(--sky2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--blue);line-height:1.5;margin-bottom:12px}
+.warn-box{background:#FEF3C7;border:1px solid #FDE68A;border-radius:6px;padding:10px 12px;font-size:12px;color:#92400E;line-height:1.5;margin-bottom:12px}
+
+@media(max-width:600px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .g2,.g3,.prods-cols{grid-template-columns:1fr}
+  .hdr-nav button{padding:5px 8px;font-size:11px}
+  .main{padding:12px}
+}
+@media print{.hdr,.hdr-nav,.form-nav,.cq-filter{display:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="hdr">
+  <div class="hdr-logo">🎨 MestrePro <span>Laudos Técnicos</span></div>
+  <div class="hdr-nav">
+    <button id="nav-home" class="active" onclick="goView('home')">📋 Laudos</button>
+    <button id="nav-ref" onclick="goView('ref')">🔬 Patologias</button>
+  </div>
+</div>
+<div class="main" id="main"></div>
+</div>
+<div id="toast-box"></div>
+<script>
+'use strict';
+
+/* ═══════════ DADOS DE PATOLOGIAS ═══════════ */
+const PATS = [
+{id:1,nome:"Bolhas / Empolamento",cat:"umidade",
+ tec:"Formação de bolhas na película por pressão de vapor d'água ou gás retido entre o substrato úmido e o revestimento impermeável. Indica falha grave de preparo ou umidade ativa.",
+ own:"A tinta inchou e formou bolhas — como se houvesse ar ou água presa embaixo. Sinal claro de umidade ou preparo inadequado.",
+ causa:"Aplicação sobre substrato úmido; ausência de fundo preparador; umidade ascendente capilar ou infiltrante ativa; sais solúveis no substrato; pintura sob sol intenso",
+ rec:"Identificar e eliminar a fonte de umidade (obrigatório); remover toda tinta solta; aguardar secagem ≥72h; fundo preparador; repintar",
+ passos:["Proteger piso e móveis com lona plástica","Raspar toda a área com bolhas usando espátula — não deixar bordas soltas","⚠️ OBRIGATÓRIO: identificar e eliminar a fonte de umidade (vazamento, infiltração, umidade capilar do solo)","Teste de absorção: jogar gota d'água na parede — se absorver rápido, OK; se empaçar, ainda úmido","Aguardar secagem completa — mínimo 72h; em umidade ascendente pode levar semanas","Lixar a superfície (lixa P80→P120); remover pó com pano seco","Aplicar 1 demão de Fundo Preparador — aguardar 2–4h","Aplicar 2 demãos de acabamento com intervalo de 4–6h; NÃO pintar sob sol intenso"],
+ prods:{eucatex:["Fundo Preparador de Paredes Premium Eucatex","Selador Acrílico Eucatex","SuperPren Paredes Eucatex (externo)"],sw:["Eco Fundo Preparador de Paredes SW","Selador Acrílico SW","Metalatex Elastic Fosco SW"]}
+},
+{id:2,nome:"Calcinação / Pulverulência",cat:"intemperie",
+ tec:"Desagregação superficial por degradação do ligante via intemperismo UV e chuva. Radiação solar quebra as cadeias poliméricas da resina → pigmento solto → pó ao toque. Indica fim de vida útil da tinta ou uso de produto inadequado para externo.",
+ own:"Passa a mão na parede e sai pó branco ou colorido — a tinta ou o reboco envelheceram e perderam resistência. Tinta nova aplicada diretamente vai descascar em pouco tempo.",
+ causa:"Envelhecimento natural por intemperismo UV; tinta de baixa qualidade ou diluída em excesso; reboco com traço fraco; falta de manutenção",
+ rec:"Escovar toda a área para remover partes soltas; selador penetrante consolidante; repintar com tinta de alto desempenho UV",
+ passos:["Escovar com escova de cerdas duras ou lixar (lixa P80) para remover pó e partes soltas","Lavagem sob pressão moderada — aguardar secagem completa","Teste de absorção com gota d'água antes de receber o fundo","Aplicar 1 demão de Fundo Preparador de Paredes (consolidante) — aguardar 2–4h","Verificar se pó voltou — se sim, aplicar 2ª demão do fundo","Aplicar 2 demãos de tinta acrílica de alta durabilidade com intervalo de 4–6h"],
+ prods:{eucatex:["Fundo Preparador de Paredes Premium Eucatex (penetrante, consolidante)","Selador Acrílico Eucatex","SuperPren Paredes ou Máxima Proteção Eucatex"],sw:["Eco Fundo Preparador de Paredes SW","Metalatex Litoral SW (alta resistência UV) ou Metalatex Elastic Fosco SW"]}
+},
+{id:3,nome:"Craquelamento / Gretamento",cat:"execucao",
+ tec:"Fendilhação em mapa (padrão xadrez ou irregular) na película por retração diferencial, envelhecimento ou incompatibilidade entre camadas. Retração volumétrica da camada externa > resistência à tração → abertura em rede.",
+ own:"A tinta trincou em vários sentidos, parecendo um mapa ou couro seco. Material envelheceu, foi aplicado espesso demais, ou sobre camada incompatível.",
+ causa:"Retração da argamassa; tinta aplicada em camada muito espessa; camadas incompatíveis (esmalte sobre acrílico fresco); variação térmica sem juntas de dilatação; reboco com excesso de cal",
+ rec:"Remover todo revestimento comprometido; verificar problema estrutural subjacente; fundo preparador; tinta elástica para prevenir recorrência",
+ passos:["Raspar toda a tinta craquelada com espátula — nenhuma área solta pode permanecer","Lixar (lixa P80→P120) até uniformizar; remover pó","Verificar se o craquelamento atinge a argamassa — se sim, verificar fissuras antes de prosseguir","Se necessário, Massa Acrílica em camadas finas (máx. 1mm por demão) — aguardar 4h; lixar P150","Aplicar 1 demão de Fundo Preparador — aguardar 2h","Aplicar 3 demãos de tinta elástica com intervalo de 4–6h"],
+ prods:{eucatex:["Fundo Preparador Eucatex","Massa Acrílica Eucatex","SuperPren Paredes Eucatex (elástico)"],sw:["Eco Fundo Preparador SW","Massa Acrílica SW","Metalatex Elastic Fosco SW (elástico, acompanha até 0,3mm)"]}
+},
+{id:4,nome:"Descascamento",cat:"execucao",
+ tec:"Perda total de aderência da película ao substrato, com desprendimento em placas. Falha na interface tinta/substrato por contaminação, ausência de fundo aderente ou aplicação em condições inadequadas.",
+ own:"A tinta está se soltando em pedaços. Não aderiu ao reboco — por falta do fundo preparador, superfície suja ou úmida na hora de pintar.",
+ causa:"Superfície suja, gordurosa ou úmida na aplicação; ausência de fundo aderente; incompatibilidade entre sistemas; eflorescência ativa; argamassa sem cura mínima de 28 dias",
+ rec:"Remover TODA tinta solta; limpar e desengordurar; identificar e corrigir causa raiz; fundo preparador adequado; repintar",
+ passos:["Remover toda a tinta solta com espátula — incluindo bordas adjacentes","Lixar (lixa P60→P120) até expor substrato firme; remover pó","Se houver gordura: lavar com água + detergente neutro; secar completamente","Verificar pH — deve estar entre 7 e 9","Teste de absorção para definir o tipo de fundo correto","Aplicar 1 demão de Fundo Preparador — aguardar 2–4h","Aplicar 2 demãos de tinta com intervalo de 4h"],
+ prods:{eucatex:["Fundo Preparador de Paredes Premium Eucatex","Selador Acrílico Eucatex"],sw:["Eco Fundo Preparador de Paredes SW","Selador Acrílico SW"]}
+},
+{id:5,nome:"Eflorescência",cat:"umidade",
+ tec:"Depósito cristalino de sais solúveis (sulfatos e carbonatos de cálcio, sódio ou magnésio) por migração através da umidade. Sais dissolvidos na água interna migram por capilaridade → evaporação → cristalização na superfície.",
+ own:"Manchas brancas como crosta ou salitre — são sais que a umidade empurra de dentro para fora. Não é fungo. Se a causa de umidade não for resolvida, sempre volta.",
+ causa:"Umidade ascendente capilar transportando sais; materiais com alto teor de sais; fissuras facilitando entrada de água; falta de impermeabilização de baldrame",
+ rec:"⚠️ NUNCA molhar eflorescência ativa; escovar a seco; eliminar fonte de umidade; aguardar secagem; tinta respirável (NÃO impermeável sobre sais ativos)",
+ passos:["⚠️ NUNCA molhar ou lavar eflorescência ativa — a água reativa os sais","Escovar a seco com escova de cerdas duras ou lixa P60 até remover todos os cristais visíveis","Remover pó com pano seco — NÃO usar pano úmido nesta etapa","⚠️ Identificar e corrigir a fonte de umidade (capilar, infiltração, condensação)","Aguardar parede completamente seca — mínimo 72h","Aplicar 1 demão de Fundo Preparador — aguardar cura completa","Aplicar 2 demãos de tinta RESPIRÁVEL (não impermeável)"],
+ prods:{eucatex:["Fundo Preparador de Paredes Premium Eucatex","Selador Acrílico Eucatex","⚠️ NÃO aplicar impermeável sem tratar a causa"],sw:["Eco Fundo Preparador de Paredes SW","Metalatex Elastic Fosco SW","⚠️ Tinta respirável — não impermeável sobre área com sais ativos"]}
+},
+{id:6,nome:"Fungo / Mofo",cat:"umidade",
+ tec:"Crescimento de micro-organismos (fungos, bactérias, algas) formando manchas escuras ou esverdeadas. Proliferam em: umidade relativa acima de 70%, baixa ventilação e ausência de biocidas. Esporos podem causar problemas respiratórios.",
+ own:"Manchas pretas, cinzas ou esverdeadas — especialmente em banheiros, cozinhas e áreas sombreadas. Os esporos causam problemas respiratórios. Sem controle ambiental, sempre retorna.",
+ causa:"Umidade relativa do ar elevada (>70%) + baixa ventilação; infiltrações ou condensação; tinta sem fungicida; área sem insolação direta",
+ rec:"Resolver umidade e ventilação (obrigatório); tratamento biocida antes de qualquer pintura; selador; acabamento com tinta antifúngica",
+ passos:["⚠️ Usar EPI obrigatório: luvas de borracha, máscara PFF2 e óculos","Preparar solução: 1 parte de água sanitária para 3 partes de água","Aplicar solução sobre toda a área com pincel ou rolo; aguardar 15 min — NÃO enxaguar imediatamente","Esfregar com escova de cerdas duras","Enxaguar com água limpa e aguardar secagem completa (24–48h)","Aplicar Zero Mofo Eucatex ou Metalatex Bioprotect SW antes do selador","Aplicar 1 demão de Selador Acrílico — aguardar 4h","Aplicar 2 demãos de tinta com biocida incorporado"],
+ prods:{eucatex:["Zero Mofo Eucatex (biocida, antes do fundo)","Selador Acrílico Eucatex","SuperPren Paredes Eucatex (aditivado com biocida, externo)"],sw:["Metalatex Bioprotect SW — elimina 99% micro-organismos","Eco Fundo Preparador SW","Metalatex Bioprotect SW como acabamento"]}
+},
+{id:7,nome:"Manchas de Umidade",cat:"umidade",
+ tec:"Manchas amareladas, acinzentadas ou escuras por presença de umidade. Diagnóstico diferencial: base até 1m → umidade ascendente; pontos isolados em fachada → infiltração localizada; cantos de teto → condensação.",
+ own:"Manchas que aparecem na parede por água infiltrando ou subindo pelo chão. Se não resolver a causa, voltará sempre após pintar.",
+ causa:"Umidade ascendente capilar; infiltração por fachada ou cobertura; condensação; falha em instalações hidráulicas; ausência de impermeabilização de baldrame",
+ rec:"Diagnosticar o tipo de umidade antes de qualquer intervenção; eliminar a fonte; secar completamente; impermeabilizar; repintar",
+ passos:["⚠️ JAMAIS pintar sobre área com umidade ativa — aguardar completa secagem","Diagnosticar: base (até 1m) = capilar; pontos isolados = infiltração; cantos de teto = condensação","Identificar e eliminar a fonte de umidade","Remover revestimento afetado + margem de 50% além da mancha visível","Aguardar secagem completa — pode exigir dias ou semanas","Aplicar impermeabilizante adequado ao tipo de umidade","Aplicar 1 demão de Fundo Preparador — aguardar cura","Aplicar 2 demãos de acabamento com intervalo de 4–6h"],
+ prods:{eucatex:["Fundo Preparador Eucatex","Acqua Resist Eucatex (paredes externas)","Máxima Proteção Eucatex (emborrachado)"],sw:["Eco Fundo Preparador SW","Manta Líquida SW (coberturas)","Metalatex Elastic Fosco SW"]}
+},
+{id:8,nome:"Saponificação",cat:"produto",
+ tec:"Reação química entre álcalis do cimento (pH 11–13) e ácidos graxos de tinta alquídica/esmalte, formando sabão e destruindo a película. Frequente em reboco novo sem cura mínima de 28 dias.",
+ own:"Tinta amolecida, oleosa ou com manchas amareladas. Acontece quando esmalte ou tinta à base de óleo é usada sobre reboco novo — o cimento alcalino reage quimicamente com a tinta.",
+ causa:"Esmalte ou tinta alquídica sobre reboco alcalino não curado; pH acima de 9 sem proteção; ausência de selador bloqueador de alcalinidade",
+ rec:"Remover completamente a tinta saponificada; aguardar cura mínima (28 dias); verificar pH (7–9); fundo resistente à alcalinidade; usar SOMENTE tinta acrílica",
+ passos:["Remover completamente a tinta saponificada com espátula; lixar (lixa P80)","⚠️ Medir pH — deve estar entre 7 e 9; pH acima de 9 = cimento ainda alcalino","Se pH acima de 9: aguardar cura mínima de 28 dias","Neutralizar com solução de água e vinagre (pH 4) se necessário; aguardar secagem","Aplicar 1 demão de Selador Acrílico ou Fundo Preparador resistente a álcali","Aguardar cura e aplicar 2 demãos de tinta ACRÍLICA (NUNCA esmalte sobre reboco)"],
+ prods:{eucatex:["Fundo Preparador Eucatex (resistente a álcali)","Selador Acrílico Eucatex","⚠️ NUNCA usar esmalte sobre reboco novo"],sw:["Eco Fundo Preparador SW (resistente a álcali)","Metalatex linha acrílica SW","⚠️ Esmaltes SOMENTE após pH 7–9 e com selador bloqueador"]}
+},
+{id:9,nome:"Escorrimento / Sagging",cat:"execucao",
+ tec:"Formação de ranhuras verticais ('lágrimas') por escoamento antes da gelificação. Indica tinta fora da viscosidade (excessiva diluição), demão muito espessa ou condições que retardam a secagem (T<10°C ou UR>85%).",
+ own:"A tinta escorreu pela parede formando listras ou gotinhas secas. Por excesso de água, demão grossa demais, ou dia muito frio/úmido.",
+ causa:"Tinta excessivamente diluída (acima de 15%); demão muito espessa; temperatura baixa (<10°C) ou umidade alta (>85%); rolo com pelo longo",
+ rec:"Aguardar secagem; lixar os escorrimentos; massa acrílica se necessário; reaplicar com diluição e espessura corretas; respeitar condições climáticas",
+ passos:["Aguardar secagem completa dos escorrimentos — mínimo 24h","Lixar os escorrimentos com lixa P80 até nivelar com a superfície ao redor","Se irregularidades profundas: Massa Acrílica para nivelar; lixar P150 após secagem","Remover pó; verificar temperatura (>10°C) e umidade (<85%) antes de reaplicar","Reaplicar com diluição correta (máx. 10–15%) e rolo de pelo curto (5–8mm)","Aplicar demãos finas cruzadas (vertical + horizontal) para distribuição uniforme"],
+ prods:{eucatex:["Massa Acrílica Eucatex","Fundo Preparador Eucatex","Tinta acrílica adequada ao ambiente"],sw:["Massa Acrílica SW","Eco Fundo Preparador SW","Metalatex linha adequada"]}
+},
+{id:10,nome:"Micro-trincas",cat:"execucao",
+ tec:"Aberturas muito finas (<0,2mm) por movimentação térmica diária. Microfissura <0,1mm; fissura fina 0,1–0,5mm. Podem ser precursoras de fissuras maiores sem tratamento com tinta elástica.",
+ own:"Trincas tão finas que parecem riscos na tinta — quase invisíveis. Sem tratamento podem crescer com o ciclo diário de calor e frio e deixar água entrar.",
+ causa:"Variação térmica diária; retração da tinta por secagem rápida; substrato com movimentação diferencial; tinta rígida sem elasticidade",
+ rec:"Lixar levemente para abrir as trincas; fundo preparador; tinta elástica que acompanha micro-movimentações de até 0,3mm",
+ passos:["Lixar levemente com lixa P150 para abrir as trincas e permitir penetração do fundo","Limpar com pano seco; verificar se há micro-trincas também na argamassa","Aplicar 1 demão de Fundo Preparador — aguardar 2–4h","Verificar se as trincas são ativas (crescendo) ou passivas — se ativas, ver Fissuras na Alvenaria","Aplicar 3 demãos de tinta elástica com intervalo de 4–6h para acompanhar movimentação até 0,3mm"],
+ prods:{eucatex:["Fundo Preparador Eucatex","SuperPren Paredes Eucatex (elástico, externo)"],sw:["Eco Fundo Preparador SW","Metalatex Elastic Fosco SW","Manta Líquida SW (coberturas)"]}
+},
+{id:11,nome:"Manchas de Ferrugem",cat:"umidade",
+ tec:"Manchas avermelhadas/alaranjadas por corrosão de armaduras. Carbonatação do concreto reduz pH → ativa corrosão → óxido de ferro expande até 6x → pressão interna → fissuração e manchamento superficial.",
+ own:"Manchas vermelhas ou laranjas que surgem de dentro — é o ferro da estrutura enferrujando. O ferro oxidado incha, pode rachar o concreto e comprometer a segurança estrutural.",
+ causa:"Cobrimento insuficiente de armaduras; carbonatação do concreto; umidade e cloretos penetrando; fissuras expondo armadura",
+ rec:"⚠️ Casos avançados exigem laudo estrutural (CREA/CAU) obrigatório; expor a armadura; remover ferrugem; primer anticorrosivo; reconstituir cobrimento",
+ passos:["⚠️ ATENÇÃO: corrosão avançada ou risco estrutural exige laudo de engenheiro (CREA/CAU)","Quebrar o reboco ao redor da mancha até expor completamente o metal corroído","Remover toda a ferrugem com escova de aço ou lixa P40 até metal brilhante","Verificar se a armadura perdeu seção transversal — se sim, consultar engenheiro estrutural","Aplicar primer anticorrosivo sobre a armadura — aguardar cura 24h","Reconstituir cobrimento com argamassa de reparo estrutural — aguardar 28 dias","Aplicar Selador Acrílico + impermeabilizante; acabamento com tinta elástica"],
+ prods:{eucatex:["Selador Acrílico Eucatex","Acqua Resist Eucatex","Linha de acabamento externo Eucatex"],sw:["Eco Fundo Preparador SW","Metalatex Elastic Fosco SW"]}
+},
+{id:12,nome:"Crateras / Pinholes",cat:"execucao",
+ tec:"Pequenos furos na película por contaminação com óleo/gordura/silicone (causa 'fisheye' — repulsão da tinta) ou bolhas de ar que estouram antes da gelificação.",
+ own:"A tinta ficou cheia de furinhos minúsculos, como casca de laranja ruim. Geralmente por óleo, graxa, silicone na superfície, ou pistola mal regulada.",
+ causa:"Contaminação por óleo, gordura, silicone ou cera; tinta muito diluída; ar comprimido contaminado com óleo; substrato muito poroso sem selador",
+ rec:"Lixar completamente; limpar com solvente; selar porosidade; repintar com diluição correta e rolo adequado",
+ passos:["Lixar toda a área com lixa P150 para nivelar as crateras","Limpar com solvente: aguarrás para óleo/graxa, álcool isopropílico para silicone — secar completamente","Aguardar secagem do solvente (mín. 30 min)","Se crateras profundas: Massa Corrida ou Massa Acrílica antes do selador","Aplicar 1 demão de Selador Acrílico para selar porosidade","Aplicar 2 demãos de acabamento com rolo de pelo curto (5–8mm)"],
+ prods:{eucatex:["Selador Acrílico Eucatex","Massa Acrílica Eucatex","Fundo Preparador Eucatex"],sw:["Selador Acrílico SW","Massa Acrílica SW","Eco Fundo Preparador SW"]}
+},
+{id:13,nome:"Fissuras na Alvenaria",cat:"estrutura",
+ tec:"Aberturas lineares por tensões superiores à resistência. Classificação: microfissura <0,1mm; fissura fina 0,1–0,5mm; fissura média 0,5–1mm; trinca >1mm; rachadura >5mm. Monitorar 30 dias com gessinho: ativa (em movimentação) ou passiva (estabilizada).",
+ own:"Rachaduras que vão além da tinta e atingem a parede. As pequenas geralmente são da argamassa. As maiores precisam de atenção — podem indicar que a fundação está se movendo.",
+ causa:"Retração hidráulica da argamassa; movimentação térmica sem juntas; recalque diferencial de fundação; sobrecargas estruturais",
+ rec:"Monitorar 30 dias com gessinho; fissuras passivas: abrir em V + selante + tela; trincas ativas ou >5mm: laudo estrutural obrigatório",
+ passos:["Monitorar 30 dias com gessinho: ATIVA = gessinho racha; PASSIVA = gessinho intacto","⚠️ Fissuras ativas ou >5mm: engenheiro estrutural (CREA/CAU) obrigatório antes de qualquer pintura","Fissuras passivas superficiais: abrir em 'V' com formão, remover pó, aplicar selante acrílico elástico","Para trincas até 10mm: abrir em 'V' (10mm × 10mm), limpar, aplicar Restauração Selatrinca SW","Cobrir com tela de nylon ou poliéster (mín. 10cm cada lado) fixada com massa acrílica — aguardar 4h","Aplicar Complemento Acrílico Flexível SW ou SuperPren Eucatex sobre a tela","Acabamento com 2–3 demãos de tinta elástica"],
+ prods:{eucatex:["Fundo Preparador Eucatex","SuperPren Paredes Eucatex (elástico + tela de poliéster)","Massa Acrílica Eucatex"],sw:["Restauração Selatrinca SW — veda trincas até 10mm","Complemento Acrílico Flexível SW","Metalatex Elastic Fosco SW (NBR 11702)"]}
+},
+{id:14,nome:"Infiltração Pluvial",cat:"umidade",
+ tec:"Penetração de água da chuva pelo envelope da edificação (fachada, cobertura, janelas, juntas). Associada a falha ou ausência de impermeabilização (NBR 9575). Identificar todos os pontos de entrada antes de qualquer reparo.",
+ own:"A água da chuva está entrando pelo teto, fachada ou janelas. Só pintar por cima não resolve e pode piorar — aprisionando umidade.",
+ causa:"Ausência ou falha de impermeabilização; fissuras em fachada; juntas de movimentação deterioradas; rufos, calhas ou telhas danificadas; caixilharia sem vedação",
+ rec:"Identificar TODOS os pontos de entrada antes de qualquer intervenção; corrigir causas estruturais; impermeabilizar conforme NBR 9575; tratar fissuras",
+ passos:["Inspecionar e limpar calhas, rufos, pingadeiras e juntas — reparar tudo antes de pintar","Identificar e tratar todas as fissuras na fachada","Remover toda tinta deteriorada; aguardar secagem mínima de 72h sem chuva","Para coberturas/lajes: aplicar Manta Líquida SW ou Acqua Resist Eucatex","Para fachadas: aplicar tinta elástica como impermeabilizante","Aplicar Fundo Preparador na fachada antes do acabamento","Acabamento: 3 demãos de tinta elástica com intervalo de 4–6h"],
+ prods:{eucatex:["Fundo Preparador Eucatex","Acqua Resist Eucatex ou Máxima Proteção Eucatex","SuperPren Paredes Eucatex (elástico)"],sw:["Manta Líquida SW — impermeabilização para lajes","Eco Fundo Preparador SW","Metalatex Elastic Fosco SW","Complemento Acrílico Flexível SW"]}
+},
+{id:15,nome:"Enrugamento",cat:"produto",
+ tec:"Formação de rugas ou ondulações por incompatibilidade química entre sistemas. Solvente da tinta nova ataca e dissolve parcialmente a camada anterior → contração antes de secar → rugas. Também ocorre por demão espessa sem secagem.",
+ own:"A tinta ficou enrugada, como plástico amassado. Ocorre ao aplicar tinta a base de solvente (esmalte) sobre acrílico fresco, ou demão grossa sobre outra não seca.",
+ causa:"Incompatibilidade de sistemas: esmalte sobre acrílico fresco; segunda demão antes da secagem completa; demão excessivamente espessa; temperatura inadequada",
+ rec:"Remover toda tinta enrugada; verificar compatibilidade (alquídico e acrílico NÃO compatíveis frescos); respeitar intervalos; camadas finas",
+ passos:["Aguardar secagem completa (24h antes de qualquer intervenção)","Raspar toda tinta enrugada com espátula — área enrugada não pode ser recuperada","Lixar (lixa P80→P120) até uniformizar; remover pó","⚠️ Verificar compatibilidade: nunca esmalte sobre acrílico fresco; aguardar cura total (7 dias) ou usar selador de isolamento","Aplicar 1 demão de Fundo Preparador — aguardar 2–4h","Reaplicar em demãos FINAS com temperatura entre 10°C e 35°C e UR <85%"],
+ prods:{eucatex:["Fundo Preparador Eucatex","Selador Acrílico Eucatex (isolamento entre sistemas)","Tinta acrílica adequada"],sw:["Eco Fundo Preparador SW","Selador Acrílico SW","Metalatex linha acrílica SW"]}
+},
+{id:16,nome:"Pulverulência por Execução",cat:"produto",
+ tec:"Superfície áspera com pigmento solto — película não se formou completamente (coalescência incompleta). Distinto da calcinação por ser falha de aplicação, não de envelhecimento. Substrato poroso absorve a resina antes de formar filme.",
+ own:"Superfície áspera com pó solto ao toque. A tinta não formou película resistente — tinta de baixa qualidade, muito diluída, ou substrato poroso absorvendo a resina.",
+ causa:"Excesso de diluição; tinta de qualidade inferior; substrato muito poroso sem selador; vento forte seca antes da coalescência",
+ rec:"Escovar toda a área; selador consolidante penetrante; repintar com produto de qualidade — máx. 10% de diluição",
+ passos:["Escovar com escova de cerdas duras para remover todo o pó solto","Lixar levemente com lixa P120; remover resíduos com pano seco","Teste de absorção: se absorver em <30s, substrato muito poroso e precisa de selador reforçado","Aplicar 1 demão de Selador Acrílico (penetra nos poros e sela) — aguardar cura (4h)","Se pó retornar ao lixar, aplicar 2ª demão do selador","Aplicar 2 demãos de tinta de qualidade superior com diluição máxima de 10%"],
+ prods:{eucatex:["Selador Acrílico Eucatex","Fundo Preparador de Paredes Premium Eucatex"],sw:["Eco Fundo Preparador de Paredes SW","Metalatex Acrílico Fosco SW"]}
+},
+];
+
+const CATS = {
+  umidade:    {lb:"Umidade",      c:"#0EA5E9", bg:"#E0F2FE"},
+  execucao:   {lb:"Execução",     c:"#EA580C", bg:"#FFF0E6"},
+  produto:    {lb:"Produto",      c:"#9333EA", bg:"#F3E8FF"},
+  intemperie: {lb:"Intemperismo", c:"#16A34A", bg:"#DCFCE7"},
+  estrutura:  {lb:"Estrutura",    c:"#DC2626", bg:"#FEE2E2"},
+};
+
+const NBRS = [
+  "NBR 6118:2014 — Projeto de estruturas de concreto",
+  "NBR 7200:1998 — Execução de revestimento de paredes e tetos",
+  "NBR 9575:2010 — Impermeabilização: seleção e projeto",
+  "NBR 13749:2013 — Revestimento de paredes e tetos de argamassas",
+  "NBR 15575:2013 — Edificações habitacionais: Desempenho",
+  "NBR 15079:2012 — Tintas para construção civil",
+  "NBR 6492:2021 — Documentação técnica para projetos",
+];
+
+/* ═══════════ STATE ═══════════ */
+let VIEW = 'home';
+let STEP = 0;
+let D = {};
+let SEL = {};
+let LAUDOS = [];
+let SIG_DATA = '';
+
+const LAUDOS_KEY = 'laudo_plat_v1';
+
+/* ═══════════ UTILS ═══════════ */
+function h(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function todayISO(){ return new Date().toISOString().split('T')[0]; }
+function fmtDate(d){ if(!d)return '—'; const p=d.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; }
+function toast(msg,dur=2800){
+  const b=document.getElementById('toast-box');
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;b.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},dur);
+}
+function catBadge(cat){
+  const c=CATS[cat]||{lb:cat,c:'#5A6A7E',bg:'#F1F5F9'};
+  return `<span class="pat-cat-badge" style="background:${c.bg};color:${c.c}">${c.lb}</span>`;
+}
+function newNum(){
+  const yr=new Date().getFullYear();
+  const nums=LAUDOS.map(l=>parseInt((l.numero||'000/0000').split('/')[0])||0);
+  const next=(Math.max(0,...nums)+1).toString().padStart(3,'0');
+  return `${next}/${yr}`;
+}
+function calcCriticidade(){
+  const sel=PATS.filter(p=>SEL[p.id]);
+  if(sel.some(p=>SEL[p.id]?.grav==='Grave')) return 'CRÍTICO';
+  if(sel.filter(p=>SEL[p.id]?.grav==='Moderada').length>2) return 'RELEVANTE';
+  return 'MODERADO';
+}
+
+/* ═══════════ STORAGE ═══════════ */
+function loadLaudos(){ try{ LAUDOS=JSON.parse(localStorage.getItem(LAUDOS_KEY)||'[]'); }catch{ LAUDOS=[]; } }
+function saveLaudos(){ localStorage.setItem(LAUDOS_KEY,JSON.stringify(LAUDOS)); }
+function saveCurrent(){
+  if(!D.id) return;
+  const idx=LAUDOS.findIndex(l=>l.id===D.id);
+  const snap={...D,sel:JSON.parse(JSON.stringify(SEL)),sig:SIG_DATA,criticidade:calcCriticidade()};
+  if(idx>=0) LAUDOS[idx]=snap; else LAUDOS.unshift(snap);
+  saveLaudos();
+}
+function newLaudo(){
+  D={ id:Date.now().toString(), numero:newNum(), status:'rascunho',
+      data:todayISO(), cliente:'', contato:'', obra:'', cidade:'', estado:'SP',
+      substrato:'reboco', ambiente:'Externo', clima:'Ensolarado',
+      responsavel:'', crea:'', descricao:'', diagnostico:'',
+      recomendacoes:'', conclusao:'', nbrs:[], sel:{} };
+  SEL={};SIG_DATA='';STEP=0;
+}
+function openLaudo(id){
+  loadLaudos();
+  const l=LAUDOS.find(x=>x.id===id);if(!l)return;
+  D={...l};SEL=l.sel?JSON.parse(JSON.stringify(l.sel)):{};SIG_DATA=l.sig||'';
+  STEP=0;VIEW='form';render();
+}
+function deleteLaudo(id){
+  if(!confirm('Excluir este laudo?')) return;
+  LAUDOS=LAUDOS.filter(l=>l.id!==id);saveLaudos();render();
+}
+
+/* ═══════════ VIEWS ═══════════ */
+function goView(v){
+  VIEW=v;
+  document.querySelectorAll('.hdr-nav button').forEach(b=>b.classList.remove('active'));
+  const nb=document.getElementById('nav-'+v);
+  if(nb) nb.classList.add('active');
+  render();
+}
+
+function render(){
+  const main=document.getElementById('main');
+  if(VIEW==='home'){ renderHome(main); return; }
+  if(VIEW==='form'){ renderForm(main); return; }
+  if(VIEW==='ref'){  renderRef(main); return; }
+}
+
+/* ─── HOME ─── */
+function renderHome(main){
+  loadLaudos();
+  const fin=LAUDOS.filter(l=>l.status==='finalizado').length;
+  const draft=LAUDOS.length-fin;
+  const crit=LAUDOS.filter(l=>l.criticidade==='CRÍTICO').length;
+  main.innerHTML=`
+  <div class="stats-banner">
+    <h2>📋 Laudos Técnicos</h2>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num">${LAUDOS.length}</div><div class="stat-lbl">Total</div></div>
+      <div class="stat-box"><div class="stat-num">${fin}</div><div class="stat-lbl">Finalizados</div></div>
+      <div class="stat-box"><div class="stat-num">${draft}</div><div class="stat-lbl">Rascunhos</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:#FCA5A5">${crit}</div><div class="stat-lbl">Críticos</div></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:16px">
+    <button class="btn btn-primary" onclick="startNew()" style="flex:1">+ Novo Laudo</button>
+    <button class="btn btn-sec" onclick="goView('ref')">🔬 Consultar Patologias</button>
+  </div>
+  ${LAUDOS.length===0?`
+    <div class="empty"><div class="ico">📄</div><p>Nenhum laudo criado ainda.<br>Clique em "+ Novo Laudo" para começar.</p></div>
+  `:LAUDOS.map(l=>`
+    <div class="laudo-item" onclick="openLaudo('${h(l.id)}')">
+      <div class="laudo-icon">📋</div>
+      <div class="laudo-info">
+        <div class="laudo-num">Laudo ${h(l.numero)}</div>
+        <div class="laudo-cli">${h(l.cliente)||'—'} · ${h(l.obra)||'—'}</div>
+        <div class="laudo-meta">
+          <span class="badge badge-gray">📅 ${fmtDate(l.data)}</span>
+          <span class="badge ${l.status==='finalizado'?'badge-green':'badge-amber'}">${l.status==='finalizado'?'✅ Finalizado':'✏️ Rascunho'}</span>
+          ${l.criticidade?`<span class="crit-badge crit-${l.criticidade}">${l.criticidade}</span>`:''}
+          ${l.sel?`<span class="badge badge-blue">${Object.keys(l.sel).length} patologia(s)</span>`:''}
+        </div>
+      </div>
+      <button class="btn btn-red btn-sm" onclick="event.stopPropagation();deleteLaudo('${h(l.id)}')">🗑</button>
+    </div>
+  `).join('')}
+  `;
+}
+
+function startNew(){
+  loadLaudos();
+  newLaudo();
+  VIEW='form';render();
+}
+
+/* ─── FORM ─── */
+const STEPS=['Identificação','Patologias','Técnico','Finalizar'];
+function renderForm(main){
+  main.innerHTML=`
+  <div class="steps">
+    ${STEPS.map((s,i)=>`<div class="step-item${i===STEP?' active':i<STEP?' done':''}"><span class="sn">${i+1}</span>${s}</div>`).join('')}
+  </div>
+  <div id="step-body"></div>
+  `;
+  if(STEP===0) renderStep0();
+  if(STEP===1) renderStep1();
+  if(STEP===2) renderStep2();
+  if(STEP===3) renderStep3();
+}
+
+function renderStep0(){
+  const sb=document.getElementById('step-body');
+  sb.innerHTML=`
+  <div class="card">
+    <div class="card-title"><div class="ico">🏠</div>Dados da Vistoria</div>
+    <div class="g2">
+      <div class="field"><label class="lbl">Nº do Laudo</label><input class="inp" id="f-num" value="${h(D.numero)}"></div>
+      <div class="field"><label class="lbl">Data da Vistoria</label><input class="inp" type="date" id="f-data" value="${h(D.data)}"></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="lbl">Cliente</label><input class="inp" id="f-cli" value="${h(D.cliente)}" placeholder="Nome do cliente"></div>
+      <div class="field"><label class="lbl">Contato / Telefone</label><input class="inp" id="f-tel" value="${h(D.contato)}" placeholder="(00) 00000-0000"></div>
+    </div>
+    <div class="field"><label class="lbl">Endereço / Obra</label><input class="inp" id="f-obra" value="${h(D.obra)}" placeholder="Rua, número, bairro"></div>
+    <div class="g2">
+      <div class="field"><label class="lbl">Cidade</label><input class="inp" id="f-cid" value="${h(D.cidade)}"></div>
+      <div class="field"><label class="lbl">Estado</label><select class="inp" id="f-est">
+        ${['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(e=>`<option${e===D.estado?' selected':''}>${e}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="divider"></div>
+    <div class="g2">
+      <div class="field"><label class="lbl">Tipo de Substrato</label><select class="inp" id="f-sub">
+        ${['reboco','concreto','gesso','fibrocimento','madeira','ceramica','alvenaria'].map(s=>`<option value="${s}"${s===D.substrato?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+      </select></div>
+      <div class="field"><label class="lbl">Ambiente</label><select class="inp" id="f-amb">
+        ${['Externo','Interno','Semi-externo'].map(a=>`<option${a===D.ambiente?' selected':''}>${a}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="lbl">Condição Climática</label><select class="inp" id="f-clim">
+        ${['Ensolarado','Nublado','Parcialmente Nublado','Chuvoso'].map(c=>`<option${c===D.clima?' selected':''}>${c}</option>`).join('')}
+      </select></div>
+      <div class="field"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="g2">
+      <div class="field"><label class="lbl">Responsável Técnico</label><input class="inp" id="f-resp" value="${h(D.responsavel)}" placeholder="Nome completo"></div>
+      <div class="field"><label class="lbl">CREA / Registro</label><input class="inp" id="f-crea" value="${h(D.crea)}" placeholder="Ex: CREA-SP 123456-D"></div>
+    </div>
+    <div class="field"><label class="lbl">Descrição Geral da Vistoria</label><textarea class="inp" id="f-desc" rows="3" placeholder="Descreva o objeto da vistoria, área avaliada...">${h(D.descricao)}</textarea></div>
+  </div>
+  <div class="form-nav">
+    <button class="btn btn-sec" onclick="VIEW='home';render()">← Cancelar</button>
+    <button class="btn btn-primary" onclick="saveStep0();nextStep()" style="flex:2">Próximo: Patologias →</button>
+  </div>`;
+}
+
+function saveStep0(){
+  D.numero=document.getElementById('f-num').value.trim();
+  D.data=document.getElementById('f-data').value;
+  D.cliente=document.getElementById('f-cli').value.trim();
+  D.contato=document.getElementById('f-tel').value.trim();
+  D.obra=document.getElementById('f-obra').value.trim();
+  D.cidade=document.getElementById('f-cid').value.trim();
+  D.estado=document.getElementById('f-est').value;
+  D.substrato=document.getElementById('f-sub').value;
+  D.ambiente=document.getElementById('f-amb').value;
+  D.clima=document.getElementById('f-clim').value;
+  D.responsavel=document.getElementById('f-resp').value.trim();
+  D.crea=document.getElementById('f-crea').value.trim();
+  D.descricao=document.getElementById('f-desc').value.trim();
+}
+
+function renderStep1(){
+  const sb=document.getElementById('step-body');
+  sb.innerHTML=`
+  <div class="card">
+    <div class="card-title"><div class="ico">🔍</div>Patologias Identificadas</div>
+    <div class="info-box">Selecione as patologias encontradas na vistoria. Clique no nome para expandir detalhes e definir a gravidade.</div>
+    <div id="pat-list">
+      ${PATS.map(p=>`
+        <div class="pat-card${SEL[p.id]?' sel':''}" id="pc-${p.id}">
+          <div class="pat-head" onclick="togglePat(${p.id})">
+            <div class="pat-check">${SEL[p.id]?'✓':''}</div>
+            <div class="pat-info">
+              <div class="pat-nome">${h(p.nome)}</div>
+              <div class="pat-badges" style="display:flex;gap:5px;margin-top:3px">
+                ${catBadge(p.cat)}
+                ${SEL[p.id]?.grav?`<span class="badge" style="background:${SEL[p.id].grav==='Grave'?'#FEE2E2':SEL[p.id].grav==='Moderada'?'#FEF3C7':'#DCFCE7'};color:${SEL[p.id].grav==='Grave'?'#DC2626':SEL[p.id].grav==='Moderada'?'#D97706':'#16A34A'}">${SEL[p.id].grav}</span>`:''}
+              </div>
+            </div>
+            <span style="color:var(--sub);font-size:18px;transition:.2s" id="arr-${p.id}">›</span>
+          </div>
+          <div class="pat-body">
+            <div class="pat-own"><strong>Linguagem simples</strong>${h(p.own)}</div>
+            ${SEL[p.id]?`
+              <div class="lbl" style="margin-bottom:6px">Gravidade</div>
+              <div class="grav-row">
+                <button class="gbtn lv${SEL[p.id].grav==='Leve'?' on':''}" onclick="setGrav(${p.id},'Leve')">✅ Leve</button>
+                <button class="gbtn mo${SEL[p.id].grav==='Moderada'?' on':''}" onclick="setGrav(${p.id},'Moderada')">⚠️ Moderada</button>
+                <button class="gbtn gr${SEL[p.id].grav==='Grave'?' on':''}" onclick="setGrav(${p.id},'Grave')">🔴 Grave</button>
+              </div>
+              <div class="custo-row">
+                <span class="custo-lbl">R$ Custo Est.</span>
+                <input class="custo-inp" type="text" placeholder="Opcional" value="${h(SEL[p.id].custo||'')}" oninput="SEL[${p.id}].custo=this.value">
+              </div>
+              <textarea class="nota-inp" rows="2" placeholder="Observações específicas desta patologia..." oninput="SEL[${p.id}].nota=this.value">${h(SEL[p.id].nota||'')}</textarea>
+            `:''}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+              <button class="btn btn-sec btn-sm" onclick="toggleDetail(${p.id})">📋 Passos de reparo</button>
+              <button class="btn btn-sec btn-sm" onclick="toggleProds(${p.id})">🎨 Produtos indicados</button>
+            </div>
+            <div id="det-${p.id}" style="display:none;margin-top:10px">
+              <div class="passos-box">
+                <div class="passos-title">Passos de Reparo</div>
+                ${p.passos.map((ps,i)=>`<div class="passo-item"><div class="passo-num">${i+1}</div><div>${h(ps)}</div></div>`).join('')}
+              </div>
+            </div>
+            <div id="prd-${p.id}" style="display:none;margin-top:10px">
+              <div class="prods-box">
+                <div class="prods-title">Produtos Indicados</div>
+                <div class="prods-cols">
+                  <div>
+                    <div class="prod-marca">Eucatex</div>
+                    ${(p.prods?.eucatex||[]).map(pr=>`<div class="prod-item">${h(pr)}</div>`).join('')}
+                  </div>
+                  <div>
+                    <div class="prod-marca">Sherwin-Williams</div>
+                    ${(p.prods?.sw||[]).map(pr=>`<div class="prod-item">${h(pr)}</div>`).join('')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  </div>
+  <div class="form-nav">
+    <button class="btn btn-sec" onclick="prevStep()">← Voltar</button>
+    <button class="btn btn-primary" onclick="nextStep()" style="flex:2">Próximo: Técnico →</button>
+  </div>`;
+}
+
+function togglePat(id){
+  const card=document.getElementById('pc-'+id);
+  const isOpen=card.classList.contains('open');
+  if(isOpen){
+    card.classList.remove('open');
+    document.getElementById('arr-'+id).style.transform='';
+  } else {
+    card.classList.add('open');
+    document.getElementById('arr-'+id).style.transform='rotate(90deg)';
+    if(!SEL[id]){ SEL[id]={grav:'Moderada',nota:'',custo:''}; card.classList.add('sel'); renderStep1(); }
+  }
+}
+
+function setGrav(id,g){
+  if(!SEL[id]) SEL[id]={grav:g,nota:'',custo:''};
+  SEL[id].grav=g;
+  renderStep1();
+  setTimeout(()=>{
+    const c=document.getElementById('pc-'+id);
+    if(c){c.classList.add('open');document.getElementById('arr-'+id).style.transform='rotate(90deg)';}
+  },50);
+}
+
+function toggleDetail(id){
+  const d=document.getElementById('det-'+id);
+  d.style.display=d.style.display==='none'?'block':'none';
+}
+function toggleProds(id){
+  const d=document.getElementById('prd-'+id);
+  d.style.display=d.style.display==='none'?'block':'none';
+}
+
+function renderStep2(){
+  const sb=document.getElementById('step-body');
+  const selPats=PATS.filter(p=>SEL[p.id]);
+  const crit=calcCriticidade();
+
+  const autoDiag=selPats.length?
+    selPats.map(p=>`▸ ${p.nome} (${SEL[p.id].grav}): ${p.tec}`).join('\n\n')
+    :'Nenhuma patologia selecionada.';
+  const autoRec=selPats.length?
+    selPats.map(p=>`▸ ${p.nome}: ${p.rec}`).join('\n\n')
+    :'Nenhuma patologia selecionada.';
+
+  if(!D.diagnostico) D.diagnostico=autoDiag;
+  if(!D.recomendacoes) D.recomendacoes=autoRec;
+
+  sb.innerHTML=`
+  <div class="card">
+    <div class="card-title"><div class="ico">📝</div>Laudo Técnico</div>
+    ${selPats.length===0?'<div class="warn-box">⚠️ Nenhuma patologia selecionada. Volte ao passo anterior e selecione ao menos uma.</div>':''}
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:var(--sky);border:1px solid var(--border);border-radius:var(--r2);padding:10px 14px">
+      <span style="font-size:13px;font-weight:600;color:var(--sub)">Criticidade Geral:</span>
+      <span class="crit-badge crit-${crit}">${crit}</span>
+      <span style="font-size:12px;color:var(--sub);flex:1">${selPats.length} patologia(s) identificada(s)</span>
+    </div>
+    <div class="field">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <label class="lbl">Diagnóstico Técnico</label>
+        <button class="btn btn-sec btn-sm" onclick="D.diagnostico=document.getElementById('f-diag').value;document.getElementById('f-diag').value='${''}'">Limpar</button>
+      </div>
+      <textarea class="inp" id="f-diag" rows="6">${h(D.diagnostico)}</textarea>
+    </div>
+    <div class="field">
+      <label class="lbl">Recomendações Técnicas</label>
+      <textarea class="inp" id="f-rec" rows="5">${h(D.recomendacoes)}</textarea>
+    </div>
+    <div class="field">
+      <label class="lbl">Conclusão / Parecer Final</label>
+      <textarea class="inp" id="f-conc" rows="3" placeholder="Conclusão geral do laudo...">${h(D.conclusao)}</textarea>
+    </div>
+    <div class="divider"></div>
+    <div class="card-title" style="font-size:14px;margin-bottom:10px"><div class="ico">📜</div>Normas Técnicas Referenciadas</div>
+    ${NBRS.map((n,i)=>`
+      <div class="nbr-item${D.nbrs&&D.nbrs.includes(i)?' on':''}" onclick="toggleNbr(${i})">
+        <div class="nbr-check">${D.nbrs&&D.nbrs.includes(i)?'✓':''}</div>
+        <span>${h(n)}</span>
+      </div>
+    `).join('')}
+  </div>
+  <div class="form-nav">
+    <button class="btn btn-sec" onclick="saveStep2();prevStep()">← Voltar</button>
+    <button class="btn btn-primary" onclick="saveStep2();nextStep()" style="flex:2">Próximo: Finalizar →</button>
+  </div>`;
+}
+
+function saveStep2(){
+  D.diagnostico=document.getElementById('f-diag')?.value||D.diagnostico;
+  D.recomendacoes=document.getElementById('f-rec')?.value||D.recomendacoes;
+  D.conclusao=document.getElementById('f-conc')?.value||D.conclusao;
+}
+
+function toggleNbr(i){
+  if(!D.nbrs) D.nbrs=[];
+  const idx=D.nbrs.indexOf(i);
+  if(idx>=0) D.nbrs.splice(idx,1); else D.nbrs.push(i);
+  renderStep2();
+}
+
+function renderStep3(){
+  const sb=document.getElementById('step-body');
+  const selPats=PATS.filter(p=>SEL[p.id]);
+  const crit=calcCriticidade();
+  sb.innerHTML=`
+  <div class="card">
+    <div class="card-title"><div class="ico">✅</div>Finalizar Laudo</div>
+    <div class="prev-sec">
+      <div class="prev-head">RESUMO DO LAUDO Nº ${h(D.numero)}</div>
+      <div class="prev-body">Cliente: ${h(D.cliente)||'—'}
+Obra: ${h(D.obra)||'—'}  |  ${h(D.cidade)}/${h(D.estado)}
+Data: ${fmtDate(D.data)}  |  Substrato: ${h(D.substrato)}
+Responsável: ${h(D.responsavel)} ${h(D.crea)}
+
+Criticidade: ${crit}
+Patologias (${selPats.length}): ${selPats.map(p=>p.nome+' ['+SEL[p.id].grav+']').join(', ')||'—'}
+
+DIAGNÓSTICO:
+${D.diagnostico||'—'}
+
+RECOMENDAÇÕES:
+${D.recomendacoes||'—'}
+
+CONCLUSÃO:
+${D.conclusao||'—'}
+
+NORMAS: ${D.nbrs?.length?D.nbrs.map(i=>NBRS[i]).join('; '):'—'}</div>
+    </div>
+    <div class="divider"></div>
+    <div class="card-title" style="font-size:14px;margin-bottom:10px"><div class="ico">✍️</div>Assinatura do Responsável</div>
+    <div class="info-box" style="margin-bottom:10px">Assine abaixo com o dedo ou mouse para validar o laudo.</div>
+    <div class="sig-wrap">
+      <canvas id="sig-canvas" height="140"></canvas>
+      <div class="sig-placeholder" id="sig-ph">✍️ Assine aqui</div>
+    </div>
+    <div style="display:flex;gap:8px;margin:8px 0 16px">
+      <button class="btn btn-sec btn-sm" onclick="sigClear()">Limpar assinatura</button>
+    </div>
+    <div class="g2">
+      <button class="btn btn-green btn-full" onclick="finalizarLaudo()">✅ Finalizar e Salvar</button>
+      <button class="btn btn-primary btn-full" onclick="gerarPDF()">📄 Exportar PDF</button>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn btn-sec btn-full" onclick="compartilharWhatsApp()">📱 Compartilhar no WhatsApp</button>
+    </div>
+  </div>
+  <div class="form-nav">
+    <button class="btn btn-sec" onclick="prevStep()">← Voltar</button>
+    <button class="btn btn-sec" onclick="VIEW='home';render()">🏠 Ir para lista</button>
+  </div>`;
+  initSig();
+}
+
+/* ─── SIGNATURE ─── */
+let _sigCtx=null, _sigDraw=false;
+function initSig(){
+  const canvas=document.getElementById('sig-canvas');if(!canvas)return;
+  canvas.width=canvas.offsetWidth*2;canvas.height=280;canvas.style.height='140px';
+  _sigCtx=canvas.getContext('2d');_sigCtx.scale(2,2);
+  _sigCtx.strokeStyle='#1A56A0';_sigCtx.lineWidth=2.5;_sigCtx.lineCap='round';_sigCtx.lineJoin='round';
+  if(SIG_DATA){
+    const img=new Image();img.onload=()=>_sigCtx.drawImage(img,0,0,canvas.width/2,canvas.height/2);img.src=SIG_DATA;
+    document.getElementById('sig-ph').style.display='none';
+  }
+  function pos(e){
+    const r=canvas.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    return {x:(t.clientX-r.left)*(canvas.width/2/r.width),y:(t.clientY-r.top)*(canvas.height/2/r.height)};
+  }
+  canvas.addEventListener('mousedown',e=>{_sigDraw=true;const p=pos(e);_sigCtx.beginPath();_sigCtx.moveTo(p.x,p.y);document.getElementById('sig-ph').style.display='none';});
+  canvas.addEventListener('mousemove',e=>{if(!_sigDraw)return;const p=pos(e);_sigCtx.lineTo(p.x,p.y);_sigCtx.stroke();});
+  canvas.addEventListener('mouseup',()=>{_sigDraw=false;SIG_DATA=canvas.toDataURL('image/png');});
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();_sigDraw=true;const p=pos(e);_sigCtx.beginPath();_sigCtx.moveTo(p.x,p.y);document.getElementById('sig-ph').style.display='none';},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!_sigDraw)return;const p=pos(e);_sigCtx.lineTo(p.x,p.y);_sigCtx.stroke();},{passive:false});
+  canvas.addEventListener('touchend',()=>{_sigDraw=false;SIG_DATA=document.getElementById('sig-canvas').toDataURL('image/png');});
+}
+function sigClear(){
+  const canvas=document.getElementById('sig-canvas');if(!canvas||!_sigCtx)return;
+  _sigCtx.clearRect(0,0,canvas.width,canvas.height);
+  SIG_DATA='';document.getElementById('sig-ph').style.display='flex';
+}
+
+/* ─── STEPS NAV ─── */
+function nextStep(){
+  if(STEP===0) saveStep0();
+  if(STEP===2) saveStep2();
+  saveCurrent();
+  STEP=Math.min(STEP+1,3);render();window.scrollTo(0,0);
+}
+function prevStep(){
+  if(STEP===2) saveStep2();
+  STEP=Math.max(STEP-1,0);render();window.scrollTo(0,0);
+}
+
+function finalizarLaudo(){
+  D.status='finalizado';D.criticidade=calcCriticidade();
+  saveCurrent();
+  toast('✅ Laudo '+D.numero+' finalizado e salvo!');
+  VIEW='home';render();
+}
+
+/* ─── PDF ─── */
+function gerarPDF(){
+  if(typeof window.jspdf==='undefined'){toast('⚠️ jsPDF não carregou. Verifique a conexão.');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  const W=210,ml=15,mr=195,tw=180;
+  let y=15;
+
+  const line=()=>{doc.setDrawColor(200,216,238);doc.line(ml,y,mr,y);y+=4;};
+  const sec=(t)=>{doc.setFillColor(17,24,39);doc.rect(ml,y,tw,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');doc.text(t,ml+3,y+5);y+=10;doc.setTextColor(30,42,58);};
+  const field=(label,val,wrap=true)=>{
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(90,106,126);
+    doc.text(label.toUpperCase(),ml,y);y+=4;
+    doc.setFont('helvetica','normal');doc.setTextColor(30,42,58);doc.setFontSize(10);
+    if(wrap){const lines=doc.splitTextToSize(val||'—',tw);doc.text(lines,ml,y);y+=lines.length*5+2;}
+    else{doc.text(val||'—',ml,y);y+=6;}
+  };
+
+  // HEADER
+  doc.setFillColor(17,24,39);doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(20);doc.text('LAUDO TÉCNICO',ml,12);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.text('Diagnóstico de Patologias em Revestimentos',ml,19);
+  doc.setFontSize(9);doc.text(`Nº ${D.numero||'—'}  |  ${fmtDate(D.data)}`,mr-2,12,{align:'right'});
+  y=36;
+
+  const selPats=PATS.filter(p=>SEL[p.id]);
+  const crit=calcCriticidade();
+
+  // IDENTIFICAÇÃO
+  sec('1. IDENTIFICAÇÃO');
+  const g2start=y;
+  doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(90,106,126);doc.text('CLIENTE',ml,y);doc.text('OBRA / LOCAL',ml+90,y);y+=4;
+  doc.setFont('helvetica','normal');doc.setTextColor(30,42,58);doc.setFontSize(10);
+  doc.text(D.cliente||'—',ml,y);doc.text((D.obra||'—').substring(0,35),ml+90,y);y+=7;
+  doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(90,106,126);doc.text('CIDADE / ESTADO',ml,y);doc.text('SUBSTRATO',ml+60,y);doc.text('AMBIENTE',ml+110,y);doc.text('CLIMA',ml+150,y);y+=4;
+  doc.setFont('helvetica','normal');doc.setTextColor(30,42,58);doc.setFontSize(10);
+  doc.text(`${D.cidade||'—'}/${D.estado||'SP'}`,ml,y);doc.text(D.substrato||'—',ml+60,y);doc.text(D.ambiente||'—',ml+110,y);doc.text(D.clima||'—',ml+150,y);y+=8;
+
+  // RESPONSÁVEL
+  doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(90,106,126);doc.text('RESPONSÁVEL TÉCNICO',ml,y);doc.text('REGISTRO',ml+110,y);y+=4;
+  doc.setFont('helvetica','normal');doc.setTextColor(30,42,58);doc.setFontSize(10);
+  doc.text(D.responsavel||'—',ml,y);doc.text(D.crea||'—',ml+110,y);y+=8;
+  line();
+
+  // CRITICIDADE
+  sec('2. CRITICIDADE GERAL');
+  doc.setFontSize(11);doc.setFont('helvetica','bold');
+  const cc={'CRÍTICO':[220,38,38],'RELEVANTE':[217,119,6],'MODERADO':[22,163,74]};
+  doc.setTextColor(...(cc[crit]||[90,106,126]));doc.text(crit,ml,y);y+=5;
+  doc.setTextColor(30,42,58);doc.setFont('helvetica','normal');doc.setFontSize(9);
+  doc.text(`${selPats.length} patologia(s) identificada(s).`,ml,y);y+=8;
+
+  // PATOLOGIAS
+  if(y>240){doc.addPage();y=15;}
+  sec('3. PATOLOGIAS IDENTIFICADAS');
+  selPats.forEach((p,i)=>{
+    if(y>265){doc.addPage();y=15;}
+    const s=SEL[p.id];
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(30,42,58);
+    doc.text(`${i+1}. ${p.nome}`,ml,y);
+    const gc={'Grave':[220,38,38],'Moderada':[217,119,6],'Leve':[22,163,74]};
+    doc.setTextColor(...(gc[s.grav]||[90,106,126]));doc.text(`[${s.grav||'—'}]`,mr,y,{align:'right'});y+=5;
+    doc.setFont('helvetica','normal');doc.setTextColor(30,42,58);doc.setFontSize(8);
+    if(s.nota){const ln=doc.splitTextToSize(`Obs: ${s.nota}`,tw);doc.text(ln,ml,y);y+=ln.length*4;}
+    if(s.custo){doc.text(`Custo estimado: R$ ${s.custo}`,ml,y);y+=5;}
+    y+=2;
+  });
+  y+=2;
+
+  // DIAGNÓSTICO
+  if(y>220){doc.addPage();y=15;}
+  sec('4. DIAGNÓSTICO TÉCNICO');
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(30,42,58);
+  const dlines=doc.splitTextToSize(D.diagnostico||'—',tw);
+  if(y+dlines.length*5>280){doc.addPage();y=15;}
+  doc.text(dlines,ml,y);y+=dlines.length*5+4;
+
+  // RECOMENDAÇÕES
+  if(y>220){doc.addPage();y=15;}
+  sec('5. RECOMENDAÇÕES');
+  const rlines=doc.splitTextToSize(D.recomendacoes||'—',tw);
+  if(y+rlines.length*5>280){doc.addPage();y=15;}
+  doc.text(rlines,ml,y);y+=rlines.length*5+4;
+
+  // CONCLUSÃO
+  if(D.conclusao){
+    if(y>230){doc.addPage();y=15;}
+    sec('6. CONCLUSÃO');
+    const clines=doc.splitTextToSize(D.conclusao,tw);doc.text(clines,ml,y);y+=clines.length*5+4;
+  }
+
+  // NBRs
+  if(D.nbrs?.length){
+    if(y>250){doc.addPage();y=15;}
+    sec('7. NORMAS TÉCNICAS REFERENCIADAS');
+    D.nbrs.forEach(i=>{
+      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(30,42,58);
+      doc.text('• '+NBRS[i],ml,y);y+=5;
+    });y+=2;
+  }
+
+  // ASSINATURA
+  if(y>240){doc.addPage();y=15;}
+  y=Math.max(y,240);
+  doc.setDrawColor(200,216,238);doc.line(ml,y,ml+80,y);
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(90,106,126);
+  doc.text(D.responsavel||'Responsável Técnico',ml,y+5);
+  doc.text(D.crea||'Registro Profissional',ml,y+9);
+  if(SIG_DATA){try{doc.addImage(SIG_DATA,'PNG',ml,y-20,50,18);}catch(e){}}
+
+  // RODAPÉ em todas as páginas
+  const total=doc.internal.getNumberOfPages();
+  for(let i=1;i<=total;i++){
+    doc.setPage(i);doc.setFontSize(7);doc.setTextColor(150,150,150);
+    doc.text(`MestrePro — Diagnóstico de Patologias | Laudo ${D.numero} | Pág. ${i}/${total}`,W/2,295,{align:'center'});
+  }
+
+  doc.save(`laudo-${D.numero.replace('/','_')}.pdf`);
+  toast('📄 PDF gerado com sucesso!');
+}
+
+function compartilharWhatsApp(){
+  const sel=PATS.filter(p=>SEL[p.id]);
+  const crit=calcCriticidade();
+  const msg=`*Laudo Técnico ${D.numero}*\nCliente: ${D.cliente}\nObra: ${D.obra}\nData: ${fmtDate(D.data)}\nCriticidade: ${crit}\nPatologias: ${sel.map(p=>p.nome).join(', ')||'—'}\n\nDiagnóstico disponível em PDF.`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank',{rel:'noopener'});
+}
+
+/* ─── CONSULTA DE PATOLOGIAS ─── */
+let _refCat='',_refQ='';
+function renderRef(main){
+  const cats=Object.keys(CATS);
+  const q=_refQ.toLowerCase();
+  const filtered=PATS.filter(p=>{
+    if(_refCat && p.cat!==_refCat) return false;
+    if(q && !p.nome.toLowerCase().includes(q) && !p.cat.toLowerCase().includes(q) && !p.causa.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  main.innerHTML=`
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title"><div class="ico">🔬</div>Base de Patologias em Revestimentos</div>
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input type="text" placeholder="Buscar patologia, causa, categoria..." value="${h(_refQ)}" oninput="_refQ=this.value;renderRef(document.getElementById('main'))">
+    </div>
+    <div class="cq-filter">
+      <button class="cq-fbtn${_refCat===''?' on':''}" onclick="_refCat='';renderRef(document.getElementById('main'))">Todas (${PATS.length})</button>
+      ${cats.map(c=>`<button class="cq-fbtn${_refCat===c?' on':''}" onclick="_refCat='${c}';renderRef(document.getElementById('main'))" style="border-color:${CATS[c].c};${_refCat===c?'background:'+CATS[c].bg+';color:'+CATS[c].c:''}">${CATS[c].lb} (${PATS.filter(p=>p.cat===c).length})</button>`).join('')}
+    </div>
+  </div>
+  ${filtered.length===0?'<div class="empty"><div class="ico">🔍</div><p>Nenhuma patologia encontrada.</p></div>':''}
+  ${filtered.map(p=>`
+    <div class="card" style="margin-bottom:10px;padding:14px">
+      <div style="display:flex;align-items:flex-start;gap:10px;cursor:pointer" onclick="toggleRefCard('ref-${p.id}')">
+        <div style="flex:1">
+          <div style="font-family:var(--hfont);font-size:17px;font-weight:700;color:var(--navy);margin-bottom:5px">${h(p.nome)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">${catBadge(p.cat)}</div>
+        </div>
+        <span style="color:var(--sub);font-size:20px" id="arr-ref-${p.id}">›</span>
+      </div>
+      <div id="ref-${p.id}" style="display:none;margin-top:12px">
+        <div class="pat-own"><strong>Linguagem simples</strong>${h(p.own)}</div>
+        <div class="prev-sec">
+          <div class="prev-head">DIAGNÓSTICO TÉCNICO</div>
+          <div class="prev-body" style="font-size:12px">${h(p.tec)}</div>
+        </div>
+        <div class="prev-sec">
+          <div class="prev-head">CAUSAS</div>
+          <div class="prev-body" style="font-size:12px">${h(p.causa)}</div>
+        </div>
+        <div class="prev-sec">
+          <div class="prev-head">RECOMENDAÇÕES</div>
+          <div class="prev-body" style="font-size:12px">${h(p.rec)}</div>
+        </div>
+        <div class="passos-box">
+          <div class="passos-title">Passos de Reparo</div>
+          ${p.passos.map((ps,i)=>`<div class="passo-item"><div class="passo-num">${i+1}</div><div>${h(ps)}</div></div>`).join('')}
+        </div>
+        <div class="prods-box">
+          <div class="prods-title">Produtos Indicados</div>
+          <div class="prods-cols">
+            <div><div class="prod-marca">Eucatex</div>${(p.prods?.eucatex||[]).map(pr=>`<div class="prod-item">${h(pr)}</div>`).join('')}</div>
+            <div><div class="prod-marca">Sherwin-Williams</div>${(p.prods?.sw||[]).map(pr=>`<div class="prod-item">${h(pr)}</div>`).join('')}</div>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <button class="btn btn-primary btn-sm" onclick="startNewFromPat(${p.id})">+ Criar laudo com esta patologia</button>
+        </div>
+      </div>
+    </div>
+  `).join('')}
+  `;
+}
+
+function toggleRefCard(id){
+  const el=document.getElementById(id);
+  const arr=document.getElementById('arr-'+id);
+  if(!el) return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  if(arr) arr.style.transform=open?'':'rotate(90deg)';
+}
+
+function startNewFromPat(patId){
+  loadLaudos();newLaudo();
+  SEL[patId]={grav:'Moderada',nota:'',custo:''};
+  STEP=0;VIEW='form';render();
+  document.querySelectorAll('.hdr-nav button').forEach(b=>b.classList.remove('active'));
+}
+
+/* ─── INIT ─── */
+loadLaudos();
+render();
+</script>
+</body>
+</html>
