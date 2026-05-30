@@ -1551,7 +1551,7 @@ async function irCheckout(planoId, anual){
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Gerando checkout...'; }
 
   try {
-    const { data:{ session } } = await supabase.auth.getSession();
+    const { data:{ session } } = await sb.auth.getSession();
     if(!session) throw new Error('sem sessão');
 
     const res = await fetch(`${window.PP.supabaseUrl}/functions/v1/criar-preferencia-mp`, {
