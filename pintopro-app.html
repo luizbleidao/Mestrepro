@@ -323,20 +323,26 @@ window._IFRAME_LOADED={};
     <nav class="sb-nav" id="sb-nav"></nav>
     <div class="sb-bot">
       <button onclick="irPlanos()">↑ Mudar plano</button>
-      <button onclick="sair()">↩ Sair da conta</button>
+      <button onclick="sair()" data-suspensao-allow>↩ Sair da conta</button>
     </div>
   </aside>
 
   <main class="main">
     <div class="tb">
       <div class="tb-l">
-        <button class="hbg" onclick="toggleSB()">☰</button>
+        <button class="hbg" onclick="toggleSB()" data-suspensao-allow>☰</button>
         <div class="tb-title" id="pg-title">Dashboard</div>
       </div>
       <div class="tb-r">
-        <button class="theme-t" onclick="toggleTheme()" id="thm-btn">🌙 Escuro</button>
+        <button class="theme-t" onclick="toggleTheme()" id="thm-btn" data-suspensao-allow>🌙 Escuro</button>
         <button class="tbtn tbtn-a hide-m" id="top-btn" onclick="topAction()">+ Nova Ação</button>
       </div>
+    </div>
+
+    <!-- BANNER CONTA SUSPENSA -->
+    <div id="suspensao-banner" data-suspensao-allow style="display:none;background:#7f1d1d;border-bottom:1px solid #991b1b;padding:10px 20px;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;">
+      <span style="font-size:13px;font-weight:600;color:#fecaca;">⛔ Conta suspensa — Seu acesso está bloqueado. Entre em contato com o suporte para reativar.</span>
+      <a href="https://wa.me/5517991840628?text=Olá,%20minha%20conta%20MestrePro%20está%20suspensa,%20gostaria%20de%20reativar." target="_blank" rel="noopener" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;">📲 Falar com suporte</a>
     </div>
 
     <div class="banner" id="banner" style="display:none">
@@ -951,6 +957,7 @@ function setup(){
   }
   applyTheme(); renderNav(); setupUser(); loadDashboard();
   checkTrialCountdown();
+  _aplicarBloqueioSuspensao();
   document.getElementById('loading').style.display='none';
   document.getElementById('app-wrap').style.display='flex';
   ir('dashboard');
@@ -965,6 +972,41 @@ function setup(){
     }
   });
 }
+
+// ── BLOQUEIO DE CONTA SUSPENSA ─────────────────────────────
+// Conta suspensa (ativo=false): usuário vê a plataforma mas não
+// consegue abrir nem editar nada. Plano é mantido. Reativável pelo admin.
+window.CONTA_BLOQUEADA = false;
+
+function _aplicarBloqueioSuspensao(){
+  const suspensa = PROFILE && PROFILE.ativo === false;
+  window.CONTA_BLOQUEADA = !!suspensa;
+  const banner = document.getElementById('suspensao-banner');
+  if(banner) banner.style.display = suspensa ? 'flex' : 'none';
+  document.body.classList.toggle('conta-suspensa', !!suspensa);
+}
+
+// Interceptador global em fase de captura — bloqueia toda interação
+// exceto elementos marcados com [data-suspensao-allow] (sair, tema, menu, suporte).
+(function _instalarInterceptadorSuspensao(){
+  function _bloqueado(e){
+    if(!window.CONTA_BLOQUEADA) return false;
+    if(e.target.closest && e.target.closest('[data-suspensao-allow]')) return false;
+    return true;
+  }
+  function _handler(e){
+    if(!_bloqueado(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(e.type === 'click' && typeof notif === 'function'){
+      notif('⛔ Conta suspensa — acesso bloqueado. Fale com o suporte para reativar.', 'err');
+    }
+  }
+  // click e keydown cobrem abrir (navegação/botões) e editar (digitar em campos)
+  ['click','keydown','submit','change','input'].forEach(evt=>{
+    document.addEventListener(evt, _handler, true);
+  });
+})();
 
 function renderNav(){
   document.getElementById('sb-nav').innerHTML=NAV.map(item=>{
@@ -2172,7 +2214,7 @@ if ('serviceWorker' in navigator) {
 @media(max-width:400px){.suporte-fab{bottom:16px;right:16px;}.suporte-modal{width:calc(100vw - 32px);}}
 </style>
 
-<div class="suporte-fab" id="suporte-fab">
+<div class="suporte-fab" id="suporte-fab" data-suspensao-allow>
   <div class="suporte-modal" id="suporte-modal">
     <div class="suporte-modal-header">
       <span class="suporte-modal-title">💬 Precisa de ajuda?</span>

@@ -667,7 +667,7 @@ async function toggleAtivo(id, atualAtivo){
   const suspendendo = atualAtivo; // true = estava ativo, vai suspender
 
   if(suspendendo){
-    const ok = confirm(`Suspender esta conta?\n\nO usuário perderá acesso imediatamente e o plano será rebaixado para Gratuito. Os dados são preservados e a conta pode ser reativada a qualquer momento.`);
+    const ok = confirm(`Suspender esta conta?\n\nO usuário perderá o acesso imediatamente — poderá ver a plataforma, mas não conseguirá abrir nem editar nada. O plano é mantido e os dados preservados. A conta pode ser reativada a qualquer momento.`);
     if(!ok) return;
   }
 
@@ -675,22 +675,21 @@ async function toggleAtivo(id, atualAtivo){
   const { error } = await sb.from('profiles').update({ ativo: !atualAtivo }).eq('id', id);
   if(error){ notif('⚠️ Erro ao alterar status'); return; }
 
-  // 2. Se suspendendo: rebaixa plano para gratuito e registra data
+  // 2. Registra data no obs_admin
   if(suspendendo){
-    await sb.rpc('admin_alterar_plano', {
-      p_user_id: id,
-      p_plano: 'gratuito',
-      p_brinde: false,
-      p_motivo: 'Conta suspensa pelo admin em ' + new Date().toLocaleDateString('pt-BR')
-    });
+    const u2 = allUsers.find(x=>x.id===id);
+    const obsAtual = u2?.obs_admin || '';
+    const novaObs = (obsAtual ? obsAtual + '\n' : '') +
+      '[' + new Date().toLocaleDateString('pt-BR') + '] Conta suspensa pelo admin.';
+    await sb.from('profiles').update({ obs_admin: novaObs }).eq('id', id);
   }
 
   const u = allUsers.find(x=>x.id===id);
-  if(u){ u.ativo = !atualAtivo; if(suspendendo) u.plano = 'gratuito'; }
+  if(u){ u.ativo = !atualAtivo; }
   closeModal('modal-usr');
   renderUsersTable(allUsers);
   updateStats();
-  notif(suspendendo ? '⛔ Conta suspensa e plano rebaixado para Gratuito' : '✅ Conta reativada');
+  notif(suspendendo ? '⛔ Conta suspensa — plano mantido, acesso bloqueado' : '✅ Conta reativada');
 }
 
 
@@ -870,10 +869,11 @@ async function salvarPagamento(){
 function updateStats(){
   const nonAdmins = allUsers.filter(u=>!u.is_admin);
   const total   = nonAdmins.length;
-  const pagos   = nonAdmins.filter(u=>['pro','equipe','ia-pro','ia_pro'].includes(u.plano)).length;
+  // Brindes/cortesias NÃO contam como pagantes nem faturamento
+  const pagos   = nonAdmins.filter(u=>['pro','equipe','ia-pro','ia_pro'].includes(u.plano) && !u.brinde).length;
   const gratis  = nonAdmins.filter(u=>u.plano==='gratuito'||u.plano==='trial').length;
   const pends   = allPags.filter(p=>p.status==='pendente');
-  const receita = nonAdmins.reduce((s,u)=>{return s+(PLANO_VALOR[u.plano]||0);},0);
+  const receita = nonAdmins.reduce((s,u)=>{return s+(u.brinde?0:(PLANO_VALOR[u.plano]||0));},0);
   document.getElementById('st-total').textContent    = total;
   document.getElementById('st-pagos').textContent    = pagos;
   document.getElementById('st-gratis').textContent   = gratis;
