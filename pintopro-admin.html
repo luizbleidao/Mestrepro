@@ -157,15 +157,74 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 .auth-screen{display:block;}
 .app-screen{display:none;}
 
+/* ── MOBILE ── */
 @media(max-width:768px){
-  .stats-grid{grid-template-columns:1fr 1fr;}
+  /* Topbar compacta */
+  .topbar{padding:0 12px;height:48px;}
+  .brand{font-size:15px;}
+  .admin-tag{font-size:9px;padding:2px 6px;}
+  #adm-nome-top{display:none;}
+  .theme-t{padding:4px 8px;font-size:11px;}
+
+  /* Tabs: scroll horizontal compacto */
+  .tabs-bar{padding:0 8px;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .tabs-bar::-webkit-scrollbar{display:none;}
+  .tab{padding:10px 10px;font-size:12px;white-space:nowrap;flex-shrink:0;}
+
+  /* Conteúdo */
+  .content{padding:12px;}
   .metrics-grid{grid-template-columns:1fr;}
-  .content{padding:14px;}
-  .topbar{padding:0 14px;}
+
+  /* Stats 2 colunas compactas */
+  .stats-grid{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+  .stat{padding:12px 10px;}
+  .stat .vl{font-size:20px;}
+  .stat .lb{font-size:9px;margin-bottom:4px;}
+  .stat .sub{font-size:10px;}
+
+  /* Cards */
+  .card{margin-bottom:12px;}
+  .card-header{padding:10px 14px;flex-wrap:wrap;gap:8px;}
+  .card-title{font-size:13px;}
+
+  /* Search bar */
+  .search-bar{flex-wrap:wrap;gap:8px;padding:10px 12px;}
+  .filter-select{width:100%;}
+
+  /* Tabelas — scroll horizontal obrigatório */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{min-width:560px;}
+  thead th{padding:8px 10px;font-size:10px;}
+  tbody td{padding:9px 10px;font-size:12px;}
+
+  /* Modal ocupa tela toda no mobile */
+  .modal-bg{padding:0;align-items:flex-end;}
+  .modal{max-width:100%;border-radius:16px 16px 0 0;max-height:85vh;}
+
+  /* Notif na parte de cima no mobile */
+  .notif{bottom:auto;top:60px;right:10px;left:10px;max-width:none;font-size:12px;}
+
+  /* Botões de ação nas tabelas */
+  .btn-sm{padding:5px 10px;font-size:11px;}
+
+  /* Botão instalar */
+  #btn-instalar-app{font-size:11px;padding:4px 8px;}
 }
-@media(max-width:480px){
+
+@media(max-width:420px){
+  /* Topbar: esconde texto do botão de sair */
+  .topbar-r .btn-ghost{font-size:0;padding:6px 8px;}
+  .topbar-r .btn-ghost::after{content:'↩';font-size:13px;}
+
+  /* Stats coluna única em telas muito pequenas */
   .stats-grid{grid-template-columns:1fr 1fr;}
-  .tabs-bar{overflow-x:auto;}
+
+  /* Tabs ainda menores */
+  .tab{padding:9px 8px;font-size:11px;}
+
+  /* Barras de gráfico */
+  .chart-bar-label{width:90px;font-size:11px;}
+  .chart-bar-val{font-size:11px;}
 }
 </style>
 </head>
