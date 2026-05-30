@@ -253,8 +253,14 @@ async function irParaCheckout(planoId, isAnualClick) {
   notifPlanos('⏳ Preparando checkout...');
 
   try {
-    const { data: { session } } = await sbClient.auth.getSession();
-    if (!session) { notifPlanos('❌ Faça login novamente.'); return; }
+    // Sempre refreshar para garantir token válido
+    const { data: refreshed } = await sbClient.auth.refreshSession();
+    let session = refreshed?.session;
+    if (!session?.access_token) {
+      const { data: gs } = await sbClient.auth.getSession();
+      session = gs?.session;
+    }
+    if (!session?.access_token) { notifPlanos('❌ Sessão expirada. Faça login novamente.'); return; }
 
     const res = await fetch(`${window.PP.supabaseUrl}/functions/v1/criar-preferencia-mp`, {
       method: 'POST',
