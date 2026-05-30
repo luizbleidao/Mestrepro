@@ -1499,14 +1499,26 @@ function renderPlanosGrid(){
 
   grid.innerHTML = PLANOS_CONFIG.map(p => {
     const isCurrent = planoAtual === p.id;
-    const price = _anual ? Math.round(p.precoAnual/12) : p.preco;
-    const saving = _anual ? `Economize R$ ${p.preco*12 - p.precoAnual}` : '';
+    const price     = _anual ? Math.round(p.precoAnual/12) : p.preco;
+    const origPrice = _anual ? (p.precoAnualOrig ? Math.round(p.precoAnualOrig/12) : null) : p.precoOrig;
+    const saving    = _anual ? `Cobrado R$ ${p.precoAnual.toLocaleString('pt-BR')}/ano` : '';
+
+    const promoBadge = p.temPromo
+      ? `<div style="display:inline-block;background:rgba(245,158,11,.18);border:1px solid rgba(245,158,11,.5);color:#f59e0b;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;margin-bottom:6px">${p.promoLabel}</div>`
+      : '';
+
+    const precoRiscado = origPrice
+      ? `<div style="font-size:12px;color:var(--text2);text-decoration:line-through;margin-bottom:1px">R$ ${origPrice}/mês</div>`
+      : '';
+
     return `
     <div class="up-plan${p.popular?' pop':''}${isCurrent?' current':''}">
       ${p.popular ? '<div class="up-pop-badge">⭐ Mais popular</div>' : ''}
+      ${promoBadge}
       <div class="up-plan-name">${p.nome}</div>
+      ${precoRiscado}
       <div class="up-plan-price"><sup>R$</sup>${price}<span>/mês</span></div>
-      <div class="up-plan-annual">${_anual ? saving : ' '}</div>
+      <div class="up-plan-annual">${_anual ? saving : '&nbsp;'}</div>
       <ul class="up-plan-features">
         ${p.features.map(f=>`<li>${f}</li>`).join('')}
         ${p.nao.map(f=>`<li class="no">${f}</li>`).join('')}
@@ -1523,16 +1535,18 @@ async function abrirModalPlanos(){
   document.getElementById('up-modal').classList.add('open');
   // Atualizar preços do banco antes de renderizar
   try {
-    const { data } = await supabase.rpc('get_planos_config');
+    const { data } = await sb.rpc('get_planos_config');
     if(data && data.length) {
       data.filter(c=>c.ativo).forEach(c => {
         const p = PLANOS_CONFIG.find(x=>x.id===c.id);
         if(p){
-          p.preco      = Number(c.preco_mensal_final);
-          p.precoAnual = Number(c.preco_anual_final);
-          p.temPromo   = c.tem_promo;
-          p.promoLabel = c.promo_label || (c.desconto_pct+'% OFF');
-          p.nome       = c.nome;
+          p.preco         = Number(c.preco_mensal_final);
+          p.precoAnual    = Number(c.preco_anual_final);
+          p.precoOrig     = c.tem_promo ? Number(c.preco_mensal) : null;
+          p.precoAnualOrig= c.tem_promo ? Number(c.preco_anual)  : null;
+          p.temPromo      = c.tem_promo;
+          p.promoLabel    = c.promo_label || (c.desconto_pct+'% OFF');
+          p.nome          = c.nome;
         }
       });
     }
