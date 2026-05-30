@@ -201,6 +201,7 @@ tbody td:first-child{color:var(--text);font-weight:500;}
     <button class="tab" onclick="showTab('retencao',this)">📡 Retenção</button>
     <button class="tab" onclick="showTab('ia-uso',this)">🤖 IA Uso</button>
     <button class="tab" onclick="showTab('metricas',this)">📈 Métricas</button>
+    <button class="tab" onclick="showTab('planos-config',this)">💰 Planos & Valores</button>
   </div>
 
   <div class="content">
@@ -441,6 +442,20 @@ tbody td:first-child{color:var(--text);font-weight:500;}
         <div class="card-body tbl-wrap" id="ia-table-wrap">
           <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
         </div>
+      </div>
+    </div>
+
+    <!-- PLANOS & VALORES -->
+    <div class="section" id="sec-planos-config">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <h2 style="font-size:16px;font-weight:600;margin:0">💰 Planos & Valores</h2>
+          <p style="font-size:12px;color:var(--text2);margin:4px 0 0">Edite preços e promoções. Alterações refletem imediatamente no checkout do Mercado Pago.</p>
+        </div>
+        <button class="btn btn-sm btn-acc" onclick="loadPlanosConfig()">↻ Recarregar</button>
+      </div>
+      <div id="planos-config-wrap">
+        <div class="loading-full"><div class="spin"></div> Clique na aba para carregar</div>
       </div>
     </div>
 
@@ -988,8 +1003,9 @@ function showTab(id, el){
   if(id==='indicacoes')   loadIndicacoes();
   if(id==='assinaturas')  loadAssinaturas();
   if(id==='retencao')     loadRetencao();
-  if(id==='ia-uso')       loadIaUso();
-  if(id==='metricas')     loadMetricas();
+  if(id==='ia-uso')         loadIaUso();
+  if(id==='metricas')       loadMetricas();
+  if(id==='planos-config')  loadPlanosConfig();
 }
 
 // ── Modais ────────────────────────────────────────────────
@@ -1293,6 +1309,172 @@ applyTheme();
     document.getElementById('auth-screen').style.display='flex';
   }
 })();
+
+// ── Planos & Valores ──────────────────────────────────────
+let planosConfigData = [];
+let planosConfigLoaded = false;
+
+async function loadPlanosConfig(){
+  if(planosConfigLoaded) return;
+  const wrap = document.getElementById('planos-config-wrap');
+  wrap.innerHTML = '<div class="loading-full"><div class="spin"></div> Carregando planos...</div>';
+
+  const { data, error } = await sb.rpc('get_planos_config');
+  if(error){
+    wrap.innerHTML = `<div class="loading-full" style="color:var(--red)">Erro: ${error.message}</div>`;
+    return;
+  }
+  planosConfigData = data || [];
+  renderPlanosConfig();
+  planosConfigLoaded = true;
+}
+
+function renderPlanosConfig(){
+  const wrap = document.getElementById('planos-config-wrap');
+  if(!planosConfigData.length){
+    wrap.innerHTML = '<div class="loading-full">Nenhum plano encontrado em planos_config.</div>';
+    return;
+  }
+
+  const cards = planosConfigData.map(p => {
+    const temPromo = p.tem_promo;
+    const promoBadge = temPromo
+      ? `<span style="background:var(--gold);color:#000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:8px">${p.desconto_pct}% OFF</span>`
+      : '';
+    const promoValStr = p.promo_validade ? new Date(p.promo_validade).toLocaleDateString('pt-BR') : '';
+
+    return `
+<div class="card" style="margin-bottom:16px;${!p.ativo?'opacity:.55':''}">
+  <div class="card-header" style="justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="card-title">${p.nome}</div>${promoBadge}
+      ${!p.ativo?'<span style="font-size:10px;color:var(--text2);background:var(--surf2);padding:2px 8px;border-radius:99px">Inativo</span>':''}
+    </div>
+    <button class="btn btn-sm btn-blue" onclick="openEditPlano('${p.id}')">✏ Editar</button>
+  </div>
+  <div class="card-body" style="padding:16px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">PREÇO MENSAL</div>
+        <div style="font-size:20px;font-weight:700;color:var(--green);font-family:'DM Mono',monospace">R$ ${Number(p.preco_mensal_final).toFixed(2)}</div>
+        ${temPromo?`<div style="font-size:11px;color:var(--text2);text-decoration:line-through">R$ ${Number(p.preco_mensal).toFixed(2)}</div>`:''}
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">PREÇO ANUAL</div>
+        <div style="font-size:20px;font-weight:700;color:var(--acc);font-family:'DM Mono',monospace">R$ ${Number(p.preco_anual_final).toFixed(2)}</div>
+        ${temPromo?`<div style="font-size:11px;color:var(--text2);text-decoration:line-through">R$ ${Number(p.preco_anual).toFixed(2)}</div>`:''}
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">PROMOÇÃO</div>
+        ${temPromo
+          ? `<div style="font-size:13px;font-weight:600;color:var(--gold)">${p.promo_label||p.desconto_pct+'% OFF'}</div>
+             <div style="font-size:11px;color:var(--text2)">${promoValStr?'Até '+promoValStr:'Sem prazo'}</div>`
+          : `<div style="font-size:13px;color:var(--text2)">Sem promoção ativa</div>`}
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text2)">${p.descricao||''}</div>
+  </div>
+</div>`;
+  }).join('');
+
+  wrap.innerHTML = `
+<div style="background:var(--surf2);border:1px solid var(--gold);border-radius:var(--rs);padding:12px 16px;margin-bottom:20px;font-size:12px;color:var(--text2)">
+  ⚡ Alterações entram em vigor imediatamente — o próximo checkout do Mercado Pago já usará os novos valores.
+</div>${cards}`;
+}
+
+function openEditPlano(id){
+  const p = planosConfigData.find(x=>x.id===id);
+  if(!p) return;
+  const promoValInput = p.promo_validade ? p.promo_validade.slice(0,10) : '';
+  const fs = 'width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:10px 12px;font-size:13px;font-family:"DM Sans",sans-serif;outline:none;box-sizing:border-box';
+
+  document.getElementById('modal-usr-title').textContent = `✏ Editar — ${p.nome}`;
+  document.getElementById('modal-usr-body').innerHTML = `
+<div style="display:flex;flex-direction:column;gap:14px">
+  <div class="field"><label>Nome do plano</label><input id="ep-nome" type="text" value="${p.nome}" style="${fs}"></div>
+  <div class="field"><label>Descrição</label><input id="ep-desc" type="text" value="${(p.descricao||'').replace(/"/g,'&quot;')}" style="${fs}"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="field"><label>Preço mensal (R$)</label><input id="ep-mensal" type="number" step="0.01" min="0" value="${p.preco_mensal}" style="${fs}"></div>
+    <div class="field"><label>Preço anual (R$)</label><input id="ep-anual" type="number" step="0.01" min="0" value="${p.preco_anual}" style="${fs}"></div>
+  </div>
+  <div style="border-top:1px solid var(--border);padding-top:14px">
+    <div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:12px">🏷 Promoção (desconto percentual)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label>Desconto % (0 = sem promoção)</label><input id="ep-desconto" type="number" step="1" min="0" max="100" value="${p.desconto_pct||0}" style="${fs}" oninput="previewDesconto('${p.id}')"></div>
+      <div class="field"><label>Válido até (vazio = sem prazo)</label><input id="ep-validade" type="date" value="${promoValInput}" style="${fs}"></div>
+    </div>
+    <div class="field"><label>Label da promoção</label><input id="ep-label" type="text" value="${(p.promo_label||'').replace(/"/g,'&quot;')}" placeholder="Ex: Lançamento 30% OFF" style="${fs}"></div>
+    <div id="ep-preview" style="font-size:12px;color:var(--text2);margin-top:4px"></div>
+  </div>
+  <div class="field"><label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+    <input type="checkbox" id="ep-ativo" ${p.ativo?'checked':''} style="width:16px;height:16px;accent-color:var(--acc)">
+    Plano ativo (visível no checkout)
+  </label></div>
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="salvarPlanoConfig('${id}',this)">✓ Salvar alterações</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-usr')">Cancelar</button>
+  </div>
+</div>`;
+  previewDesconto(id);
+  openModal('modal-usr');
+}
+
+function previewDesconto(id){
+  const p = planosConfigData.find(x=>x.id===id);
+  const pct    = parseFloat(document.getElementById('ep-desconto')?.value)||0;
+  const mensal = parseFloat(document.getElementById('ep-mensal')?.value)||(p?p.preco_mensal:0);
+  const anual  = parseFloat(document.getElementById('ep-anual')?.value) ||(p?p.preco_anual:0);
+  const el = document.getElementById('ep-preview');
+  if(!el) return;
+  if(pct<=0){ el.textContent='Sem desconto — preço cheio cobrado.'; return; }
+  const mF=(mensal*(1-pct/100)).toFixed(2), aF=(anual*(1-pct/100)).toFixed(2);
+  el.innerHTML=`Preview: <strong style="color:var(--green)">R$ ${mF}/mês</strong> e <strong style="color:var(--acc)">R$ ${aF}/ano</strong>`;
+}
+
+async function salvarPlanoConfig(id, btn){
+  const nome   = document.getElementById('ep-nome').value.trim();
+  const desc   = document.getElementById('ep-desc').value.trim();
+  const mensal = parseFloat(document.getElementById('ep-mensal').value);
+  const anual  = parseFloat(document.getElementById('ep-anual').value);
+  const pct    = parseFloat(document.getElementById('ep-desconto').value)||0;
+  const valStr = document.getElementById('ep-validade').value;
+  const label  = document.getElementById('ep-label').value.trim();
+  const ativo  = document.getElementById('ep-ativo').checked;
+
+  if(!nome){ notif('Nome é obrigatório','warn'); return; }
+  if(isNaN(mensal)||mensal<0){ notif('Preço mensal inválido','warn'); return; }
+  if(isNaN(anual) ||anual<0) { notif('Preço anual inválido','warn'); return; }
+
+  const validade = valStr ? new Date(valStr+'T23:59:59').toISOString() : null;
+  btn.disabled=true; btn.textContent='Salvando...';
+
+  const { error } = await sb.rpc('admin_atualizar_plano_config',{
+    p_id:id, p_nome:nome, p_descricao:desc,
+    p_preco_mensal:mensal, p_preco_anual:anual,
+    p_desconto_pct:pct, p_promo_validade:validade,
+    p_promo_label:label||null, p_ativo:ativo
+  });
+
+  btn.disabled=false; btn.textContent='✓ Salvar alterações';
+  if(error){ notif('Erro: '+error.message,'err'); return; }
+
+  const idx = planosConfigData.findIndex(x=>x.id===id);
+  if(idx>=0){
+    const promoAtiva = pct>0 && (!validade||new Date(validade)>new Date());
+    planosConfigData[idx]={
+      ...planosConfigData[idx],
+      nome,descricao:desc,preco_mensal:mensal,preco_anual:anual,
+      desconto_pct:pct,promo_validade:validade,promo_label:label||null,ativo,
+      preco_mensal_final:promoAtiva?+(mensal*(1-pct/100)).toFixed(2):mensal,
+      preco_anual_final: promoAtiva?+(anual *(1-pct/100)).toFixed(2):anual,
+      tem_promo:promoAtiva,
+    };
+  }
+  closeModal('modal-usr');
+  renderPlanosConfig();
+  notif('✅ Plano atualizado! Próximo checkout já usa o novo preço.','ok');
+}
 </script>
 </body>
 </html>
