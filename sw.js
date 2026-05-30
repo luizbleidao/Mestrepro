@@ -15,7 +15,7 @@ const STATIC_ASSETS = [
   '/pp-config.js',
   '/offline.html',
   '/manifest.json',
-  '/icons/icon.svg',
+  '/icons/logo.jpg',
   '/icons/icon-maskable.svg',
 ];
 
