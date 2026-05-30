@@ -1,7 +1,7 @@
-// MestrePro Service Worker — Modo Offline
-// Versão: 1.1.0 — 2026-05-24
-const CACHE_NAME = 'mestrepro-v2';
-const CACHE_STATIC = 'mestrepro-static-v2';
+// MestrePro Service Worker — Modo Offline + PWA
+// Versão: 1.2.0 — 2026-05-29
+const CACHE_NAME = 'mestrepro-v3';
+const CACHE_STATIC = 'mestrepro-static-v3';
 
 // Assets críticos que funcionam offline
 const STATIC_ASSETS = [
@@ -14,6 +14,9 @@ const STATIC_ASSETS = [
   '/pp-modules.js',
   '/pp-config.js',
   '/offline.html',
+  '/manifest.json',
+  '/icons/icon.svg',
+  '/icons/icon-maskable.svg',
 ];
 
 // ── INSTALL — pré-cacher assets estáticos ──

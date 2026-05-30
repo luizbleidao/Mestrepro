@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#5b7fff">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MestrePro">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="MestrePro">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon.svg">
+<link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
 <title>MestrePro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
@@ -2090,6 +2097,58 @@ if ('serviceWorker' in navigator) {
 
   if (!navigator.onLine) _offlineBanner.style.display = 'block';
 }
+
+// ── PWA INSTALL PROMPT ─────────────────────────────────────
+(function(){
+  let _deferredPrompt = null;
+
+  const _installBanner = document.createElement('div');
+  _installBanner.id = 'pwa-install-banner';
+  _installBanner.style.cssText = [
+    'display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);',
+    'background:#111827;border:1px solid #253354;border-radius:14px;',
+    'padding:14px 18px;z-index:9990;box-shadow:0 8px 32px rgba(0,0,0,.4);',
+    'display:none;align-items:center;gap:12px;max-width:320px;width:calc(100% - 32px);'
+  ].join('');
+  _installBanner.innerHTML = `
+    <img src="/icons/icon.svg" style="width:40px;height:40px;border-radius:10px;flex-shrink:0">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600;color:#e8eaf6">Instalar MestrePro</div>
+      <div style="font-size:11px;color:#8899bb;margin-top:2px">Acesso rápido pelo celular</div>
+    </div>
+    <button id="pwa-install-btn" style="background:#5b7fff;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Instalar</button>
+    <button id="pwa-dismiss-btn" style="background:transparent;color:#8899bb;border:none;font-size:18px;cursor:pointer;padding:0 4px;line-height:1">×</button>
+  `;
+  document.body.appendChild(_installBanner);
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _deferredPrompt = e;
+    // Só mostra se ainda não foi instalado/dispensado
+    if (!localStorage.getItem('pwa-dismissed')) {
+      _installBanner.style.display = 'flex';
+    }
+  });
+
+  document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+    if (!_deferredPrompt) return;
+    _installBanner.style.display = 'none';
+    _deferredPrompt.prompt();
+    const { outcome } = await _deferredPrompt.userChoice;
+    if (outcome === 'accepted') notif('✅ MestrePro instalado com sucesso!', 'ok');
+    _deferredPrompt = null;
+  });
+
+  document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
+    _installBanner.style.display = 'none';
+    localStorage.setItem('pwa-dismissed', '1');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    _installBanner.style.display = 'none';
+    _deferredPrompt = null;
+  });
+})();
 </script>
 
 <!-- BOTÃO FLUTUANTE DE SUPORTE -->

@@ -1,0 +1,45 @@
+{
+  "name": "MestrePro",
+  "short_name": "MestrePro",
+  "description": "Orçamentos, contratos, laudos e assinatura digital para pintores profissionais",
+  "start_url": "/pintopro-app.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0f1e",
+  "theme_color": "#5b7fff",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Novo Orçamento",
+      "short_name": "Orçamento",
+      "description": "Criar um novo orçamento",
+      "url": "/pintopro-app.html?open=orcamentos",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Novo Laudo",
+      "short_name": "Laudo",
+      "description": "Criar um novo laudo técnico",
+      "url": "/pintopro-app.html?open=laudos",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": []
+}
