@@ -85,6 +85,7 @@ ALTER FUNCTION public.limpar_otps_expirados()            SET search_path = publi
 ALTER FUNCTION public.sync_assinatura_on_plano_change()  SET search_path = public;
 ALTER FUNCTION public.trg_email_boas_vindas()            SET search_path = public;
 ALTER FUNCTION public.trg_email_confirmacao_assinatura() SET search_path = public;
+ALTER FUNCTION public.trg_set_atualizado_em()            SET search_path = public;
 
 -- ============================================================
 -- ROLLBACK (reabre o vazamento — usar só em emergência):
