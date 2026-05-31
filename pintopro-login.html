@@ -403,6 +403,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 </div>
 
+<!-- ═══════════ TELA: DEFINIR NOVA SENHA (retorno do link de recuperação) ═══════════ -->
+<div class="scr" id="scr-newpass">
+  <div class="rec-card">
+    <div class="rec-icon">🔒</div>
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">Criar nova senha</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.5">Digite a nova senha da sua conta. Use pelo menos 6 caracteres.</div>
+    </div>
+    <div class="msg err" id="np-err"></div>
+    <div class="msg ok" id="np-ok"></div>
+    <div class="field">
+      <label>Nova senha</label>
+      <input id="np-senha" type="password" placeholder="Nova senha" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>Confirmar nova senha</label>
+      <input id="np-senha2" type="password" placeholder="Repita a nova senha" autocomplete="new-password" onkeydown="if(event.key==='Enter')definirNovaSenha()">
+    </div>
+    <button class="btn btn-acc" id="btn-np" onclick="definirNovaSenha()">Salvar nova senha</button>
+  </div>
+</div>
+
 <script>
 const {createClient} = supabase;
 const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
@@ -641,6 +663,29 @@ async function enviarRecuperacao(){
   }
 }
 
+async function definirNovaSenha(){
+  const s1=document.getElementById('np-senha').value;
+  const s2=document.getElementById('np-senha2').value;
+  const err=document.getElementById('np-err'), ok=document.getElementById('np-ok');
+  err.classList.remove('show'); ok.classList.remove('show');
+  if(!s1 || s1.length<6){ err.textContent='A senha deve ter pelo menos 6 caracteres.'; err.classList.add('show'); return; }
+  if(s1!==s2){ err.textContent='As senhas não conferem.'; err.classList.add('show'); return; }
+  setBtn('btn-np','<div class="spin"></div> Salvando...',true);
+  try{
+    const { error } = await sb.auth.updateUser({ password: s1 });
+    if(error) throw error;
+    ok.textContent='Senha alterada com sucesso! Redirecionando...';
+    ok.classList.add('show');
+    // Limpa o hash de recuperação da URL e entra no app
+    history.replaceState(null,'',window.location.pathname);
+    setTimeout(()=>{ window.location.href='pintopro-app.html'; }, 1200);
+  }catch(e){
+    setBtn('btn-np','Salvar nova senha',false);
+    err.textContent = (e?.message||'').includes('same') ? 'A nova senha não pode ser igual à anterior.' : 'Não foi possível alterar a senha. O link pode ter expirado — solicite um novo.';
+    err.classList.add('show');
+  }
+}
+
 function demo(){
   sessionStorage.setItem('pp_demo',JSON.stringify({id:'demo',nome:'Demo MestrePro',perfil:'pintor',plano:'pro',isDemo:true}));
   window.location.href='pintopro-app.html';
@@ -719,8 +764,27 @@ async function _processarConvitePendente() {
 
 // ══════════════════════════════════════════════════════════════
 
+// ── Recuperação de senha: ao voltar do link, NÃO redireciona para o app;
+//    mostra a tela de definir nova senha. (Supabase coloca type=recovery no hash) ──
+let _recoveryMode = false;
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    _recoveryMode = true;
+    showS('scr-newpass');
+  }
+});
+if (window.location.hash.includes('type=recovery')) {
+  _recoveryMode = true;
+}
+
 (async()=>{
   const params=new URLSearchParams(window.location.search);
+
+  // Se é fluxo de recuperação de senha, mostra a tela de nova senha e para aqui
+  if (_recoveryMode || window.location.hash.includes('type=recovery')) {
+    showS('scr-newpass');
+    return;
+  }
 
   // Detecta link de convite de equipe
   const convite = params.get('convite');
