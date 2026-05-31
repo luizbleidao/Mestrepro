@@ -553,6 +553,12 @@ async function cadastrar(){
 
     if(signUpData?.user?.id){
       const aceitouMarketing = document.getElementById('chk-marketing').checked;
+      // Captura o IP para compor a prova de consentimento (LGPD Art. 8 §1º)
+      let consentIp = null;
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        if (ipRes.ok) consentIp = (await ipRes.json())?.ip || null;
+      } catch (e) { /* IP é melhor-esforço — não bloqueia o cadastro */ }
       const { error: profErr } = await sb.from('profiles').upsert({
         id: signUpData.user.id,
         nome, tel, cidade, perfil,
@@ -562,7 +568,7 @@ async function cadastrar(){
         ativo: true,
         criado_em: new Date().toISOString(),
         consentimento_termos_em: new Date().toISOString(),
-        consentimento_termos_ip: null,
+        consentimento_termos_ip: consentIp,
         consentimento_marketing: aceitouMarketing,
         consentimento_marketing_em: aceitouMarketing ? new Date().toISOString() : null,
       }, { onConflict: 'id' });
