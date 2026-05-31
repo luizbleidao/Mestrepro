@@ -1,4 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
+// esc — escapa HTML para prevenir XSS ao interpolar dados em innerHTML/PDF.
+// ─────────────────────────────────────────────────────────────────────────────
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ─────────────────────────────────────────────────────────────────────────────
 // valorExtenso — converte número para texto em PT-BR (até R$ 999.999.999,99)
 // Extraída como utilitária global para evitar duplicação.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,7 +73,8 @@ async function loadContratos() {
 
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
-    const { data } = await sb.from('contratos').select('id,numero,cliente,endereco,valor,status,dados,assinado_prof,assinado_cli,sig_token,sig_cli_base64,sig_cli_at,sig_cli_nome,sig_cli_ip,sig_prof,sig_token_expires_at,orcamento_id,data_inicio,data_fim,criado_em,atualizado_em').eq('user_id', uid).order('criado_em', { ascending: false });
+    const { data, error } = await sb.from('contratos').select('id,numero,cliente,endereco,valor,status,dados,assinado_prof,assinado_cli,sig_token,sig_cli_base64,sig_cli_at,sig_cli_nome,sig_cli_ip,sig_prof,sig_token_expires_at,orcamento_id,data_inicio,data_fim,criado_em,atualizado_em').eq('user_id', uid).order('criado_em', { ascending: false });
+    if (error) { console.error('[MestrePro] Erro ao carregar contratos:', error.message); }
     _contratos = data || [];
   } else {
     try { _contratos = JSON.parse(localStorage.getItem('pp_contratos') || '[]'); } catch { _contratos = []; }
@@ -87,8 +93,8 @@ function renderContratos() {
     <div class="list-card" onclick="editContrato('${c.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div>
-          <div style="font-size:13px;font-weight:700">${c.cliente || '—'}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">#${c.numero} · ${c.endereco || '—'}</div>
+          <div style="font-size:13px;font-weight:700">${esc(c.cliente) || '—'}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">#${esc(c.numero)} · ${esc(c.endereco) || '—'}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${statusColor[c.status]}22;color:${statusColor[c.status]}">${statusLabel[c.status]}</span>
@@ -634,7 +640,8 @@ async function loadRecibos() {
 
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
-    const { data } = await sb.from('recibos').select('id,numero,cliente,valor,descricao,forma_pgto,data,dados,criado_em,contrato_id,observacao,parcela,orc_id').eq('user_id', uid).order('criado_em', { ascending: false });
+    const { data, error } = await sb.from('recibos').select('id,numero,cliente,valor,descricao,forma_pgto,data,dados,criado_em,contrato_id,observacao,parcela,orc_id').eq('user_id', uid).order('criado_em', { ascending: false });
+    if (error) { console.error('[MestrePro] Erro ao carregar recibos:', error.message); }
     _recibos = data || [];
   } else {
     try { _recibos = JSON.parse(localStorage.getItem('pp_recibos') || '[]'); } catch { _recibos = []; }
@@ -650,9 +657,9 @@ function renderRecibos() {
     <div class="list-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:13px;font-weight:700">${r.cliente||'—'}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">#${r.numero} · ${fmtPgto[r.forma_pgto]||r.forma_pgto} · ${r.parcela||'—'}</div>
-          ${r.descricao?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${r.descricao}</div>`:''}
+          <div style="font-size:13px;font-weight:700">${esc(r.cliente)||'—'}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">#${esc(r.numero)} · ${fmtPgto[r.forma_pgto]||esc(r.forma_pgto)} · ${esc(r.parcela)||'—'}</div>
+          ${r.descricao?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${esc(r.descricao)}</div>`:''}
         </div>
         <div style="font-size:16px;font-weight:800;color:var(--acc)">R$ ${Number(r.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
       </div>
@@ -846,25 +853,25 @@ function gerarPDFRecibo(reciboId) {
   <div class="data-grid">
     <div>
       <div class="data-sec">Pagador (Cliente)</div>
-      <div class="data-row"><span class="data-lbl">Nome</span><span class="data-val">${r.cliente||'—'}</span></div>
-      ${cliDoc ? `<div class="data-row"><span class="data-lbl">CPF / CNPJ</span><span class="data-val">${cliDoc}</span></div>` : ''}
+      <div class="data-row"><span class="data-lbl">Nome</span><span class="data-val">${esc(r.cliente)||'—'}</span></div>
+      ${cliDoc ? `<div class="data-row"><span class="data-lbl">CPF / CNPJ</span><span class="data-val">${esc(cliDoc)}</span></div>` : ''}
     </div>
     <div>
       <div class="data-sec">Recebedor (Prestador)</div>
-      <div class="data-row"><span class="data-lbl">Nome</span><span class="data-val">${emp.nome||'—'}</span></div>
-      ${emp.doc ? `<div class="data-row"><span class="data-lbl">CPF / CNPJ</span><span class="data-val">${emp.doc}</span></div>` : ''}
+      <div class="data-row"><span class="data-lbl">Nome</span><span class="data-val">${esc(emp.nome)||'—'}</span></div>
+      ${emp.doc ? `<div class="data-row"><span class="data-lbl">CPF / CNPJ</span><span class="data-val">${esc(emp.doc)}</span></div>` : ''}
     </div>
   </div>
 
   <!-- DETALHES DO PAGAMENTO -->
   <div class="detail-sec">Detalhes do Pagamento</div>
   <div class="data-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-    <div class="data-row"><span class="data-lbl">Forma</span><span class="data-val">${fmtPgto[r.forma_pgto]||r.forma_pgto}</span></div>
+    <div class="data-row"><span class="data-lbl">Forma</span><span class="data-val">${fmtPgto[r.forma_pgto]||esc(r.forma_pgto)}</span></div>
     <div class="data-row"><span class="data-lbl">Data</span><span class="data-val">${dataPgto}</span></div>
-    ${r.parcela ? `<div class="data-row"><span class="data-lbl">Referência</span><span class="data-val">${r.parcela}</span></div>` : '<div></div>'}
+    ${r.parcela ? `<div class="data-row"><span class="data-lbl">Referência</span><span class="data-val">${esc(r.parcela)}</span></div>` : '<div></div>'}
   </div>
-  ${r.descricao ? `<div class="clause-box" style="margin-bottom:6px"><strong>Serviços:</strong> ${r.descricao}</div>` : ''}
-  ${r.observacao ? `<div class="clause-box" style="margin-bottom:6px"><strong>Obs:</strong> ${r.observacao}</div>` : ''}
+  ${r.descricao ? `<div class="clause-box" style="margin-bottom:6px"><strong>Serviços:</strong> ${esc(r.descricao)}</div>` : ''}
+  ${r.observacao ? `<div class="clause-box" style="margin-bottom:6px"><strong>Obs:</strong> ${esc(r.observacao)}</div>` : ''}
 
   <!-- DECLARAÇÃO FORMAL -->
   <div class="quitacao">
@@ -887,14 +894,14 @@ function gerarPDFRecibo(reciboId) {
   const canhotoBrief = `
   <div class="cut-line">✂&nbsp;&nbsp;&nbsp;CANHOTO DO RECIBO&nbsp;&nbsp;&nbsp;✂</div>
   <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
-    <div><strong>${emp.nome||'Empresa'}</strong></div>
+    <div><strong>${esc(emp.nome)||'Empresa'}</strong></div>
     <div style="text-align:right">
-      <div style="font-weight:800;font-size:13px;color:#0D2E6B">RECIBO #${r.numero}</div>
+      <div style="font-weight:800;font-size:13px;color:#0D2E6B">RECIBO #${esc(r.numero)}</div>
       <div style="font-size:9px;color:#888">${dataPgto}</div>
     </div>
   </div>
   <div style="display:flex;gap:16px;font-size:9.5px;margin-top:4px;flex-wrap:wrap">
-    <div><span style="color:#888;text-transform:uppercase;font-size:8.5px;font-weight:700">Cliente: </span>${r.cliente}</div>
+    <div><span style="color:#888;text-transform:uppercase;font-size:8.5px;font-weight:700">Cliente: </span>${esc(r.cliente)}</div>
     <div><span style="color:#888;text-transform:uppercase;font-size:8.5px;font-weight:700">Valor: </span><strong style="color:#0D2E6B">${valorFmt}</strong></div>
     ${r.parcela?`<div><span style="color:#888;font-size:8.5px;font-weight:700;text-transform:uppercase">Ref: </span>${r.parcela}</div>`:''}
     <div><span style="color:#888;font-size:8.5px;font-weight:700;text-transform:uppercase">Forma: </span>${fmtPgto[r.forma_pgto]||r.forma_pgto}</div>
@@ -954,7 +961,8 @@ const _TIPO_IC  = { servico:'🔨', visita:'🔍', reuniao:'💬', prazo:'⏰', 
 async function loadAgenda() {
   const uid = USER?.id;
   if (uid && uid !== 'demo') {
-    const { data } = await sb.from('agenda').select('id,titulo,cliente,endereco,tipo,status,data_inicio,data_fim,hora_inicio,hora_fim,cor,obs,criado_em,atualizado_em').eq('user_id', uid).order('data_inicio');
+    const { data, error } = await sb.from('agenda').select('id,titulo,cliente,endereco,tipo,status,data_inicio,data_fim,hora_inicio,hora_fim,cor,obs,criado_em,atualizado_em').eq('user_id', uid).order('data_inicio');
+    if (error) { console.error('[MestrePro] Erro ao carregar agenda:', error.message); }
     _eventos = (data || []).map(e => ({...e, inicio: e.data_inicio, fim: e.data_fim}));
   } else {
     try { _eventos = JSON.parse(localStorage.getItem('pp_agenda') || '[]'); } catch { _eventos = []; }

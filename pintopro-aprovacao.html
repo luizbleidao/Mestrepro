@@ -173,29 +173,16 @@ async function init() {
   if (!url || !key) { showErro('Configuração ausente', 'Erro interno. Tente novamente mais tarde.'); return; }
   _sb = window.supabase.createClient(url, key);
 
-  // Busca o orçamento pelo token de aprovação
-  const { data, error } = await _sb
-    .from('orcamentos')
-    .select('id, numero, cliente, endereco, status, total, data_completa, aprov_token, aprov_status, aprov_at, aprov_motivo, user_id, mode')
-    .eq('aprov_token', _apToken)
-    .single();
-
-  if (error || !data) {
-    // Tenta buscar pelo sig_token para compatibilidade retroativa
-    const { data: d2, error: e2 } = await _sb
-      .from('orcamentos')
-      .select('id, numero, cliente, endereco, status, total, data_completa, aprov_token, aprov_status, aprov_at, aprov_motivo, user_id, mode, sig_token')
-      .eq('sig_token', _apToken)
-      .single();
-    if (e2 || !d2) { showErro('Orçamento não encontrado', 'Este link pode ter expirado ou ser inválido. Solicite um novo link ao profissional.'); return; }
-    _orc = d2; _orcId = d2.id;
-  } else {
-    _orc = data; _orcId = data.id;
-  }
+  // Busca via RPC SECURITY DEFINER (filtra pelo token exato — não expõe outros orçamentos)
+  const { data, error } = await _sb.rpc('pub_orcamento_aprovacao', { p_token: _apToken });
+  if (error) { showErro('Erro de conexão', 'Não foi possível carregar o orçamento. Tente novamente em instantes.'); return; }
+  if (!data) { showErro('Orçamento não encontrado', 'Este link pode ter expirado ou ser inválido. Solicite um novo link ao profissional.'); return; }
+  _orc = data; _orcId = data.id;
 
   renderOrcamento(_orc);
 }
 
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(v){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T12:00:00'); return d.toLocaleDateString('pt-BR'); }
 
@@ -220,7 +207,7 @@ function renderOrcamento(o) {
     const at = o.aprov_at ? new Date(o.aprov_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
     statusHtml = `<div class="status-bar approved"><span class="status-icon">✅</span> Orçamento <strong>aprovado</strong>${at?' em '+at:''}.</div>`;
   } else if (isRefused) {
-    statusHtml = `<div class="status-bar refused"><span class="status-icon">❌</span> Orçamento <strong>recusado</strong>${o.aprov_motivo?' — "'+o.aprov_motivo+'"':''}.</div>`;
+    statusHtml = `<div class="status-bar refused"><span class="status-icon">❌</span> Orçamento <strong>recusado</strong>${o.aprov_motivo?' — "'+esc(o.aprov_motivo)+'"':''}.</div>`;
   } else {
     statusHtml = `<div class="status-bar pending"><span class="status-icon">⏳</span> Aguardando sua decisão sobre esta proposta.</div>`;
   }
@@ -235,9 +222,9 @@ function renderOrcamento(o) {
   servicos.forEach(sv => {
     const hasPat = sv.patologia;
     servHtml += `<div class="serv-card">
-      <div class="serv-name">${sv.nome||'Serviço'} ${hasPat?'<span class="pat-tag">⚠️ Correção inclusa</span>':''}</div>
+      <div class="serv-name">${esc(sv.nome)||'Serviço'} ${hasPat?'<span class="pat-tag">⚠️ Correção inclusa</span>':''}</div>
       <div class="serv-meta">
-        <span>${sv.tipoServico||''}</span>
+        <span>${esc(sv.tipoServico)||''}</span>
         <span class="serv-val">R$ ${fmt(sv.valorServico||0)}</span>
       </div>
     </div>`;
@@ -249,7 +236,7 @@ function renderOrcamento(o) {
   if (materiais.length && o.mode !== 'rel') {
     materiais.forEach(m => {
       const val = m.total || m.subtotal || (parseFloat(m.preco||0)*parseFloat(m.qtd||1));
-      matHtml += `<div class="mat-row"><span class="mat-name">${m.nome||m.descricao||'Item'} ${m.qtd>1?'(×'+m.qtd+')':''}</span><span class="mat-val">R$ ${fmt(val)}</span></div>`;
+      matHtml += `<div class="mat-row"><span class="mat-name">${esc(m.nome||m.descricao)||'Item'} ${m.qtd>1?'(×'+esc(m.qtd)+')':''}</span><span class="mat-val">R$ ${fmt(val)}</span></div>`;
     });
     matHtml = `<div class="section">
       <div class="section-title">🛒 Materiais / Produtos</div>
@@ -290,7 +277,7 @@ function renderOrcamento(o) {
 
   // Obs
   const obs = dc.observacoes || dc.obs || '';
-  const obsHtml = obs ? `<div class="section"><div class="section-title">📝 Observações</div><div class="obs-box">${obs}</div></div>` : '';
+  const obsHtml = obs ? `<div class="section"><div class="section-title">📝 Observações</div><div class="obs-box">${esc(obs)}</div></div>` : '';
 
   // Ações
   const actionHtml = isDone ? '' : `
@@ -309,18 +296,18 @@ function renderOrcamento(o) {
     <div class="card" style="overflow:hidden">
       <div class="orc-header">
         <div class="orc-num">Orçamento #${o.numero||'—'} · ${fmtDate(dc.data||o.data)}</div>
-        <div class="orc-title">${dc.nomeProjeto||dc.nome_projeto||o.cliente||'Proposta de serviço'}</div>
-        ${empresa?`<div class="orc-meta">por ${empresa}${pintor?' · '+pintor:''}${contato?' · '+contato:''}</div>`:''}
+        <div class="orc-title">${esc(dc.nomeProjeto||dc.nome_projeto||o.cliente)||'Proposta de serviço'}</div>
+        ${empresa?`<div class="orc-meta">por ${esc(empresa)}${pintor?' · '+esc(pintor):''}${contato?' · '+esc(contato):''}</div>`:''}
         <div class="orc-total-badge">R$ ${fmt(total)}</div>
       </div>
 
       <div class="section">
         <div class="section-title">📋 Informações gerais</div>
         <div class="info-grid">
-          <div class="info-item"><label>Cliente</label><span>${o.cliente||'—'}</span></div>
-          <div class="info-item"><label>Endereço / Local</label><span>${o.endereco||'—'}</span></div>
-          ${dc.prazo?`<div class="info-item"><label>Prazo estimado</label><span>${dc.prazo}</span></div>`:''}
-          ${dc.condicaoPagamento||dc.pagamento?`<div class="info-item"><label>Pagamento</label><span>${dc.condicaoPagamento||dc.pagamento}</span></div>`:''}
+          <div class="info-item"><label>Cliente</label><span>${esc(o.cliente)||'—'}</span></div>
+          <div class="info-item"><label>Endereço / Local</label><span>${esc(o.endereco)||'—'}</span></div>
+          ${dc.prazo?`<div class="info-item"><label>Prazo estimado</label><span>${esc(dc.prazo)}</span></div>`:''}
+          ${dc.condicaoPagamento||dc.pagamento?`<div class="info-item"><label>Pagamento</label><span>${esc(dc.condicaoPagamento||dc.pagamento)}</span></div>`:''}
         </div>
         ${validadeHtml}
       </div>

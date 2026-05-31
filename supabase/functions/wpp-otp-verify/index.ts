@@ -107,13 +107,16 @@ Deno.serve(async (req) => {
     // Código correto — marcar como usado
     await sb.from('otp_verificacoes').update({ usado: true }).eq('id', otp.id);
 
-    // Token de verificação com expiração de 30 min
+    // Token de verificação com expiração de 30 min — ASSINADO com HMAC para
+    // impedir forja (sem assinatura, qualquer um geraria token p/ qualquer telefone).
     const tokenPayload = {
       telefone: telNorm,
       verificado_em: new Date().toISOString(),
       expira_em: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     };
-    const tokenStr = btoa(JSON.stringify(tokenPayload));
+    const payloadB64 = btoa(JSON.stringify(tokenPayload));
+    const assinatura = await hmacSHA256(payloadB64, secret);
+    const tokenStr = `${payloadB64}.${assinatura}`;
 
     return new Response(
       JSON.stringify({

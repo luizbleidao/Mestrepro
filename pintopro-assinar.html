@@ -190,27 +190,15 @@ function show(id) {
 async function init() {
   if (!TOKEN) { show('scr-erro'); document.getElementById('erro-msg').textContent = 'Token de assinatura ausente na URL.'; return; }
 
-  // Try orcamentos first, then laudos
+  // Busca via RPC SECURITY DEFINER (filtra pelo sig_token exato — não expõe outros documentos)
   let rec = null, docType = null;
-
-  const { data: orc } = await sb.from('orcamentos')
-    .select('id,numero,cliente,endereco,total,status,sig_token,sig_token_expires_at,sig_cliente,sig_cliente_at,sig_cliente_nome,data_completa')
-    .eq('sig_token', TOKEN).single();
-
-  if (orc) { rec = orc; docType = 'orcamento'; }
-  else {
-    const { data: ldo } = await sb.from('laudos')
-      .select('id,numero,cliente,obra,criticidade,sig_token,sig_token_expires_at,sig_cliente,sig_cliente_at,sig_cliente_nome,dados')
-      .eq('sig_token', TOKEN).single();
-    if (ldo) { rec = ldo; docType = 'laudo'; }
-  }
-
-  if (!rec) {
-    // Try contratos
-    const { data: ct } = await sb.from('contratos')
-      .select('id,numero,cliente,endereco,valor,status,sig_token,sig_token_expires_at,assinado_cli,sig_cli_at,sig_cli_nome,dados')
-      .eq('sig_token', TOKEN).single();
-    if (ct) { rec = ct; rec.sig_cliente = ct.assinado_cli; rec.sig_cliente_at = ct.sig_cli_at; rec.sig_cliente_nome = ct.sig_cli_nome; docType = 'contrato'; }
+  const { data: rec0, error: recErr } = await sb.rpc('pub_documento_assinatura', { p_token: TOKEN });
+  if (recErr) { show('scr-erro'); return; }
+  if (rec0) {
+    rec = rec0; docType = rec0._tipo;
+    if (docType === 'contrato') {
+      rec.sig_cliente = rec0.assinado_cli; rec.sig_cliente_at = rec0.sig_cli_at; rec.sig_cliente_nome = rec0.sig_cli_nome;
+    }
   }
   if (!rec) { show('scr-erro'); return; }
 

@@ -1438,7 +1438,7 @@ function gerarRelatorioMensal(){
   +'<script>window.onload=function(){window.print();}<\/script>'
   +'</body></html>';
  const w=window.open('','_blank');
- if(w){w.document.write(html);w.document.close();}
+ if(w){w.opener=null;w.document.write(html);w.document.close();}
  else toast('Permita popups para gerar o relatório');
 }
 
@@ -2573,7 +2573,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#222;backgroun
  </body></html>`;
 
  const w=window.open('','_blank');
- if(w){w.document.write(html);w.document.close();}
+ if(w){w.opener=null;w.document.write(html);w.document.close();}
  else toast('Permita popups para exportar o PDF');
 }
 

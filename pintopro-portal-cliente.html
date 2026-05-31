@@ -131,6 +131,7 @@ const _portalToken = _p.get('ptoken') || _p.get('token');
 let _sb, _portalData, _msgs = [], _channel = null, _sending = false;
 
 // ── HELPERS ───────────────────────────────────────────────────
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(v){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtDate(s){ if(!s)return'—'; return new Date(s.includes('T')?s:s+'T12:00:00').toLocaleDateString('pt-BR'); }
 function fmtDateTime(s){ if(!s)return''; return new Date(s).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
@@ -145,26 +146,12 @@ async function init() {
   if (!url || !key) { showErro('Configuração ausente', 'Erro interno.'); return; }
   _sb = window.supabase.createClient(url, key);
 
-  // Busca dados do portal (tabela portais_cliente ou orcamentos com portal_token)
+  // Busca via RPC SECURITY DEFINER (filtra pelo token exato — não expõe outros orçamentos)
   let orc = null;
   try {
-    const { data, error } = await _sb
-      .from('orcamentos')
-      .select('id, numero, cliente, endereco, status, total, data_completa, sig_token, aprov_status, user_id, mode, portal_token, portal_progresso, portal_fotos, portal_mensagens, portal_etapa')
-      .eq('portal_token', _portalToken)
-      .single();
-    if (!error && data) orc = data;
-  } catch(e){}
-
-  // Fallback: busca pelo aprov_token (compatibilidade)
-  if (!orc) {
-    try {
-      const { data } = await _sb.from('orcamentos')
-        .select('id, numero, cliente, endereco, status, total, data_completa, sig_token, aprov_status, user_id, mode, portal_token, portal_progresso, portal_fotos, portal_mensagens, portal_etapa')
-        .eq('aprov_token', _portalToken).single();
-      if (data) orc = data;
-    } catch(e){}
-  }
+    const { data } = await _sb.rpc('pub_orcamento_portal', { p_token: _portalToken });
+    if (data) orc = data;
+  } catch(e){ console.warn('[MestrePro] Erro ao carregar portal:', e); }
 
   if (!orc) { showErro('Portal não encontrado', 'Link inválido ou expirado. Solicite um novo link ao profissional.'); return; }
 
@@ -229,12 +216,12 @@ function renderPortal(o) {
 
   // Fotos HTML
   let fotosHtml = fotos.length
-    ? `<div class="fotos-grid">${fotos.map((f,i)=>`<div class="foto-item" onclick="openLb('${f}')"><img src="${f}" alt="Foto ${i+1}" loading="lazy"></div>`).join('')}</div>`
+    ? `<div class="fotos-grid">${fotos.map((f,i)=>`<div class="foto-item" data-src="${esc(f)}" onclick="openLb(this.dataset.src)"><img src="${esc(f)}" alt="Foto ${i+1}" loading="lazy"></div>`).join('')}</div>`
     : `<div class="foto-empty">📷 Nenhuma foto enviada ainda pelo profissional.</div>`;
 
   // Mensagens HTML
   const msgsHtml = _msgs.length
-    ? _msgs.map(m=>`<div class="msg ${m.de||'pintor'}"><div>${m.texto}</div><div class="msg-meta">${m.de==='cliente'?'Você':'Profissional'} · ${fmtDateTime(m.em)}</div></div>`).join('')
+    ? _msgs.map(m=>`<div class="msg ${m.de==='cliente'?'cliente':'pintor'}"><div>${esc(m.texto)}</div><div class="msg-meta">${m.de==='cliente'?'Você':'Profissional'} · ${fmtDateTime(m.em)}</div></div>`).join('')
     : '<div style="text-align:center;font-size:12px;color:var(--text3);padding:12px">Sem mensagens ainda. Mande uma pergunta!</div>';
 
   // Botão de assinatura
@@ -257,12 +244,12 @@ function renderPortal(o) {
       <div class="card-header"><span>📋</span><span class="card-header-title">Detalhes do serviço</span></div>
       <div class="card-body">
         <div class="info-grid">
-          <div class="info-item"><label>Cliente</label><span>${o.cliente||'—'}</span></div>
-          <div class="info-item"><label>Local</label><span>${o.endereco||'—'}</span></div>
+          <div class="info-item"><label>Cliente</label><span>${esc(o.cliente)||'—'}</span></div>
+          <div class="info-item"><label>Local</label><span>${esc(o.endereco)||'—'}</span></div>
           <div class="info-item"><label>Data do orçamento</label><span>${fmtDate(dc.data||o.data)}</span></div>
-          ${dc.prazo?`<div class="info-item"><label>Prazo estimado</label><span>${dc.prazo}</span></div>`:''}
-          ${dc.condicaoPagamento?`<div class="info-item"><label>Forma de pagamento</label><span>${dc.condicaoPagamento}</span></div>`:''}
-          <div class="info-item"><label>Status</label><span>${statusMap[status]||status}</span></div>
+          ${dc.prazo?`<div class="info-item"><label>Prazo estimado</label><span>${esc(dc.prazo)}</span></div>`:''}
+          ${dc.condicaoPagamento?`<div class="info-item"><label>Forma de pagamento</label><span>${esc(dc.condicaoPagamento)}</span></div>`:''}
+          <div class="info-item"><label>Status</label><span>${statusMap[status]||esc(status)}</span></div>
         </div>
       </div>
     </div>

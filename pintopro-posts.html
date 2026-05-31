@@ -386,6 +386,7 @@ function limparHistorico() {
 <script>
 // Sync tema com app pai
 window.addEventListener('message', e => {
+  if (e.origin !== window.location.origin) return;
   if (!e.data || e.data.type !== 'pp_cmd') return;
   if (e.data.cmd === 'syncUser') {
     // Recebe userId e plano do app pai — necessário pois sessionStorage é isolado por iframe

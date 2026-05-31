@@ -592,6 +592,7 @@ const PERFIL_BADGE= { pintor:'b-blue', lojista:'b-amber' };
 let allUsers=[], allPags=[], adminUser=null;
 
 // ── Formatação ────────────────────────────────────────────
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate = d => { if(!d)return'—'; const dt=new Date(d); return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`; };
 const fmtHora = d => { if(!d)return'—'; const dt=new Date(d); return `${fmtDate(d)} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`; };
 
@@ -679,10 +680,10 @@ function renderUsersTable(list){
   wrap.innerHTML=`<table>
     <thead><tr><th>Nome</th><th>Perfil</th><th>Plano</th><th>Cidade</th><th>Cadastro</th><th>Status</th><th>Ações</th></tr></thead>
     <tbody>${list.map(u=>`<tr>
-      <td><div>${u.nome||'—'}</div><div style="font-size:11px;color:var(--text3)">${u.email||''}</div></td>
-      <td><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${u.perfil||'—'}</span></td>
-      <td><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano||'—'}</span></td>
-      <td>${u.cidade||'—'}</td>
+      <td><div>${esc(u.nome)||'—'}</div><div style="font-size:11px;color:var(--text3)">${esc(u.email)}</div></td>
+      <td><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${esc(u.perfil)||'—'}</span></td>
+      <td><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||esc(u.plano)||'—'}</span></td>
+      <td>${esc(u.cidade)||'—'}</td>
       <td>${fmtDate(u.criado_em)}</td>
       <td><span class="badge ${u.ativo!==false?'b-green':'b-red'}">${u.ativo!==false?'Ativo':'Suspenso'}</span></td>
       <td><div style="display:flex;gap:5px">
@@ -699,10 +700,10 @@ function renderUltimosTable(list){
   wrap.innerHTML=`<table>
     <thead><tr><th>Nome</th><th>Perfil</th><th>Plano</th><th>Cidade</th><th>Cadastro</th></tr></thead>
     <tbody>${list.map(u=>`<tr>
-      <td>${u.nome||'—'}</td>
-      <td><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${u.perfil||'—'}</span></td>
-      <td><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano||'—'}</span></td>
-      <td>${u.cidade||'—'}</td>
+      <td>${esc(u.nome)||'—'}</td>
+      <td><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${esc(u.perfil)||'—'}</span></td>
+      <td><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||esc(u.plano)||'—'}</span></td>
+      <td>${esc(u.cidade)||'—'}</td>
       <td>${fmtDate(u.criado_em)}</td>
     </tr>`).join('')}</tbody>
   </table>`;
@@ -714,18 +715,18 @@ function openUser(id){
   document.getElementById('modal-usr-title').textContent = u.nome || 'Usuário';
   document.getElementById('modal-usr-body').innerHTML = `
     <div class="modal-row"><span class="lb2">ID</span><span style="font-family:monospace;font-size:11px">${u.id.slice(0,16)}...</span></div>
-    <div class="modal-row"><span class="lb2">Nome</span><span>${u.nome||'—'}</span></div>
-    <div class="modal-row"><span class="lb2">Perfil</span><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${u.perfil||'—'}</span></div>
-    <div class="modal-row"><span class="lb2">E-mail</span><span style="font-size:13px;color:var(--text2)">${u.email||'—'}</span></div>
-    <div class="modal-row"><span class="lb2">Plano</span><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||u.plano||'—'}</span></div>
-    <div class="modal-row"><span class="lb2">WhatsApp</span><span>${u.tel||'—'}</span></div>
-    <div class="modal-row"><span class="lb2">Cidade</span><span>${u.cidade||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">Nome</span><span>${esc(u.nome)||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">Perfil</span><span class="badge ${PERFIL_BADGE[u.perfil]||'b-gray'}">${esc(u.perfil)||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">E-mail</span><span style="font-size:13px;color:var(--text2)">${esc(u.email)||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">Plano</span><span class="badge ${PLANO_BADGE[u.plano]||'b-gray'}">${PLANO_LABEL[u.plano]||esc(u.plano)||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">WhatsApp</span><span>${esc(u.tel)||'—'}</span></div>
+    <div class="modal-row"><span class="lb2">Cidade</span><span>${esc(u.cidade)||'—'}</span></div>
     <div class="modal-row"><span class="lb2">Cadastro</span><span>${fmtDate(u.criado_em)}</span></div>
     <div class="modal-row"><span class="lb2">Status</span><span class="badge ${u.ativo!==false?'b-green':'b-red'}">${u.ativo!==false?'Ativo':'Suspenso'}</span></div>
-    ${u.obs_admin?`<div class="modal-row"><span class="lb2">Obs. admin</span><span style="font-size:12px">${u.obs_admin}</span></div>`:''}
+    ${u.obs_admin?`<div class="modal-row"><span class="lb2">Obs. admin</span><span style="font-size:12px">${esc(u.obs_admin)}</span></div>`:''}
     <div style="margin-top:14px">
       <div class="field"><label>Observação interna</label>
-        <input id="obs-inp-${id}" type="text" value="${u.obs_admin||''}" placeholder="Anotação para uso interno..." style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+        <input id="obs-inp-${id}" type="text" value="${esc(u.obs_admin)}" placeholder="Anotação para uso interno..." style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
       </div>
     </div>
     <div class="modal-actions">
@@ -878,7 +879,7 @@ function renderPagsPendentes(list){
     <tbody>${list.map(p=>{
       const u = allUsers.find(x=>x.id===p.user_id);
       return `<tr>
-        <td>${u?.nome||'—'} ${u?.tel?`<a href="https://wa.me/55${u.tel.replace(/\D/g,'')}" target="_blank" style="font-size:11px;color:#25d366;margin-left:6px">📲</a>`:''}
+        <td>${esc(u?.nome)||'—'} ${u?.tel?`<a href="https://wa.me/55${u.tel.replace(/\D/g,'')}" target="_blank" rel="noopener" style="font-size:11px;color:#25d366;margin-left:6px">📲</a>`:''}
         </td>
         <td><span class="badge ${PLANO_BADGE[p.plano]||'b-gray'}">${PLANO_LABEL[p.plano]||p.plano}</span></td>
         <td style="color:var(--green);font-family:'DM Mono',monospace">R$ ${Number(p.valor||0).toFixed(2)}</td>
@@ -1017,9 +1018,9 @@ async function loadMetricas(){
   const fmtD = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
   const rows = producao.map(r => `
     <tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:9px 10px">${r.nome||'—'}</td>
-      <td style="padding:9px 10px;font-size:12px;color:var(--text3)">${r.email||'—'}</td>
-      <td style="padding:9px 10px"><span class="badge b-blue">${r.plano||'gratuito'}</span></td>
+      <td style="padding:9px 10px">${esc(r.nome)||'—'}</td>
+      <td style="padding:9px 10px;font-size:12px;color:var(--text3)">${esc(r.email)||'—'}</td>
+      <td style="padding:9px 10px"><span class="badge b-blue">${esc(r.plano)||'gratuito'}</span></td>
       <td style="padding:9px 10px;text-align:center;font-weight:700;color:var(--acc)">${r.total_orcamentos}</td>
       <td style="padding:9px 10px;text-align:center;font-weight:700;color:var(--green)">${r.total_laudos}</td>
       <td style="padding:9px 10px;text-align:center;font-weight:600">${Number(r.total_orcamentos)+Number(r.total_laudos)}</td>
@@ -1131,14 +1132,14 @@ function renderIndicacoesTable(list){
   wrap.innerHTML=`<table>
     <thead><tr><th>Referrer</th><th>Indicado</th><th>Status</th><th>Plano</th><th>Comissão</th><th>Payout</th><th>Data</th></tr></thead>
     <tbody>${list.map(i=>`<tr>
-      <td><div>${i.referrer_nome||'—'}</div><div style="font-size:11px;color:var(--text3)">${i.referrer_email||''}</div></td>
-      <td style="font-size:12px">${i.indicado_email||'—'}</td>
-      <td><span class="badge ${stBadge[i.status]||'b-gray'}">${i.status}</span></td>
-      <td>${i.plano_contratado?`<span class="badge ${PLANO_BADGE[i.plano_contratado]||'b-gray'}">${PLANO_LABEL[i.plano_contratado]||i.plano_contratado}</span>`:'—'}</td>
+      <td><div>${esc(i.referrer_nome)||'—'}</div><div style="font-size:11px;color:var(--text3)">${esc(i.referrer_email)}</div></td>
+      <td style="font-size:12px">${esc(i.indicado_email)||'—'}</td>
+      <td><span class="badge ${stBadge[i.status]||'b-gray'}">${esc(i.status)}</span></td>
+      <td>${i.plano_contratado?`<span class="badge ${PLANO_BADGE[i.plano_contratado]||'b-gray'}">${PLANO_LABEL[i.plano_contratado]||esc(i.plano_contratado)}</span>`:'—'}</td>
       <td style="font-family:'DM Mono',monospace;font-size:12px">${i.comissao_pct||20}% → R$${parseFloat(i.comissao_brl||0).toFixed(2)}</td>
       <td>
-        <span class="badge ${ptBadge[i.payout_status||'pendente']||'b-gray'}">${i.payout_status||'pendente'}</span>
-        ${i.payout_erro?`<div style="font-size:10px;color:#f87171;margin-top:2px" title="${i.payout_erro}">⚠️ ${i.payout_erro.slice(0,35)}...</div>`:''}
+        <span class="badge ${ptBadge[i.payout_status||'pendente']||'b-gray'}">${esc(i.payout_status)||'pendente'}</span>
+        ${i.payout_erro?`<div style="font-size:10px;color:#f87171;margin-top:2px" title="${esc(i.payout_erro)}">⚠️ ${esc(String(i.payout_erro).slice(0,35))}...</div>`:''}
       </td>
       <td style="font-size:12px">${fmtDate(i.criado_em)}</td>
     </tr>`).join('')}</tbody>
@@ -1250,9 +1251,9 @@ async function loadIaUso(){
   wrap.innerHTML=`<table>
     <thead><tr><th>Usuário</th><th>Plano</th><th>Feature</th><th>Usos</th><th>Tokens</th><th>Erros</th><th>Último uso</th></tr></thead>
     <tbody>${allIaUso.map(r=>`<tr>
-      <td><div>${r.nome||'—'}</div><div style="font-size:11px;color:var(--text3)">${r.email||''}</div></td>
-      <td><span class="badge ${PLANO_BADGE[r.plano]||'b-gray'}">${PLANO_LABEL[r.plano]||r.plano||'—'}</span></td>
-      <td>${featureIcon[r.feature]||'🤖'} ${r.feature}</td>
+      <td><div>${esc(r.nome)||'—'}</div><div style="font-size:11px;color:var(--text3)">${esc(r.email)}</div></td>
+      <td><span class="badge ${PLANO_BADGE[r.plano]||'b-gray'}">${PLANO_LABEL[r.plano]||esc(r.plano)||'—'}</span></td>
+      <td>${featureIcon[r.feature]||'🤖'} ${esc(r.feature)}</td>
       <td style="text-align:center;font-weight:700;color:var(--acc)">${r.total_usos}</td>
       <td style="text-align:center;font-family:'DM Mono',monospace;font-size:12px">${Number(r.total_tokens||0).toLocaleString('pt-BR')}</td>
       <td style="text-align:center;color:${Number(r.erros)>0?'var(--red)':'var(--green)'}">${r.erros}</td>
@@ -1294,10 +1295,10 @@ async function loadRetencao(){
       churnWrap.innerHTML='<div class="tbl-empty">✅ Nenhum usuário pago inativo há 14+ dias</div>';
     } else {
       churnWrap.innerHTML=`<table><thead><tr><th>Nome</th><th>Plano</th><th>Última atividade</th><th>Ação</th></tr></thead><tbody>${churnRisk.map(r=>`<tr>
-        <td>${r.nome||'—'}</td>
-        <td><span class="badge b-green">${r.plano}</span></td>
+        <td>${esc(r.nome)||'—'}</td>
+        <td><span class="badge b-green">${esc(r.plano)}</span></td>
         <td style="font-size:11px;color:var(--red)">${fmtHora(r.updated_at)}</td>
-        <td><button class="btn btn-sm btn-ghost" onclick="verUsuario('${r.id}')">👁 Ver</button></td>
+        <td><button class="btn btn-sm btn-ghost" onclick="openUser('${r.id}')">👁 Ver</button></td>
       </tr>`).join('')}</tbody></table>`;
     }
   }
@@ -1312,8 +1313,8 @@ async function loadRetencao(){
       novosWrap.innerHTML='<div class="tbl-empty">Nenhum novo cadastro nesta semana</div>';
     } else {
       novosWrap.innerHTML=`<table><thead><tr><th>Nome</th><th>Plano</th><th>Cadastrado em</th></tr></thead><tbody>${novos.map(r=>`<tr>
-        <td>${r.nome||'—'}</td>
-        <td><span class="badge ${['pro','equipe','ia-pro','ia_pro'].includes(r.plano)?'b-green':'b-amber'}">${r.plano||'gratuito'}</span></td>
+        <td>${esc(r.nome)||'—'}</td>
+        <td><span class="badge ${['pro','equipe','ia-pro','ia_pro'].includes(r.plano)?'b-green':'b-amber'}">${esc(r.plano)||'gratuito'}</span></td>
         <td style="font-size:11px">${fmtHora(r.criado_em)}</td>
       </tr>`).join('')}</tbody></table>`;
     }

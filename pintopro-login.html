@@ -466,7 +466,7 @@ function irMP(plano,evt){
     value: precos[plano]||0
   });
   const url=MP[plano]?.[periodo];
-  if(url) window.open(url,'_blank');
+  if(url) window.open(url,'_blank','noopener');
 }
 
 async function login(){

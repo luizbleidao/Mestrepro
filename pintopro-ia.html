@@ -717,6 +717,7 @@ async function executarResumoCliente() {
 
 // ── TEMA ──────────────────────────────────────────────────────────────────
 window.addEventListener('message', (e) => {
+  if (e.origin !== window.location.origin) return;
   if (!e.data || e.data.type !== 'pp_cmd') return;
   if (e.data.cmd === 'syncTheme') {
     document.documentElement.setAttribute('data-theme', e.data.theme || 'dark');

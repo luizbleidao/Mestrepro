@@ -207,7 +207,7 @@ serve(async (req: Request) => {
 
     if (fnErr) {
       console.error('[webhook-mp] ativar_plano() erro:', fnErr);
-      return new Response('DB error: ' + fnErr.message, { status: 500 });
+      return new Response('Internal error', { status: 500 });
     }
 
     console.log(`[webhook-mp] ✅ Plano ${planoInfo.plano} ativado para user ${userId} até ${fim.toISOString()}`);
@@ -271,7 +271,7 @@ serve(async (req: Request) => {
 
   } catch (err) {
     console.error('[webhook-mp] Erro inesperado:', err);
-    return new Response('Internal error: ' + String(err), { status: 500 });
+    return new Response('Internal error', { status: 500 });
   }
 });
 

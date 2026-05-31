@@ -32,9 +32,9 @@ serve(async (req: Request) => {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  // Verificar origem interna (header secreto simples)
+  // Verificar origem interna (fail-closed: se o secret não estiver configurado, recusa tudo)
   const internalSecret = Deno.env.get('INTERNAL_SECRET') ?? '';
-  if (internalSecret && req.headers.get('x-internal-secret') !== internalSecret) {
+  if (!internalSecret || req.headers.get('x-internal-secret') !== internalSecret) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -45,15 +45,42 @@ serve(async (req: Request) => {
     return new Response('Body inválido', { status: 400 });
   }
 
-  const { indicacao_id, referrer_id, comissao_brl } = body;
+  const { indicacao_id, referrer_id } = body;
 
-  if (!indicacao_id || !referrer_id || !comissao_brl) {
+  if (!indicacao_id || !referrer_id) {
     return new Response('Parâmetros ausentes', { status: 422 });
   }
 
   const sbUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   const sb    = createClient(sbUrl, sbKey);
+
+  // ── Idempotência + valor canônico: a fonte de verdade é a tabela, NUNCA o body ──
+  const { data: indic, error: indicErr } = await sb
+    .from('indicacoes')
+    .select('comissao_brl, payout_status, referrer_id')
+    .eq('id', indicacao_id)
+    .single();
+
+  if (indicErr || !indic) {
+    console.error('[pagar-comissao] Indicação não encontrada:', indicErr?.message);
+    return new Response(JSON.stringify({ ok: false, motivo: 'indicacao_nao_encontrada' }), { status: 200 });
+  }
+
+  // Confere consistência do referrer (defesa em profundidade contra body forjado)
+  if (indic.referrer_id !== referrer_id) {
+    console.error('[pagar-comissao] referrer_id do body diverge da indicação — abortando.');
+    return new Response(JSON.stringify({ ok: false, motivo: 'referrer_divergente' }), { status: 200 });
+  }
+
+  // Idempotência ancorada no banco: não paga de novo se já foi enviado/em processamento
+  if (['enviado', 'processando', 'in_process'].includes(String(indic.payout_status))) {
+    console.log(`[pagar-comissao] Payout já em estado "${indic.payout_status}" — ignorando duplicata.`);
+    return new Response(JSON.stringify({ ok: false, motivo: 'ja_processado' }), { status: 200 });
+  }
+
+  // Valor pago = valor canônico da tabela (ignora qualquer valor vindo no body)
+  const comissao_brl = Number(indic.comissao_brl || 0);
 
   // ── Valor mínimo ──────────────────────────────────────────────────────────
   if (comissao_brl < PAYOUT_MINIMO_BRL) {
@@ -96,8 +123,7 @@ serve(async (req: Request) => {
   }
 
   // ── Buscar email do referrer (para o campo payer do MP) ───────────────────
-  const { data: { users }, error: userErr } = await sb.auth.admin.listUsers();
-  const referrerUser = users?.find(u => u.id === referrer_id);
+  const { data: { user: referrerUser }, error: userErr } = await sb.auth.admin.getUserById(referrer_id);
   const referrerEmail = referrerUser?.email ?? 'referrer@mestrepro.space';
 
   if (userErr) {
@@ -132,7 +158,9 @@ serve(async (req: Request) => {
     },
   };
 
-  console.log(`[pagar-comissao] Enviando PIX R$ ${comissao_brl} → chave ${pixType}:${pixChave}`);
+  // Mascara a chave PIX no log (LGPD — não expor CPF/email/telefone em texto claro)
+  const pixMasc = pixChave.length > 4 ? pixChave.slice(0, 3) + '***' + pixChave.slice(-2) : '***';
+  console.log(`[pagar-comissao] Enviando PIX R$ ${comissao_brl} → chave ${pixType}:${pixMasc}`);
 
   let mpResponse: Response;
   try {
@@ -182,7 +210,6 @@ serve(async (req: Request) => {
     mp_id:  mpData.id,
     status: mpData.status,
     valor:  comissao_brl,
-    chave:  pixChave,
   }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
