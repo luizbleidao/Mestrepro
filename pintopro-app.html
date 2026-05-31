@@ -695,6 +695,41 @@ window._IFRAME_LOADED={};
               <button class="theme-t" onclick="toggleTheme()" id="thm-btn-cfg">🌙 Escuro</button>
             </div>
           </div>
+
+          <!-- PRIVACIDADE & LGPD -->
+          <div class="card" style="max-width:600px;margin-top:12px">
+            <div class="ch"><div class="ct">🔒 Privacidade & Dados (LGPD)</div></div>
+            <div class="cfg-msg" id="cfg-lgpd-msg"></div>
+            <p style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px">
+              Você tem direito de acessar, exportar e excluir seus dados pessoais a qualquer momento (LGPD, Art. 18).
+            </p>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:13px;font-weight:600">Exportar meus dados</div>
+                  <div style="font-size:11px;color:var(--text3);margin-top:2px">Baixe um arquivo JSON com todos os seus dados na plataforma.</div>
+                </div>
+                <button class="tbtn" id="btn-export-dados" onclick="exportarMeusDados()">📥 Exportar (JSON)</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:13px;font-weight:600">Comunicações de marketing</div>
+                  <div style="font-size:11px;color:var(--text3);margin-top:2px">Cancelar o recebimento de e-mails de novidades e dicas.</div>
+                </div>
+                <button class="tbtn" id="btn-revogar-mkt" onclick="revogarMarketing()">🔕 Cancelar marketing</button>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div>
+                  <div style="font-size:13px;font-weight:600;color:#ef4444">Excluir minha conta</div>
+                  <div style="font-size:11px;color:var(--text3);margin-top:2px">Agenda a exclusão definitiva da conta e de todos os dados após 30 dias. Pode cancelar nesse período.</div>
+                </div>
+                <button class="tbtn" id="btn-excluir-conta" onclick="excluirMinhaConta()" style="border-color:#ef4444;color:#ef4444">🗑️ Excluir conta</button>
+              </div>
+            </div>
+            <p style="font-size:11px;color:var(--text3);margin-top:12px">
+              Dúvidas sobre privacidade? Fale com nosso Encarregado de Dados (DPO): <a href="mailto:privacidade@mestrepro.space" style="color:var(--acc)">privacidade@mestrepro.space</a>.
+            </p>
+          </div>
         </div>
 
         <!-- ABA EQUIPE -->
@@ -1902,6 +1937,60 @@ async function changePassword() {
   document.getElementById('cfg-senha-nova').value = '';
   document.getElementById('cfg-senha-conf').value = '';
   showCfgMsg('cfg-senha-msg', '✅ Senha alterada com sucesso!', 'ok');
+}
+
+// ── Direitos do titular (LGPD Art. 18) ──────────────────────────────────────
+async function exportarMeusDados() {
+  const btn = document.getElementById('btn-export-dados');
+  if (USER?.id === 'demo') { showCfgMsg('cfg-lgpd-msg', 'Disponível apenas em conta real.', 'warn'); return; }
+  const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Gerando...';
+  try {
+    const { data, error } = await sb.rpc('exportar_meus_dados');
+    if (error) throw error;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `mestrepro-meus-dados-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    showCfgMsg('cfg-lgpd-msg', '✅ Seus dados foram exportados (download iniciado).', 'ok');
+  } catch (e) {
+    console.error('[MestrePro] Erro ao exportar dados:', e.message || e);
+    showCfgMsg('cfg-lgpd-msg', '⚠️ Não foi possível exportar agora. Tente novamente.', 'err');
+  } finally { btn.disabled = false; btn.textContent = orig; }
+}
+
+async function revogarMarketing() {
+  const btn = document.getElementById('btn-revogar-mkt');
+  if (USER?.id === 'demo') { showCfgMsg('cfg-lgpd-msg', 'Disponível apenas em conta real.', 'warn'); return; }
+  if (!confirm('Deseja cancelar o recebimento de e-mails de marketing? Você continuará recebendo apenas comunicações essenciais da sua conta.')) return;
+  const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳...';
+  try {
+    const { error } = await sb.rpc('revogar_consentimento_marketing');
+    if (error) throw error;
+    showCfgMsg('cfg-lgpd-msg', '✅ Consentimento de marketing revogado. Você não receberá mais esses e-mails.', 'ok');
+  } catch (e) {
+    console.error('[MestrePro] Erro ao revogar marketing:', e.message || e);
+    showCfgMsg('cfg-lgpd-msg', '⚠️ Não foi possível concluir. Tente novamente.', 'err');
+  } finally { btn.disabled = false; btn.textContent = orig; }
+}
+
+async function excluirMinhaConta() {
+  const btn = document.getElementById('btn-excluir-conta');
+  if (USER?.id === 'demo') { showCfgMsg('cfg-lgpd-msg', 'Disponível apenas em conta real.', 'warn'); return; }
+  if (!confirm('ATENÇÃO: isto agenda a exclusão DEFINITIVA da sua conta e de TODOS os seus dados (orçamentos, contratos, clientes) após 30 dias.\n\nVocê pode cancelar dentro desse período fazendo login novamente. Deseja continuar?')) return;
+  const confirma = prompt('Para confirmar, digite EXCLUIR (em maiúsculas):');
+  if (confirma !== 'EXCLUIR') { showCfgMsg('cfg-lgpd-msg', 'Exclusão cancelada.', 'info'); return; }
+  const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳...';
+  try {
+    const { error } = await sb.rpc('solicitar_exclusao_conta');
+    if (error) throw error;
+    showCfgMsg('cfg-lgpd-msg', '✅ Exclusão agendada. Sua conta e dados serão removidos em 30 dias. Faça login nesse período para cancelar.', 'ok');
+    notif('🗑️ Exclusão de conta agendada.', 'warn');
+  } catch (e) {
+    console.error('[MestrePro] Erro ao solicitar exclusão:', e.message || e);
+    showCfgMsg('cfg-lgpd-msg', '⚠️ Não foi possível concluir. Tente novamente ou contate privacidade@mestrepro.space.', 'err');
+  } finally { btn.disabled = false; btn.textContent = orig; }
 }
 
 async function saveCompanyData() {

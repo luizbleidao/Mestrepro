@@ -895,6 +895,7 @@ function renderPagsPendentes(list){
 
 async function aprovarPag(pagId){
   const pag = allPags.find(p=>p.id===pagId); if(!pag) return;
+  if(!confirm(`Confirmar aprovação do pagamento e ativar o plano ${PLANO_LABEL[pag.plano]||pag.plano} para este usuário?`)) return;
   // 1. Aprovar pagamento
   const { error:e1 } = await sb.from('pagamentos').update({ status:'aprovado', aprovado_em: new Date().toISOString() }).eq('id', pagId);
   if(e1){ notif('⚠️ Erro ao aprovar'); return; }
@@ -911,6 +912,7 @@ async function aprovarPag(pagId){
 }
 
 async function cancelarPag(pagId){
+  if(!confirm('Confirmar o cancelamento deste pagamento?')) return;
   const { error } = await sb.from('pagamentos').update({ status:'cancelado' }).eq('id', pagId);
   if(error){ notif('⚠️ Erro'); return; }
   const pag = allPags.find(p=>p.id===pagId); if(pag) pag.status='cancelado';
@@ -1345,10 +1347,12 @@ async function loadRetencao(){
 function exportCSV(data, filename){
   if(!data?.length){ notif('Sem dados para exportar'); return; }
   const headers = Object.keys(data[0]);
+  // Neutraliza CSV injection: célula iniciando com = + - @ é prefixada com aspa simples
+  const sanitizeCell = s => /^[=+\-@]/.test(s) ? "'" + s : s;
   const rows = data.map(r=>headers.map(h=>{
     const v=r[h]; if(v===null||v===undefined) return '';
     if(typeof v==='object') return `"${JSON.stringify(v).replace(/"/g,'""')}"`;
-    const s=String(v); return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`  :s;
+    const s=sanitizeCell(String(v)); return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`  :s;
   }).join(','));
   const csv=[headers.join(','),...rows].join('\n');
   const a=document.createElement('a');
@@ -1531,6 +1535,7 @@ async function salvarPlanoConfig(id, btn){
   if(inicioStr && valStr && new Date(inicioStr) >= new Date(valStr)){
     notif('O início da promoção deve ser antes do fim','warn'); return;
   }
+  if(!confirm(`Salvar e aplicar imediatamente os preços do plano "${nome}" em produção?\nMensal: R$ ${mensal.toFixed(2)} · Anual: R$ ${anual.toFixed(2)}`)) return;
 
   const inicio   = inicioStr ? new Date(inicioStr).toISOString() : null;
   const validade = valStr    ? new Date(valStr).toISOString()    : null;
