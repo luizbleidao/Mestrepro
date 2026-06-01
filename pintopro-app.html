@@ -1824,6 +1824,9 @@ function showCfgMsg(id, msg, type) {
 
 function previewCfgLogo(input) {
   if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (!file.type.startsWith('image/')) { notif('⚠️ Selecione um arquivo de imagem (JPG, PNG, etc.)', 'warn'); input.value = ''; return; }
+  if (file.size > 2_000_000) { notif('⚠️ Logo muito grande. Máximo 2 MB.', 'warn'); input.value = ''; return; }
   const r = new FileReader();
   r.onload = e => {
     cfgLogoBase64 = e.target.result;
