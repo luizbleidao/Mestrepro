@@ -1128,6 +1128,7 @@ async function loadDashboard(){
 
   renderDashLaudos(laudos);
   renderDashOrcs(orcs.slice(0,3));
+  window._ppOrcCount = orcs.length; // expõe para renderOnboarding (multi-device)
 
   // ── Dashboard Financeiro — exibir apenas para planos Pro+ ──
   const _planosComFinanceiro = ['pro','equipe','ia_pro','ia-pro'];
@@ -1662,13 +1663,16 @@ function renderOnboarding(){
   if(localStorage.getItem(key)) return;
 
   const emp = PROFILE?.empresa_data || JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+  // Usa count do Supabase (carregado em loadDashboard) como fonte primária — funciona em qualquer dispositivo.
+  // Fallback para localStorage apenas quando ainda não há dado do servidor (ex: loadDashboard falhou).
   const orcKey = 'orcamentos_' + (USER?.id || 'anon');
-  const orcs = JSON.parse(localStorage.getItem(orcKey) || '[]');
-  const temSig = !!localStorage.getItem('pp_sig_profissional');
+  const hasOrcs = (window._ppOrcCount > 0) ||
+    (JSON.parse(localStorage.getItem(orcKey) || '[]').length > 0);
+  const temSig = !!(PROFILE?.sig_profissional || localStorage.getItem('pp_sig_profissional'));
 
   const steps = [
     !!emp.nome,
-    orcs.length > 0,
+    hasOrcs,
     (_contratos || []).length > 0,
     temSig,
   ];
