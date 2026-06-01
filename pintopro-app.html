@@ -1005,6 +1005,9 @@ function setup(){
     if(e.data?.type==='pp_iframe_ready' && USER && PLANO){
       _broadcastUser();
     }
+    if(e.data?.type==='pp_cmd' && e.data?.cmd==='irPlanos'){
+      irPlanos();
+    }
   });
 }
 
@@ -1128,6 +1131,7 @@ async function loadDashboard(){
 
   renderDashLaudos(laudos);
   renderDashOrcs(orcs.slice(0,3));
+  window._ppOrcCount = orcs.length; // expõe para renderOnboarding (multi-device)
 
   // ── Dashboard Financeiro — exibir apenas para planos Pro+ ──
   const _planosComFinanceiro = ['pro','equipe','ia_pro','ia-pro'];
@@ -1206,7 +1210,7 @@ function renderDashOrcs(list){
   const sm={aprovado:'badge bg',enviado:'badge bb',rascunho:'badge bz',recusado:'badge br'};
   const fmtVal=v=>v!=null&&v>0?'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2}):'—';
   el.innerHTML=`<table><thead><tr><th>Cliente</th><th>Status</th><th>Valor</th></tr></thead><tbody>`+
-    list.map(o=>`<tr><td>${o.cliente||'—'}</td><td><span class="${sm[o.status]||'badge bz'}">${o.status||'—'}</span></td><td>${fmtVal(o.total)}</td></tr>`).join('')+
+    list.map(o=>`<tr><td>${esc(o.cliente)||'—'}</td><td><span class="${sm[o.status]||'badge bz'}">${esc(o.status)||'—'}</span></td><td>${fmtVal(o.total)}</td></tr>`).join('')+
   `</tbody></table>`;
 }
 
@@ -1215,7 +1219,7 @@ function renderDashLaudos(list){
   if(!list?.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);text-align:center;padding:20px">Nenhum laudo ainda</div>';return;}
   const cm={'CRÍTICO':'badge br','RELEVANTE':'badge ba','MODERADO':'badge bg'};
   el.innerHTML=`<table><thead><tr><th>Cliente</th><th>Criticidade</th><th>Data</th></tr></thead><tbody>`+
-    list.map(l=>`<tr><td>${l.cliente||'—'}</td><td><span class="${cm[l.criticidade]||'badge bz'}">${l.criticidade||'—'}</span></td><td>${l.data||'—'}</td></tr>`).join('')+
+    list.map(l=>`<tr><td>${esc(l.cliente)||'—'}</td><td><span class="${cm[l.criticidade]||'badge bz'}">${esc(l.criticidade)||'—'}</span></td><td>${esc(l.data)||'—'}</td></tr>`).join('')+
   `</tbody></table>`;
 }
 
@@ -1662,13 +1666,16 @@ function renderOnboarding(){
   if(localStorage.getItem(key)) return;
 
   const emp = PROFILE?.empresa_data || JSON.parse(localStorage.getItem('empresaSalva') || '{}');
+  // Usa count do Supabase (carregado em loadDashboard) como fonte primária — funciona em qualquer dispositivo.
+  // Fallback para localStorage apenas quando ainda não há dado do servidor (ex: loadDashboard falhou).
   const orcKey = 'orcamentos_' + (USER?.id || 'anon');
-  const orcs = JSON.parse(localStorage.getItem(orcKey) || '[]');
-  const temSig = !!localStorage.getItem('pp_sig_profissional');
+  const hasOrcs = (window._ppOrcCount > 0) ||
+    (JSON.parse(localStorage.getItem(orcKey) || '[]').length > 0);
+  const temSig = !!(PROFILE?.sig_profissional || localStorage.getItem('pp_sig_profissional'));
 
   const steps = [
     !!emp.nome,
-    orcs.length > 0,
+    hasOrcs,
     (_contratos || []).length > 0,
     temSig,
   ];
@@ -1824,6 +1831,9 @@ function showCfgMsg(id, msg, type) {
 
 function previewCfgLogo(input) {
   if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (!file.type.startsWith('image/')) { notif('⚠️ Selecione um arquivo de imagem (JPG, PNG, etc.)', 'warn'); input.value = ''; return; }
+  if (file.size > 2_000_000) { notif('⚠️ Logo muito grande. Máximo 2 MB.', 'warn'); input.value = ''; return; }
   const r = new FileReader();
   r.onload = e => {
     cfgLogoBase64 = e.target.result;
