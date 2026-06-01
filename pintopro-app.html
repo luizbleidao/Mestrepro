@@ -1005,6 +1005,9 @@ function setup(){
     if(e.data?.type==='pp_iframe_ready' && USER && PLANO){
       _broadcastUser();
     }
+    if(e.data?.type==='pp_cmd' && e.data?.cmd==='irPlanos'){
+      irPlanos();
+    }
   });
 }
 

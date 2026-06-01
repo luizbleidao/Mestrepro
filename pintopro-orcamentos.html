@@ -631,7 +631,8 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 function abrirIADash(){
   const plano = _getUserPlano();
   if(plano !== 'ia-pro'){
-    alert('O recurso de geração por IA está disponível apenas no plano IA Pro.\n\nFaça upgrade em Configurações → Planos.');
+    // Notifica o app pai para abrir o modal de upgrade
+    try{ window.parent.postMessage({type:'pp_cmd', cmd:'irPlanos'}, window.location.origin); }catch(e){}
     return;
   }
   window._iaFromDash = true;
