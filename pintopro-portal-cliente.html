@@ -224,7 +224,11 @@ function renderPortal(o) {
     ? _msgs.map(m=>`<div class="msg ${m.de==='cliente'?'cliente':'pintor'}"><div>${esc(m.texto)}</div><div class="msg-meta">${m.de==='cliente'?'Você':'Profissional'} · ${fmtDateTime(m.em)}</div></div>`).join('')
     : '<div style="text-align:center;font-size:12px;color:var(--text3);padding:12px">Sem mensagens ainda. Mande uma pergunta!</div>';
 
-  // Botão de assinatura
+  // Botão de assinatura.
+  // Segurança: sig_token é escopado a este orçamento específico. A RPC
+  // registrar_assinatura_cliente usa p_token como chave de lookup —
+  // só afeta o documento exato com esse token, sem acesso a outros docs.
+  // O botão só aparece quando o pintor gerou o link (sig_token != null).
   const temSigToken = o.sig_token;
   const assinHtml = temSigToken
     ? `<a href="pintopro-assinar.html?token=${o.sig_token}" style="display:block"><button class="assinar-btn">✍️ Assinar documento</button></a>`
