@@ -392,6 +392,42 @@ async function gerarLinkContratoAssinatura(contratoId) {
   modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
 }
 
+// Abre um documento HTML para impressão/visualização de forma resiliente.
+// Em celular (público principal do MestrePro) o navegador frequentemente bloqueia
+// window.open('','_blank'), o que antes resultava em falha silenciosa ("não abriu").
+// Fallback: gera um Blob URL e dispara um clique de âncora dentro do gesto do usuário.
+function abrirDocImpressao(html, contexto) {
+  let w = null;
+  try { w = window.open('', '_blank'); } catch (e) { w = null; }
+  if (w) {
+    try {
+      w.opener = null;
+      w.document.write(html);
+      w.document.close();
+      return true;
+    } catch (e) {
+      console.warn('[MestrePro] Falha ao escrever no popup:', String(e));
+    }
+  }
+  // Popup bloqueado → fallback via Blob URL (navegação por gesto, raramente bloqueada)
+  try {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    if (typeof notif === 'function') notif('📄 Documento aberto em nova aba.', 'info');
+    return true;
+  } catch (e) {
+    console.error('[MestrePro] Não foi possível abrir o documento:', String(e));
+    if (typeof notif === 'function') notif('❌ Não foi possível abrir o documento. Permita pop-ups para este site e tente de novo.', 'err');
+    return false;
+  }
+}
+
 async function gerarPDFContrato(contratoId) {
   const ct = _contratos.find(c => c.id === contratoId);
   if (!ct) return;
@@ -617,8 +653,7 @@ ${ct.dados?.clausulas ? `<div class="sec">
 <script>window.onload=()=>window.print();<\/script>
 </body></html>`;
 
-  const w = window.open('', '_blank');
-  if (w) { w.opener = null; w.document.write(html); w.document.close(); }
+  abrirDocImpressao(html, 'contrato');
 }
 
 async function gerarReciboDeContrato(contratoId) {
@@ -946,8 +981,7 @@ ${canhotoBrief}
 <script>window.onload=()=>window.print();<\/script>
 </body></html>`;
 
-  const w = window.open('', '_blank');
-  if (w) { w.opener = null; w.document.write(html); w.document.close(); }
+  abrirDocImpressao(html, 'recibo');
 }
 
 // ──────────────────────────────────────────────────────────────
