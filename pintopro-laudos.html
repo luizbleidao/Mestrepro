@@ -717,6 +717,18 @@ function toast(msg,dur=2500){
  const t=document.createElement('div');t.className='toast';t.textContent=msg;b.appendChild(t);
  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},dur);
 }
+// Abre documento HTML resiliente: popup -> fallback Blob URL (celular bloqueia popup)
+function abrirDocLaudo(html){
+ let w=null;
+ try{w=window.open('','_blank');}catch(e){w=null;}
+ if(w){try{w.opener=null;w.document.write(html);w.document.close();return;}catch(e){}}
+ try{
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+ }catch(e){toast('Não foi possível abrir o documento. Permita pop-ups para este site.');}
+}
 function newLaudoNum(){
  const yr=new Date().getFullYear();
  const nums=LAUDOS.map(l=>parseInt((l.numero||'000/0000').split('/')[0])||0);
@@ -1437,9 +1449,7 @@ function gerarRelatorioMensal(){
   +'<div style="text-align:center;font-size:9px;color:#999">'+CONSULTOR.empresa+' | '+CONSULTOR.tel+' | '+CONSULTOR.site+'</div>'
   +'<script>window.onload=function(){window.print();}<\/script>'
   +'</body></html>';
- const w=window.open('','_blank');
- if(w){w.opener=null;w.document.write(html);w.document.close();}
- else toast('Permita popups para gerar o relatório');
+ abrirDocLaudo(html,'Permita popups para gerar o relatório');
 }
 
 
@@ -2572,9 +2582,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#222;backgroun
  <script>window.onload=function(){window.print();}<\/script>
  </body></html>`;
 
- const w=window.open('','_blank');
- if(w){w.opener=null;w.document.write(html);w.document.close();}
- else toast('Permita popups para exportar o PDF');
+ abrirDocLaudo(html,'Permita popups para exportar o PDF');
 }
 
 // ─── CONSULTA RÁPIDA ─────────────────
