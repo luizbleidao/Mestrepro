@@ -44,7 +44,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .ni.active{background:linear-gradient(135deg,rgba(97,114,243,.18),rgba(129,140,248,.08));color:var(--acc2);font-weight:600;box-shadow:inset 2px 0 0 var(--acc);}
 .ni.locked{opacity:.35;cursor:not-allowed;}
 .ni.locked:hover{background:transparent;color:var(--text2);}
-.ni .ic{width:18px;text-align:center;font-size:16px;flex-shrink:0;}
+.ni .ic{width:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ni .ic svg{display:block;}
 .lk{margin-left:auto;font-size:10px;color:var(--text3);background:var(--surf2);padding:2px 6px;border-radius:20px;}
 .sb-bot{padding:12px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;}
 .sb-bot button{width:100%;background:transparent;border:1px solid var(--border);color:var(--text2);padding:8px 12px;border-radius:var(--rs);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;text-align:left;}
@@ -56,7 +57,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .bottom-nav-items{display:flex;justify-content:space-around;align-items:center;height:56px;}
 .bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;color:var(--text3);transition:.15s;border-radius:10px;min-width:52px;}
 .bn-item.active{color:var(--acc);}
-.bn-item .bn-ic{font-size:18px;line-height:1;}
+.bn-item .bn-ic{display:flex;align-items:center;justify-content:center;height:18px;}
+.bn-item .bn-ic svg{display:block;}
 .bn-item .bn-lb{font-size:9px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;}
 @media(max-width:768px){.bottom-nav{display:block;}.screen{padding-bottom:72px !important;}}
 /* MAIN */
@@ -990,16 +992,29 @@ function _resolverPlano(p){
   }
   return 'gratuito';
 }
+// Ícones SVG (traço fino, herdam a cor do item via currentColor)
+const _svg = p => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const ICONS = {
+  dashboard:     _svg('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
+  orcamentos:    _svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>'),
+  laudos:        _svg('<path d="M9 2h6v4a3 3 0 0 1-6 0z" transform="translate(0 1)"/><path d="M12 7v4"/><circle cx="12" cy="16" r="5"/><path d="M10.5 16l1.2 1.2 2.3-2.4"/>'),
+  financeiro:    _svg('<rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/>'),
+  agenda:        _svg('<rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M8 2v4M16 2v4M3 9.5h18"/>'),
+  posts:         _svg('<path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>'),
+  ia_pro:        _svg('<rect x="5" y="7" width="14" height="12" rx="2.5"/><circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/><path d="M12 7V4M12 4h.01"/><path d="M9 16h6"/>'),
+  indicacao:     _svg('<rect x="3" y="8" width="18" height="4" rx="1.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M12 8v13"/><path d="M12 8c-1.5-3.5-7-3.5-7-.5C5 9 7 9 12 8zM12 8c1.5-3.5 7-3.5 7-.5C19 9 17 9 12 8z"/>'),
+  configuracoes: _svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
+};
 const NAV = [
-  {id:'dashboard',     ic:'📊', lb:'Dashboard'},
-  {id:'orcamentos',    ic:'📝', lb:'Orçamentos'},
-  {id:'laudos',        ic:'🔬', lb:'Laudos Técnicos'},
-  {id:'financeiro',    ic:'💰', lb:'Financeiro'},
-  {id:'agenda',        ic:'📅', lb:'Agenda'},
-  {id:'posts',         ic:'✨', lb:'Gerador de Posts IA'},
-  {id:'ia_pro',        ic:'🤖', lb:'IA Pro', plano:'ia-pro'},
-  {id:'indicacao',     ic:'🤝', lb:'Indicar & Ganhar'},
-  {id:'configuracoes', ic:'⚙️', lb:'Configurações'},
+  {id:'dashboard',     lb:'Dashboard'},
+  {id:'orcamentos',    lb:'Orçamentos'},
+  {id:'laudos',        lb:'Laudos Técnicos'},
+  {id:'financeiro',    lb:'Financeiro'},
+  {id:'agenda',        lb:'Agenda'},
+  {id:'posts',         lb:'Gerador de Posts IA'},
+  {id:'ia_pro',        lb:'IA Pro', plano:'ia-pro'},
+  {id:'indicacao',     lb:'Indicar & Ganhar'},
+  {id:'configuracoes', lb:'Configurações'},
 ];
 const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',financeiro:'Financeiro',agenda:'Agenda',ia_pro:'IA Pro',indicacao:'Indicar & Ganhar',configuracoes:'Configurações'};
 const BTNS   = {dashboard:'+ Nova ação',orcamentos:'+ Novo orçamento',laudos:'+ Novo laudo',financeiro:'+ Nova transação',agenda:'+ Agendar',ia_pro:'Explorar IA',indicacao:'Compartilhar link',configuracoes:'Salvar'};
@@ -1127,10 +1142,16 @@ function _aplicarBloqueioSuspensao(){
 })();
 
 function renderNav(){
+  // Ícones SVG no bottom nav mobile
+  document.querySelectorAll('.bn-item').forEach(b=>{
+    const id=b.id.replace('bn-','');
+    const ic=b.querySelector('.bn-ic');
+    if(ic && ICONS[id]) ic.innerHTML=ICONS[id];
+  });
   document.getElementById('sb-nav').innerHTML=NAV.map(item=>{
     const locked=!cfg.telas.includes(item.id);
     return `<div class="ni${locked?' locked':''}" id="ni-${item.id}" onclick="${locked?'irPlanos()':`ir('${item.id}')`}">
-      <span class="ic">${item.ic}</span><span>${item.lb}</span>
+      <span class="ic">${ICONS[item.id]||''}</span><span>${item.lb}</span>
       ${locked?'<span class="lk">🔒</span>':''}
     </div>`;
   }).join('');
