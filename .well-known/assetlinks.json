@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "space.mestrepro.twa",
+        "sha256_cert_fingerprints": ["69:FB:EC:7E:5F:ED:17:55:59:6F:7A:57:CA:D9:32:D0:C6:BF:F5:AE:99:06:DC:68:CD:5F:AC:05:CF:42:42:88"]
+      }
+    }]
