@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="dark">
+<html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -18,9 +18,9 @@
 <script src="pp-modules.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-[data-theme="dark"]{--bg:#070c1a;--surf:#0f1729;--surf2:#152033;--surf3:#1a2a45;--border:#1e3060;--text:#eef0fb;--text2:#7c90bb;--text3:#3d5080;--sh:0 4px 24px rgba(0,0,0,.6);}
-[data-theme="light"]{--bg:#f0f4ff;--surf:#fff;--surf2:#e8edf8;--surf3:#d8e2f5;--border:#c0cfec;--text:#0f1629;--text2:#4a5a80;--text3:#8899bb;--sh:0 4px 20px rgba(0,0,0,.08);}
-:root{--acc:#6172f3;--acc2:#818cf8;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#a855f7;--teal:#14b8a6;--r:12px;--rs:8px;--sw:228px;}
+[data-theme="dark"]{--bg:#070c1a;--surf:#0f1729;--surf2:#152033;--surf3:#1a2a45;--border:#1e3060;--text:#eef0fb;--text2:#7c90bb;--text3:#3d5080;--sh:0 4px 24px rgba(0,0,0,.6);--card-sh:0 1px 3px rgba(0,0,0,.4);}
+[data-theme="light"]{--bg:#f4f6fc;--surf:#ffffff;--surf2:#f0f3fa;--surf3:#e6ebf8;--border:#e6eaf5;--text:#171c30;--text2:#5d6b8d;--text3:#9aa6c2;--sh:0 8px 32px rgba(54,68,120,.10);--card-sh:0 1px 3px rgba(54,68,120,.06),0 4px 16px rgba(54,68,120,.05);}
+:root{--acc:#6172f3;--acc2:#818cf8;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#a855f7;--teal:#14b8a6;--r:16px;--rs:10px;--sw:228px;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:14px;transition:background .2s,color .2s;}
 .app{display:flex;height:100vh;overflow:hidden;}
@@ -98,8 +98,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 
 /* STATS */
 .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
-.sc{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;transition:.2s;}
-.sc:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.sc{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;transition:.2s;box-shadow:var(--card-sh);}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--sh);}
 .sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;}
 .sc:nth-child(1)::before{background:linear-gradient(90deg,#6172f3,#818cf8);}
 .sc:nth-child(2)::before{background:linear-gradient(90deg,#22c55e,#16a34a);}
@@ -109,7 +109,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .sc .vl{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.5px;}
 .sc .sb2{font-size:11px;color:var(--green);margin-top:4px;font-weight:500;}
 .sc .sb2.ng{color:var(--red);}
-.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px;}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px;box-shadow:var(--card-sh);}
 .ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
 .ct{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
 table{width:100%;border-collapse:collapse;}
@@ -120,6 +120,9 @@ tbody td{padding:10px;font-size:13px;color:var(--text2);}
 tbody td:first-child{color:var(--text);font-weight:500;}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
 .bg{background:rgba(34,197,94,.15);color:#4ade80;}
+[data-theme="light"] .bg{color:#15803d;}
+[data-theme="light"] .br{color:#b91c1c;}
+[data-theme="light"] .bb{color:#1d4ed8;}
 .ba{background:rgba(245,158,43,.15);color:var(--acc2);}
 .br{background:rgba(239,68,68,.15);color:#f87171;}
 .bb{background:rgba(59,130,246,.15);color:#60a5fa;}
@@ -1572,7 +1575,7 @@ function _copiarTextoShare() {
 function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('ov').classList.toggle('open');}
 function closeSB(){document.getElementById('sb').classList.remove('open');document.getElementById('ov').classList.remove('open');}
 
-let dark=localStorage.getItem('pp_theme')!=='light';
+let dark=localStorage.getItem('pp_theme')==='dark'; // padrão claro (estilo StudioBeauty)
 function applyTheme(){
   document.documentElement.setAttribute('data-theme',dark?'dark':'light');
   const btn=document.getElementById('thm-btn');
