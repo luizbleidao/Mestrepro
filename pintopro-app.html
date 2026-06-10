@@ -58,7 +58,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .bn-item.active{color:var(--acc);}
 .bn-item .bn-ic{font-size:18px;line-height:1;}
 .bn-item .bn-lb{font-size:9px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;}
-@media(max-width:768px){.bottom-nav{display:block;}.content{padding-bottom:56px;}}
+@media(max-width:768px){.bottom-nav{display:block;}.screen{padding-bottom:72px !important;}}
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
 .tb{background:var(--surf);border-bottom:1px solid var(--border);padding:0 20px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;box-shadow:0 1px 0 var(--border);}
@@ -1007,14 +1007,9 @@ async function init(){
   if(!profile && USER.id !== 'demo'){
     // Primeiro login via OAuth (Google) — cria perfil automaticamente
     const nome = USER.user_metadata?.full_name || USER.user_metadata?.nome || USER.email?.split('@')[0] || 'Usuário';
-    await sb.from('profiles').upsert({
-      id: USER.id,
-      nome,
-      perfil: 'pintor',
-      plano: 'trial',
-      ativo: true,
-      criado_em: new Date().toISOString(),
-    }, { onConflict: 'id' }).catch(()=>{});
+    const novoProfile = { id: USER.id, nome, perfil: 'pintor', plano: 'trial', ativo: true, criado_em: new Date().toISOString() };
+    await sb.from('profiles').upsert(novoProfile, { onConflict: 'id' }).catch(()=>{});
+    profile = novoProfile; // usa os dados recém-criados sem re-fetch
   }
   PROFILE=profile||{nome:USER.user_metadata?.full_name||USER.user_metadata?.nome||USER.email,perfil:'pintor',plano:'gratuito',criado_em:USER.created_at,trial_fim:null};
   PLANO=_resolverPlano(PROFILE.plano||'gratuito');

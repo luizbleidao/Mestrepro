@@ -511,6 +511,8 @@ function irMP(plano,evt){
 }
 
 async function loginGoogle(){
+  // Detecta qual tab está ativa para mostrar o erro no lugar certo
+  const errId = document.getElementById('tc').style.display === 'none' ? 'el' : 'ec';
   try{
     const{error}=await sb.auth.signInWithOAuth({
       provider:'google',
@@ -518,8 +520,7 @@ async function loginGoogle(){
     });
     if(error) throw error;
   }catch(err){
-    showMsg('el','Erro ao conectar com o Google. Tente novamente.','err');
-    document.getElementById('el').classList.add('show');
+    showMsg(errId,'Erro ao conectar com o Google. Tente novamente.','err');
   }
 }
 
