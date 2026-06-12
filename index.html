@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="MestrePro">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/logo.jpg">
-<link rel="icon" type="image/jpeg" href="/icons/logo.jpg">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
 <title>MestrePro — Trabalhe como profissional. Cobre como empresário.</title>
 <meta name="description" content="Orçamentos, contratos, laudos e assinatura digital para pintores e prestadores de serviço. Pareça uma empresa. Cobre mais. Feche mais.">
 <meta property="og:title" content="MestrePro — Cobre como empresário">
@@ -220,7 +220,8 @@ nav {
 .hero-badge::before { content: '✦'; font-size: 10px; }
 
 h1 {
-  font-size: clamp(42px, 7vw, 88px);
+  font-size: clamp(32px, 8vw, 88px);
+  overflow-wrap: break-word;
   font-family: 'Syne', sans-serif;
   font-weight: 800;
   line-height: 1.02;
@@ -554,17 +555,17 @@ h2 {
 }
 .plan-name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
 .plan-tagline { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
-.plan-price { margin-bottom: 24px; }
+.plan-price { margin-bottom: 24px; white-space: nowrap; }
 .plan-price .currency { font-size: 16px; font-weight: 600; color: var(--text2); vertical-align: top; margin-top: 6px; display: inline-block; }
 .plan-price .amount {
   font-family: 'Syne', sans-serif;
-  font-size: 44px;
+  font-size: clamp(34px, 3.4vw, 44px);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.04em;
 }
 .plan-price .per { font-size: 13px; color: var(--text2); }
-.plan-annual-note { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.plan-annual-note { font-size: 11px; color: var(--text3); margin-top: 4px; white-space: normal; }
 .plan-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
 .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
 .plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text2); line-height: 1.4; }
@@ -586,7 +587,7 @@ h2 {
   transition: .2s;
 }
 .plan-btn.primary { background: var(--acc); color: #fff; }
-.plan-btn.primary:hover { background: #d46b08; }
+.plan-btn.primary:hover { background: #4f5fe0; }
 .plan-btn.outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
 .plan-btn.outline:hover { border-color: var(--acc); color: var(--acc); }
 
@@ -713,7 +714,7 @@ footer {
 <!-- NAV -->
 <nav>
   <a href="/" class="nav-logo">
-    <img src="/icons/logo.jpg" alt="MestrePro" style="height:38px;width:38px;border-radius:10px;object-fit:cover;">
+    <img src="/icons/icon-192.png" alt="MestrePro" style="height:38px;width:38px;border-radius:10px;object-fit:cover;">
     <span>
       <span class="nav-logo-text" style="display:block;line-height:1.1;">MestrePro</span>
       <span class="nav-logo-sub">Gestão para pintores</span>
@@ -1183,7 +1184,7 @@ footer {
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">
-      <img src="/icons/logo.jpg" alt="MestrePro" style="height:52px;width:auto;border-radius:10px;object-fit:contain;margin-bottom:10px;display:block;">
+      <img src="/icons/icon-192.png" alt="MestrePro" style="height:52px;width:52px;border-radius:12px;object-fit:cover;margin-bottom:10px;display:block;">
       <p>Plataforma de gestão e vendas para prestadores de serviço autônomos no Brasil.</p>
     </div>
     <div class="footer-col">
