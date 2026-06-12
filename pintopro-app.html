@@ -10,8 +10,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="MestrePro">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/logo.jpg">
-<link rel="icon" type="image/jpeg" href="/icons/logo.jpg">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
 <title>MestrePro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
@@ -139,6 +139,13 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 @keyframes si{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px;}
 .loading .brand{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--acc);}
+@keyframes splashIn{from{opacity:0;transform:translateY(14px) scale(.92);}to{opacity:1;transform:translateY(0) scale(1);}}
+@keyframes splashGlow{0%,100%{filter:drop-shadow(0 8px 28px rgba(97,114,243,.30));}50%{filter:drop-shadow(0 8px 36px rgba(97,114,243,.55));}}
+.splash-logo{animation:splashIn .6s cubic-bezier(.22,1,.36,1) both, splashGlow 2.6s ease-in-out 0.6s infinite;line-height:0;}
+.splash-logo svg{border-radius:24px;}
+.splash-brand{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;letter-spacing:-.5px;color:var(--text);animation:splashIn .6s cubic-bezier(.22,1,.36,1) .12s both;}
+.splash-brand b{font-weight:800;color:#f59e0b;}
+.splash-sub{font-family:'Syne',sans-serif;font-size:12px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;animation:splashIn .6s ease .24s both;}
 .spin{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;}
 @keyframes sp{to{transform:rotate(360deg)}}
 ::-webkit-scrollbar{width:4px;}
@@ -330,9 +337,25 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 <body>
 
 <div class="loading" id="loading">
-  <img src="/icons/logo.jpg" alt="MestrePro" style="height:72px;width:auto;border-radius:16px;object-fit:contain;margin-bottom:20px;box-shadow:0 0 40px rgba(97,114,243,.35);">
+  <div class="splash-logo">
+    <svg viewBox="0 0 512 512" width="104" height="104" xmlns="http://www.w3.org/2000/svg" aria-label="MestrePro">
+      <defs>
+        <linearGradient id="spl-bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6d7ef7"/><stop offset="100%" stop-color="#4d5ee0"/></linearGradient>
+        <linearGradient id="spl-ck" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f59e0b"/></linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="112" fill="url(#spl-bg)"/>
+      <path d="M138 272 L218 352 L344 206" fill="none" stroke="url(#spl-ck)" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+      <g transform="translate(346 204) rotate(-49)">
+        <rect x="-30" y="-64" width="60" height="128" rx="26" fill="#fff"/>
+        <rect x="-15" y="-48" width="30" height="96" rx="13" fill="#4d5ee0"/>
+        <rect x="-72" y="57" width="56" height="14" rx="7" fill="#fff"/>
+        <rect x="-72" y="57" width="14" height="62" rx="7" fill="#fff"/>
+      </g>
+    </svg>
+  </div>
+  <div class="splash-brand">Mestre<b>Pro</b></div>
   <div class="spin"></div>
-  <div style="font-family:'Syne',sans-serif;font-size:13px;color:var(--text3);margin-top:10px;letter-spacing:.5px;">Carregando...</div>
+  <div class="splash-sub">Carregando</div>
 </div>
 <script>
 /* Stub early — garante que iframeReady existe antes do script principal */
@@ -347,7 +370,7 @@ window._IFRAME_LOADED={};
   <aside class="sb" id="sb">
     <div class="sb-logo">
       <div style="display:flex;align-items:center;gap:10px;">
-        <img src="/icons/logo.jpg" alt="MestrePro" style="height:38px;width:38px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 2px rgba(97,114,243,.4);">
+        <img src="/icons/icon-192.png" alt="MestrePro" style="height:38px;width:38px;border-radius:10px;object-fit:cover;box-shadow:0 0 0 2px rgba(97,114,243,.4);">
         <div>
           <div class="brand">MestrePro</div>
           <div class="sub">Gestão profissional</div>
