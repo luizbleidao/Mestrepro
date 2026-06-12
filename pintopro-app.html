@@ -1035,7 +1035,7 @@ async function init(){
   if(!session){window.location.href='pintopro-login.html';return;}
   USER=session.user;
   try { await sb.rpc('verificar_expiracao_trial', { p_user_id: USER.id }); } catch(e) {}
-  const {data:profile}=await sb.from('profiles').select('id,nome,plano,perfil,criado_em,trial_fim,cidade,tel,sig_profissional,empresa_data,preferencias,lgpd_aceito,equipe_owner_id,laudos_mes,orcamentos_total,ativo,conta_excluir_em').eq('id',USER.id).single();
+  const {data:profile}=await sb.from('profiles').select('id,nome,plano,perfil,is_admin,criado_em,trial_fim,cidade,tel,sig_profissional,empresa_data,preferencias,lgpd_aceito,equipe_owner_id,laudos_mes,orcamentos_total,ativo,conta_excluir_em').eq('id',USER.id).single();
   if(!profile && USER.id !== 'demo'){
     // Primeiro login via OAuth (Google) — cria perfil automaticamente
     const nome = USER.user_metadata?.full_name || USER.user_metadata?.nome || USER.email?.split('@')[0] || 'Usuário';
@@ -1155,6 +1155,14 @@ function renderNav(){
       ${locked?'<span class="lk">🔒</span>':''}
     </div>`;
   }).join('');
+  // Conta admin: acesso ao painel dentro do próprio app (mesmo APK)
+  if(PROFILE && (PROFILE.perfil==='admin' || PROFILE.is_admin)){
+    document.getElementById('sb-nav').innerHTML += `
+    <div class="ns">Administração</div>
+    <div class="ni" id="ni-admin" onclick="window.location.href='pintopro-admin.html'">
+      <span class="ic">${_svg('<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9.5 12l1.8 1.8 3.4-3.6"/>')}</span><span>Painel Admin</span>
+    </div>`;
+  }
 }
 
 function setupUser(){
@@ -2495,7 +2503,9 @@ if ('serviceWorker' in navigator) {
 .suporte-link-label{font-weight:600;font-size:13px;}
 .suporte-link-detail{font-size:12px;color:var(--text3);}
 .suporte-divider{font-size:11px;color:var(--text3);text-align:center;}
-@media(max-width:400px){.suporte-fab{bottom:16px;right:16px;}.suporte-modal{width:calc(100vw - 32px);}}
+/* No mobile a bottom-nav ocupa o rodapé — sobe o FAB para não cobrir o botão Config. */
+@media(max-width:768px){.suporte-fab{bottom:calc(70px + env(safe-area-inset-bottom,0px));right:14px;}.suporte-fab-btn{width:46px;height:46px;font-size:19px;}}
+@media(max-width:400px){.suporte-modal{width:calc(100vw - 32px);}}
 </style>
 
 <div class="suporte-fab" id="suporte-fab" data-suspensao-allow>
