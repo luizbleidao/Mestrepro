@@ -1,5 +1,5 @@
-const { authOrRespond, requireAuth } = require('../_lib/auth');
-const { withUser, pool } = require('../_lib/db');
+const { authOrRespond, requireAuth } = require('../auth');
+const { withUser, pool } = require('../db');
 
 // GET  /api/equipe/convite?codigo=XXX  — validar código (público, sem auth,
 //      igual a validar_convite_equipe no fluxo de cadastro/login)

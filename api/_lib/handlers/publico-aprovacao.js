@@ -1,4 +1,4 @@
-const { withSystem } = require('../_lib/db');
+const { withSystem } = require('../db');
 
 // GET  /api/publico/aprovacao?token=XXX          — dados do orçamento pra aprovação (sem auth)
 // POST /api/publico/aprovacao {token,status,motivo} — cliente aprova/recusa (sem auth)

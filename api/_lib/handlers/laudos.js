@@ -1,5 +1,5 @@
-const { authOrRespond } = require('../_lib/auth');
-const { withUser } = require('../_lib/db');
+const { authOrRespond } = require('../auth');
+const { withUser } = require('../db');
 
 module.exports = async (req, res) => {
   const auth = await authOrRespond(req, res);

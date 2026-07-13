@@ -1,4 +1,4 @@
-const { withSystem } = require('../_lib/db');
+const { withSystem } = require('../db');
 
 // POST /api/publico/assinar — assinatura digital do cliente via sig_token,
 // SEM Clerk (o cliente do pintor nunca faz login). Substitui a RPC

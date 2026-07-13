@@ -1,5 +1,5 @@
-const { authOrRespond } = require('./_lib/auth');
-const { withUser } = require('./_lib/db');
+const { authOrRespond } = require('../auth');
+const { withUser } = require('../db');
 
 // GET /api/me — substitui a leitura direta de `profiles` + RPC meu_uso() que
 // o frontend fazia via supabase.from('profiles').select() / supabase.rpc('meu_uso').

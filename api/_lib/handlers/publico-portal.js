@@ -1,4 +1,4 @@
-const { withSystem } = require('../_lib/db');
+const { withSystem } = require('../db');
 
 // GET /api/publico/portal?token=XXX — portal do cliente, sem auth nenhuma
 // (o token no link é a única "senha"), igual pub_orcamento_portal do Supabase.

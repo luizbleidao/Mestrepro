@@ -1,5 +1,5 @@
-const { authOrRespond } = require('../_lib/auth');
-const { withUser } = require('../_lib/db');
+const { authOrRespond } = require('../auth');
+const { withUser } = require('../db');
 
 // POST /api/portal/progresso — o PINTOR (autenticado) atualiza progresso/foto/mensagem
 module.exports = async (req, res) => {

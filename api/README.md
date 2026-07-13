@@ -8,7 +8,22 @@ RLS do Postgres protege os dados linha a linha. O Neon não tem um "PostgREST"
 embutido, então essa pasta é a API que faz esse papel: recebe requests do
 frontend, valida a sessão do Clerk, e fala com o Postgres do Neon.
 
-## Padrão de cada rota (ver `orcamentos/index.js` como modelo)
+## Estrutura de arquivos (importante!)
+
+O plano Hobby da Vercel limita a **12 Serverless Functions por deployment**.
+Por isso os handlers NÃO ficam um-arquivo-por-rota em `/api/*` — eles moram
+em `api/_lib/handlers/*.js` (excluído da contagem, prefixo `_`) e são
+despachados por duas rotas dinâmicas:
+- `api/[...slug].js` — tudo que exige Clerk (`/api/orcamentos`, `/api/contratos`, etc.)
+- `api/publico/[...slug].js` — sem Clerk (`/api/publico/assinar`, `/api/publico/portal`, `/api/publico/aprovacao`)
+- `api/webhooks/clerk.js` — fica sozinho, precisa de config de body raw própria
+
+As URLs do frontend continuam limpas (`/api/orcamentos`, não `/api/[...slug]`)
+— o catch-all é só um detalhe de implementação. Ao adicionar uma rota nova,
+crie o handler em `_lib/handlers/` e registre no mapa `routes` do
+`[...slug].js` correspondente — **não** crie um novo arquivo direto em `/api/`.
+
+## Padrão de cada rota (ver `_lib/handlers/orcamentos.js` como modelo)
 
 1. `authOrRespond(req, res)` — valida o Bearer token do Clerk, resolve
    `profiles.id`. Já responde 401/403/404 e retorna `null` se falhar.

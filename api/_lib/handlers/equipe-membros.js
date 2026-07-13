@@ -1,5 +1,5 @@
-const { authOrRespond } = require('../_lib/auth');
-const { withUser } = require('../_lib/db');
+const { authOrRespond } = require('../auth');
+const { withUser } = require('../db');
 
 // GET    /api/equipe/membros                  — listar membros da própria equipe
 // DELETE /api/equipe/membros?membro_id=UUID   — remover um membro (dono) ou sair (o próprio)

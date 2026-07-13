@@ -1,5 +1,5 @@
-const { authOrRespond } = require('../_lib/auth');
-const { withUser } = require('../_lib/db');
+const { authOrRespond } = require('../auth');
+const { withUser } = require('../db');
 
 // GET  /api/orcamentos       — substitui supabase.from('orcamentos').select()
 // POST /api/orcamentos       — substitui supabase.from('orcamentos').insert()
