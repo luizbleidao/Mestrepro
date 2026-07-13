@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>MestrePro — Portal do Cliente</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="pp-config.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -140,17 +139,11 @@ function fmtDateTime(s){ if(!s)return''; return new Date(s).toLocaleString('pt-B
 async function init() {
   if (!_portalToken) { showErro('Link inválido', 'Este portal precisa de um link válido. Solicite ao profissional.'); return; }
 
-  const cfg = window.PP_CONFIG || window.PP || {};
-  const url = cfg.supabaseUrl || cfg.SUPABASE_URL;
-  const key = cfg.supabaseAnonKey || cfg.SUPABASE_ANON_KEY || cfg.supabaseKey;
-  if (!url || !key) { showErro('Configuração ausente', 'Erro interno.'); return; }
-  _sb = window.supabase.createClient(url, key);
-
-  // Busca via RPC SECURITY DEFINER (filtra pelo token exato — não expõe outros orçamentos)
+  // Rota pública (sem login) — substitui a chamada direta à RPC via supabase-js.
   let orc = null;
   try {
-    const { data } = await _sb.rpc('pub_orcamento_portal', { p_token: _portalToken });
-    if (data) orc = data;
+    const res = await fetch(`/api/publico/portal?token=${encodeURIComponent(_portalToken)}`);
+    if (res.ok) orc = await res.json();
   } catch(e){ console.warn('[MestrePro] Erro ao carregar portal:', e); }
 
   if (!orc) { showErro('Portal não encontrado', 'Link inválido ou expirado. Solicite um novo link ao profissional.'); return; }
@@ -299,51 +292,46 @@ function renderPortal(o) {
   if (ml) ml.scrollTop = ml.scrollHeight;
 }
 
-// ── REALTIME ──────────────────────────────────────────────────
+// ── ATUALIZAÇÃO AO VIVO (polling) ──────────────────────────────
+// Substitui o canal Realtime do Supabase (Neon não tem equivalente nativo) —
+// reconsulta o portal a cada 8s e aplica o mesmo diff de antes.
+let _pollTimer = null;
 function initRealtime(){
-  if(!_sb || !_portalData?.id) return;
-  try {
-    _channel = _sb.channel('portal-' + _portalData.id)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'orcamentos',
-        filter: `id=eq.${_portalData.id}`
-      }, payload => {
-        if (!payload.new) return;
-        const updated = {..._portalData, ...payload.new};
-        // Só re-renderiza se houve mudança relevante (progresso, etapa, fotos)
-        const changed = (
-          updated.portal_progresso !== _portalData.portal_progresso ||
-          updated.portal_etapa     !== _portalData.portal_etapa     ||
-          JSON.stringify(updated.portal_fotos) !== JSON.stringify(_portalData.portal_fotos)
-        );
-        // Mensagens novas do profissional
-        const newMsgs = (updated.portal_mensagens||[]).filter(m=>m.de==='pintor');
-        const oldMsgs = (_portalData.portal_mensagens||[]).filter(m=>m.de==='pintor');
-        const hasNewMsg = newMsgs.length > oldMsgs.length;
-        _portalData = updated;
-        if(hasNewMsg){
-          _msgs = updated.portal_mensagens || [];
-          appendNewMessages(newMsgs.slice(oldMsgs.length));
-        }
-        if(changed){
-          renderPortal(updated);
-          showPortalToast('✅ Profissional atualizou o progresso!');
-        } else if(hasNewMsg){
-          showPortalToast('💬 Nova mensagem do profissional');
-        }
-      })
-      .subscribe(status => {
-        const indicator = document.getElementById('rt-indicator');
-        if(!indicator) return;
-        if(status === 'SUBSCRIBED') {
-          indicator.textContent = '🟢 Ao vivo';
-          indicator.style.color = 'var(--green)';
-        } else {
-          indicator.textContent = '🔴 Offline';
-          indicator.style.color = 'var(--red)';
-        }
-      });
-  } catch(e){ console.warn('[Portal] Realtime não disponível:', e); }
+  if(!_portalData?.id) return;
+  const indicator = document.getElementById('rt-indicator');
+  const tick = async () => {
+    try {
+      const res = await fetch(`/api/publico/portal?token=${encodeURIComponent(_portalToken)}`);
+      if(!res.ok) throw new Error('fetch falhou');
+      const updated = await res.json();
+      if(indicator){ indicator.textContent = '🟢 Ao vivo'; indicator.style.color = 'var(--green)'; }
+
+      const changed = (
+        updated.portal_progresso !== _portalData.portal_progresso ||
+        updated.portal_etapa     !== _portalData.portal_etapa     ||
+        JSON.stringify(updated.portal_fotos) !== JSON.stringify(_portalData.portal_fotos)
+      );
+      const newMsgs = (updated.portal_mensagens||[]).filter(m=>m.de==='pintor');
+      const oldMsgs = (_portalData.portal_mensagens||[]).filter(m=>m.de==='pintor');
+      const hasNewMsg = newMsgs.length > oldMsgs.length;
+      _portalData = updated;
+      if(hasNewMsg){
+        _msgs = updated.portal_mensagens || [];
+        appendNewMessages(newMsgs.slice(oldMsgs.length));
+      }
+      if(changed){
+        renderPortal(updated);
+        showPortalToast('✅ Profissional atualizou o progresso!');
+      } else if(hasNewMsg){
+        showPortalToast('💬 Nova mensagem do profissional');
+      }
+    } catch(e){
+      if(indicator){ indicator.textContent = '🔴 Offline'; indicator.style.color = 'var(--red)'; }
+    }
+  };
+  if(_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(tick, 8000);
+  if(indicator){ indicator.textContent = '🟢 Ao vivo'; indicator.style.color = 'var(--green)'; }
 }
 
 function appendNewMessages(msgs){
@@ -407,14 +395,15 @@ async function enviarMensagem() {
     ml.scrollTop = ml.scrollHeight;
   }
 
-  // Persiste via RPC pública (SECURITY DEFINER — não requer auth)
+  // Persiste via rota pública (não requer auth — o token é a "senha")
   try {
-    const { data: rpcData, error } = await _sb.rpc('enviar_mensagem_portal_cliente', {
-      p_token: _portalToken,
-      p_texto: texto
+    const res = await fetch('/api/publico/portal', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ token: _portalToken, texto }),
     });
-    if (error || (rpcData && !rpcData.success)) {
-      console.warn('[MestrePro] Erro ao salvar mensagem:', error || rpcData?.error);
+    const rpcData = await res.json().catch(()=>null);
+    if (!res.ok || !rpcData?.success) {
+      console.warn('[MestrePro] Erro ao salvar mensagem:', rpcData?.error);
     }
   } catch(e) { console.warn('[MestrePro] Erro ao salvar mensagem:', e); }
 

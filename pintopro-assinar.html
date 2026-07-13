@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#5b7fff">
 <title>Assinatura Digital — MestrePro</title>
 <script src="pp-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#0a0f1e;--surf:#111827;--surf2:#1a2235;--border:#253354;--acc:#5b7fff;--text:#e8eaf6;--text2:#8899bb;--text3:#4a5a80;--green:#22c55e;--red:#ef4444;--r:12px;--rs:8px;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -147,7 +146,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 </div>
 
 <script>
-const sb = supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
 const params = new URLSearchParams(location.search);
 const TOKEN = params.get('token') || '';
 let docRecord = null;
@@ -196,10 +194,12 @@ function show(id) {
 async function init() {
   if (!TOKEN) { show('scr-erro'); document.getElementById('erro-msg').textContent = 'Token de assinatura ausente na URL.'; return; }
 
-  // Busca via RPC SECURITY DEFINER (filtra pelo sig_token exato — não expõe outros documentos)
-  let rec = null, docType = null;
-  const { data: rec0, error: recErr } = await sb.rpc('pub_documento_assinatura', { p_token: TOKEN });
-  if (recErr) { show('scr-erro'); return; }
+  // Busca via rota pública (filtra pelo sig_token exato — não expõe outros documentos)
+  let rec = null, docType = null, rec0 = null;
+  try {
+    const res = await fetch(`/api/publico/assinar?token=${encodeURIComponent(TOKEN)}`);
+    if (res.ok) rec0 = await res.json();
+  } catch(e) { show('scr-erro'); return; }
   if (rec0) {
     rec = rec0; docType = rec0._tipo;
     if (docType === 'contrato') {
@@ -319,17 +319,15 @@ async function assinar() {
   //      A função escreve corretamente em sig_cli_base64 + assinado_cli = true.
   //   2) Segurança: UPDATE público via policy permitia alterar qualquer coluna do doc.
   //      A função aceita apenas os parâmetros de assinatura e ignora o resto.
-  const { data: rpcResult, error: rpcError } = await sb.rpc('registrar_assinatura_cliente', {
-    p_token:   TOKEN,
-    p_tipo:    docRecord.docType,
-    p_nome:    nome,
-    p_ip:      clientIP,
-    p_sig_b64: sigBase64,
-    p_cpf:     cpf || null
-  });
-  const error = rpcError || (rpcResult && !rpcResult.ok
-    ? { message: rpcResult.error || 'Erro ao registrar assinatura' }
-    : null);
+  let rpcResult = null, error = null;
+  try {
+    const res = await fetch('/api/publico/assinar', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ token: TOKEN, tipo: docRecord.docType, nome, sig_b64: sigBase64 }),
+    });
+    rpcResult = await res.json().catch(()=>null);
+    if (!res.ok || !rpcResult?.ok) error = { message: rpcResult?.error || 'Erro ao registrar assinatura' };
+  } catch(e) { error = { message: e.message }; }
 
   if (error) {
     showErr('Erro ao registrar assinatura: ' + error.message);

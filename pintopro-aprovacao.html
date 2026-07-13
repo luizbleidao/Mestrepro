@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>MestrePro — Aprovação de Orçamento</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="pp-config.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -166,16 +165,15 @@ async function init() {
     return;
   }
 
-  // Init Supabase (config vem de pp-config.js)
-  const cfg = window.PP_CONFIG || window.PP || {};
-  const url = cfg.supabaseUrl || cfg.SUPABASE_URL;
-  const key = cfg.supabaseAnonKey || cfg.SUPABASE_ANON_KEY || cfg.supabaseKey;
-  if (!url || !key) { showErro('Configuração ausente', 'Erro interno. Tente novamente mais tarde.'); return; }
-  _sb = window.supabase.createClient(url, key);
-
-  // Busca via RPC SECURITY DEFINER (filtra pelo token exato — não expõe outros orçamentos)
-  const { data, error } = await _sb.rpc('pub_orcamento_aprovacao', { p_token: _apToken });
-  if (error) { showErro('Erro de conexão', 'Não foi possível carregar o orçamento. Tente novamente em instantes.'); return; }
+  // Rota pública (sem login) — substitui a chamada direta à RPC via supabase-js.
+  let data;
+  try {
+    const res = await fetch(`/api/publico/aprovacao?token=${encodeURIComponent(_apToken)}`);
+    data = await res.json().catch(()=>null);
+    if (!res.ok) { showErro('Orçamento não encontrado', 'Este link pode ter expirado ou ser inválido. Solicite um novo link ao profissional.'); return; }
+  } catch(e) {
+    showErro('Erro de conexão', 'Não foi possível carregar o orçamento. Tente novamente em instantes.'); return;
+  }
   if (!data) { showErro('Orçamento não encontrado', 'Este link pode ter expirado ou ser inválido. Solicite um novo link ao profissional.'); return; }
   _orc = data; _orcId = data.id;
 
@@ -350,13 +348,16 @@ async function confirmarAprovacao() {
   const btn = document.querySelector('#modal-aprovar .btn-conf');
   btn.disabled = true; btn.textContent = '⏳ Salvando...';
 
-  const { data: rpcData, error } = await _sb.rpc('registrar_aprovacao_orcamento', {
-    p_token: _apToken,
-    p_status: 'aprovado',
-    p_motivo: null
-  });
+  let rpcData;
+  try {
+    const res = await fetch('/api/publico/aprovacao', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ token: _apToken, status: 'aprovado', motivo: null }),
+    });
+    rpcData = await res.json().catch(()=>null);
+  } catch(e) { rpcData = null; }
 
-  if (error || (rpcData && !rpcData.success)) {
+  if (!rpcData || !rpcData.ok) {
     btn.disabled=false; btn.textContent='✅ Confirmar aprovação';
     alert('Erro ao registrar aprovação. Tente novamente.'); return;
   }
@@ -395,13 +396,16 @@ async function confirmarRecusa() {
   const btn = document.querySelector('#modal-recusar .btn-conf');
   btn.disabled = true; btn.textContent = '⏳ Salvando...';
 
-  const { data: rpcData, error } = await _sb.rpc('registrar_aprovacao_orcamento', {
-    p_token: _apToken,
-    p_status: 'recusado',
-    p_motivo: motivo || null
-  });
+  let rpcData;
+  try {
+    const res = await fetch('/api/publico/aprovacao', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ token: _apToken, status: 'recusado', motivo: motivo || null }),
+    });
+    rpcData = await res.json().catch(()=>null);
+  } catch(e) { rpcData = null; }
 
-  if (error || (rpcData && !rpcData.success)) {
+  if (!rpcData || !rpcData.ok) {
     btn.disabled=false; btn.textContent='Recusar';
     alert('Erro ao registrar recusa. Tente novamente.'); return;
   }

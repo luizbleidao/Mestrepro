@@ -1,11 +1,24 @@
 const { withSystem } = require('../db');
 
+// GET  /api/publico/assinar?token=XXX — busca o documento (orçamento/laudo/
+//      contrato) pelo sig_token, sem auth. Substitui pub_documento_assinatura.
 // POST /api/publico/assinar — assinatura digital do cliente via sig_token,
 // SEM Clerk (o cliente do pintor nunca faz login). Substitui a RPC
 // registrar_assinatura_cliente(p_token, p_tipo, p_nome, p_ip, p_sig_b64)
 // que já é SECURITY DEFINER e valida o token/expiração internamente —
 // aqui só repassamos os parâmetros, sem checar auth nenhuma de propósito.
 module.exports = async (req, res) => {
+  if (req.method === 'GET') {
+    const token = req.query && req.query.token;
+    if (!token) { res.status(400).json({ error: 'query param obrigatório: token' }); return; }
+    const data = await withSystem((client) =>
+      client.query('SELECT pub_documento_assinatura($1) AS r', [token]).then((r) => r.rows[0].r)
+    );
+    if (!data) { res.status(404).json({ error: 'documento não encontrado' }); return; }
+    res.status(200).json(data);
+    return;
+  }
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method not allowed' });
     return;
