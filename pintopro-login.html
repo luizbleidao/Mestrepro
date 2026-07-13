@@ -17,9 +17,14 @@
 <script
   async crossorigin="anonymous"
   data-clerk-publishable-key="pk_test_ZGV2b3RlZC1tb25hcmNoLTczLmNsZXJrLmFjY291bnRzLmRldiQ"
-  src="https://devoted-monarch-73.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
   type="text/javascript"
 ></script>
+<!-- Nota: o domínio próprio do Clerk (clerk.accounts.dev/npm/...) é o recomendado
+     para produção (exige domínio customizado configurado), mas devolveu 503 em
+     requisições cross-origin nesta instância de desenvolvimento sem domínio
+     próprio. jsDelivr é o fallback documentado pelo Clerk e funciona igual. -->
+
 <style>
 :root{
   --bg:#f4f6fc;--surf:#ffffff;--surf2:#f0f3fa;--surf3:#e9edf9;
