@@ -524,11 +524,15 @@ const MP = {
 const PRECOS = window.PP.precos;
 let _anual = false;
 
-const showS   = id => { document.querySelectorAll('.scr').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); };
-const gv      = id => document.getElementById(id)?.value?.trim()||'';
-const setBtn  = (id,html,off) => { const b=document.getElementById(id); if(b){b.innerHTML=html;b.disabled=!!off;} };
-const showMsg = (id,msg,t) => { const el=document.getElementById(id); if(el){el.textContent=msg;el.className='msg '+t+' show';} };
-const hideMsg = id => { const el=document.getElementById(id); if(el)el.classList.remove('show'); };
+// function declarations (não const) de propósito: são "hoisted" com corpo e
+// tudo, disponíveis desde o início da execução do script — sem essa garantia
+// já vimos "Cannot access before initialization" nesses helpers em alguns
+// carregamentos (condição de corrida ainda não totalmente isolada).
+function showS(id){ document.querySelectorAll('.scr').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+function gv(id){ return document.getElementById(id)?.value?.trim()||''; }
+function setBtn(id,html,off){ const b=document.getElementById(id); if(b){b.innerHTML=html;b.disabled=!!off;} }
+function showMsg(id,msg,t){ const el=document.getElementById(id); if(el){el.textContent=msg;el.className='msg '+t+' show';} }
+function hideMsg(id){ const el=document.getElementById(id); if(el)el.classList.remove('show'); }
 
 // ── Analytics helper — dispara GA4 + Meta Pixel se configurados ─────────────
 function _track(event, params={}){
