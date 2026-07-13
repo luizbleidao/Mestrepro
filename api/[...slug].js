@@ -20,8 +20,18 @@ const routes = {
   'portal-progresso': require('./_lib/handlers/portal-progresso'),
 };
 
+function resolveSlug(req) {
+  if (req.query && req.query.slug) {
+    return Array.isArray(req.query.slug) ? req.query.slug : [req.query.slug];
+  }
+  // Fallback: nem toda runtime da Vercel popula req.query com os params
+  // de [...slug] fora do Next.js — parseia a partir do path cru.
+  const pathname = (req.url || '').split('?')[0];
+  return pathname.replace(/^\/api\//, '').split('/').filter(Boolean);
+}
+
 module.exports = (req, res) => {
-  const slug = req.query.slug || [];
+  const slug = resolveSlug(req);
   const resource = slug[0];
   const handler = routes[resource];
   if (!handler) {

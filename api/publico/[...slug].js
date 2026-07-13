@@ -5,8 +5,16 @@ const routes = {
   aprovacao: require('../_lib/handlers/publico-aprovacao'),
 };
 
+function resolveSlug(req) {
+  if (req.query && req.query.slug) {
+    return Array.isArray(req.query.slug) ? req.query.slug : [req.query.slug];
+  }
+  const pathname = (req.url || '').split('?')[0];
+  return pathname.replace(/^\/api\/publico\//, '').split('/').filter(Boolean);
+}
+
 module.exports = (req, res) => {
-  const slug = req.query.slug || [];
+  const slug = resolveSlug(req);
   const resource = slug[0];
   const handler = routes[resource];
   if (!handler) {
