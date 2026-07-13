@@ -6,7 +6,6 @@
 <title>MestrePro — Escolha seu plano</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 [data-theme="dark"]{--bg:#0a0a09;--surf:#131311;--surf2:#1a1a17;--surf3:#222220;--border:#2a2a26;--text:#f2ede6;--text2:#a09080;--text3:#5a5448;}
 :root{--acc:#5b7fff;--acc2:#7b9fff;--green:#22c55e;--red:#ef4444;--r:12px;}
@@ -160,23 +159,14 @@ try {
 } catch {}
 
 async function init() {
-  sbClient = window.supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+  // userId vem do sessionStorage (setado pelo app.html via Clerk, se o
+  // usuário chegou aqui logado); esta página em si não faz login nenhum.
 
-  // Buscar userId se não estiver em sessão
-  if (!userId) {
-    try {
-      const { data: { session } } = await sbClient.auth.getSession();
-      if (session?.user?.id) {
-        userId = session.user.id;
-        sessionStorage.setItem('pp_user_id', userId);
-      }
-    } catch {}
-  }
+  // Buscar preços do banco (rota pública — sem auth)
+  let configData = null;
+  try { ({ planos: configData } = await fetch('/api/publico/planos').then(r=>r.json())); } catch(e) {}
 
-  // Buscar preços do banco
-  const { data: configData, error } = await sbClient.rpc('get_planos_config');
-
-  if (configData && !error) {
+  if (configData) {
     PLANOS = configData
       .filter(c => c.ativo)
       .map(c => {
@@ -250,37 +240,10 @@ async function handleCheckoutClick(evt, planoId, isAnualClick) {
 }
 
 async function irParaCheckout(planoId, isAnualClick) {
-  notifPlanos('⏳ Preparando checkout...');
-
-  try {
-    // Sempre refreshar para garantir token válido
-    const { data: refreshed } = await sbClient.auth.refreshSession();
-    let session = refreshed?.session;
-    if (!session?.access_token) {
-      const { data: gs } = await sbClient.auth.getSession();
-      session = gs?.session;
-    }
-    if (!session?.access_token) { notifPlanos('❌ Sessão expirada. Faça login novamente.'); return; }
-
-    const res = await fetch(`${window.PP.supabaseUrl}/functions/v1/criar-preferencia-mp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ plano_id: planoId, periodo: isAnualClick ? 'anual' : 'mensal' }),
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.init_point) {
-      notifPlanos('❌ ' + (data.error || 'Erro ao gerar checkout.'));
-      return;
-    }
-
-    window.location.href = data.init_point;
-  } catch (e) {
-    notifPlanos('❌ Erro de conexão. Tente novamente.');
-  }
+  // TODO(Task 6): checkout Mercado Pago ainda depende da Edge Function
+  // Supabase `criar-preferencia-mp`, que valida um JWT do Supabase Auth —
+  // não aceita token do Clerk. Falta portar essa function para /api/*.
+  notifPlanos('❌ Checkout estará disponível em breve nesta versão. Fale com o suporte para assinar agora.');
 }
 
 function notifPlanos(msg) {
