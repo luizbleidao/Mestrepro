@@ -474,10 +474,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 <script>
 // Clerk substitui o supabase-js aqui. window.Clerk é injetado pelo script
-// no <head> (data-clerk-publishable-key) — precisa de Clerk.load() antes de usar.
+// <script async> no <head> — como é async, pode ainda não existir quando
+// este script inline roda (é exatamente essa corrida que causava
+// "Cannot read properties of undefined (reading 'load')"). Por isso
+// esperamos window.Clerk aparecer antes de chamar .load().
+function _waitForClerkGlobal(timeoutMs){
+  timeoutMs = timeoutMs || 10000;
+  return new Promise((resolve, reject) => {
+    if (window.Clerk) { resolve(window.Clerk); return; }
+    const inicio = Date.now();
+    const iv = setInterval(() => {
+      if (window.Clerk) {
+        clearInterval(iv);
+        resolve(window.Clerk);
+      } else if (Date.now() - inicio > timeoutMs) {
+        clearInterval(iv);
+        reject(new Error('Não foi possível carregar o sistema de login. Verifique sua conexão e recarregue a página.'));
+      }
+    }, 50);
+  });
+}
 let _clerkLoadPromise = null;
 async function ensureClerk(){
-  if(!_clerkLoadPromise) _clerkLoadPromise = window.Clerk.load();
+  if(!_clerkLoadPromise) _clerkLoadPromise = _waitForClerkGlobal().then(clerk => clerk.load());
   await _clerkLoadPromise;
   return window.Clerk;
 }
@@ -852,7 +871,14 @@ async function _processarConvitePendente() {
 // detectar type=recovery no hash — a tela scr-newpass já pede o código.
 
 (async()=>{
-  const clerk = await ensureClerk();
+  let clerk;
+  try {
+    clerk = await ensureClerk();
+  } catch (e) {
+    console.error('[MestrePro] Clerk não carregou:', e.message);
+    showMsg('el', 'Não foi possível carregar o sistema de login. Recarregue a página.', 'err');
+    return;
+  }
   const params=new URLSearchParams(window.location.search);
 
   // Retorno do redirect de OAuth (Google) — Clerk completa a sessão sozinho
