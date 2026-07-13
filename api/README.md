@@ -28,6 +28,11 @@ CLERK_SECRET_KEY=sk_test_...              # dashboard.clerk.com > API keys
 CLERK_WEBHOOK_SECRET=whsec_...            # dashboard.clerk.com > Webhooks > seu endpoint
 ```
 
+## Status do preview de teste
+
+Webhook do Clerk (`user.created`) registrado apontando para o preview desta
+branch. `CLERK_WEBHOOK_SECRET` configurado no Vercel (ambiente Preview).
+
 ## Feito até agora
 
 - `_lib/db.js`, `_lib/auth.js` — infraestrutura comum
