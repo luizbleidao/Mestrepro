@@ -6,7 +6,12 @@
 <title>MestrePro — Orçamentos</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  async crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_ZGV2b3RlZC1tb25hcmNoLTczLmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 
 <style>
 :root{
@@ -455,8 +460,36 @@ const MODE_LABEL={mao:'Mão de Obra',prod:'Com Produtos',rel:'Relação de Itens
 const UNS=['L','kg','m²','un','cj','gl','bd','sv','cx','rolo','lata','sc'];
 const PAT_LABELS={fissuras:'Fissuras/Trincas',umidade:'Umidade / Infiltração',bolor:'Bolor / Fungo',descascamento:'Descascamento / Bolha',eflorescencia:'Eflorescência',corrosao:'Corrosão / Ferrugem',outro:'Outro'};
 
-// ── Supabase (sync de metadados dos orçamentos) ──
-const _sb=supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+// ── Clerk (substitui supabase-js) — mesmo padrão de pintopro-app.html/login.
+// Como o iframe é same-origin, o Clerk.load() aqui recupera a sessão já criada
+// pelo app pai via o cookie compartilhado, sem precisar de postMessage de token.
+function _waitForClerkGlobal(timeoutMs){
+  timeoutMs = timeoutMs || 10000;
+  return new Promise((resolve, reject) => {
+    if (window.Clerk) { resolve(window.Clerk); return; }
+    const inicio = Date.now();
+    const iv = setInterval(() => {
+      if (window.Clerk) { clearInterval(iv); resolve(window.Clerk); }
+      else if (Date.now() - inicio > timeoutMs) { clearInterval(iv); reject(new Error('Não foi possível carregar autenticação.')); }
+    }, 50);
+  });
+}
+let _clerkLoadPromise = null;
+async function ensureClerk(){
+  if(!_clerkLoadPromise) _clerkLoadPromise = _waitForClerkGlobal().then(clerk => clerk.load());
+  await _clerkLoadPromise;
+  return window.Clerk;
+}
+async function apiFetch(path, opts={}){
+  const clerk = await ensureClerk();
+  const token = clerk.session ? await clerk.session.getToken() : null;
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if(token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(path, Object.assign({}, opts, {headers}));
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
+}
 
 function _getUserId(){ return sessionStorage.getItem('pp_user_id')||null; }
 function _getUserPlano(){ return sessionStorage.getItem('pp_user_plano')||'gratuito'; }
@@ -480,29 +513,19 @@ function _saveLocalCache(){
   }catch(e){}
 }
 
-// Grava orçamento no Supabase (fonte da verdade) e atualiza cache
+// Grava orçamento via API (fonte da verdade) e atualiza cache
 // Retorna true se sincronizou com sucesso, false se ficou só local
 async function _syncOrcSupabase(obj){
   const userId=_getUserId(); if(!userId)return false;
   try{
-    // Garantir que o cliente tem sessão ativa antes de tentar salvar
-    const { data: sessionData } = await _sb.auth.getSession();
-    if(!sessionData?.session){
-      console.warn('[MestrePro] _syncOrcSupabase: sem sessão ativa');
-      _saveLocalCache(); return false;
-    }
-    const { error } = await _sb.from('orcamentos').upsert({
-      id:obj.id, user_id:userId, platform:'pintorpro',
-      numero:obj.numero, cliente:obj.cliente||'', endereco:obj.endereco||'',
+    await apiFetch('/api/orcamentos', { method:'POST', body: JSON.stringify({
+      id:obj.id, numero:obj.numero, cliente:obj.cliente||'', endereco:obj.endereco||'',
       status:obj.status||'rascunho', total:obj.total||0, mode:obj.mode||'prod',
-      data:obj.data||null,
-      data_completa:obj,
-      atualizado_em:new Date().toISOString()
-    },{onConflict:'id'});
-    if(error){ console.warn('[MestrePro] upsert error:', error.message); _saveLocalCache(); return false; }
+      data:obj.data||null, data_completa:obj,
+    })});
     _saveLocalCache(); return true;
   }catch(e){
-    console.warn('[MestrePro] Sync Supabase falhou:', e.message);
+    console.warn('[MestrePro] Sync falhou:', e.message);
     _saveLocalCache(); return false;
   }
 }
@@ -531,11 +554,8 @@ async function _carregarOrcamentos(){
   const uid=_getUserId();
   if(uid){
     try{
-      const{data:orcs,error}=await _sb.from('orcamentos')
-        .select('id,data_completa,numero,cliente,endereco,status,total,mode,data,sig_token,sig_cliente,sig_cliente_at,sig_cliente_nome,atualizado_em')
-        .eq('user_id',uid)
-        .order('criado_em',{ascending:false});
-      if(!error && orcs){
+      const { orcamentos: orcs } = await apiFetch('/api/orcamentos');
+      if(orcs){
         _orcas = orcs.map(o=>{
           const full = o.data_completa || {};
           return {
@@ -545,6 +565,7 @@ async function _carregarOrcamentos(){
             mode: o.mode, data: o.data,
             sigToken: o.sig_token, sigCliente: o.sig_cliente,
             sigClienteAt: o.sig_cliente_at, sigClienteNome: o.sig_cliente_nome,
+            portalToken: o.portal_token, aprovToken: o.aprov_token, aprovStatus: o.aprov_status,
           };
         });
         const serverIds = new Set(_orcas.map(o=>o.id));
@@ -553,7 +574,7 @@ async function _carregarOrcamentos(){
         _saveLocalCache();
       }
     }catch(e){
-      console.warn('Supabase indisponível — carregando cache local:', e.message);
+      console.warn('API indisponível — carregando cache local:', e.message);
     }
   }
   if(!_orcas.length){
@@ -733,7 +754,7 @@ function deletarOrcamento(id){
   openModal('Excluir Orçamento','Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.',async()=>{
     const uid=_getUserId();
     // Remove do Supabase
-    if(uid){try{await _sb.from('orcamentos').delete().eq('id',id).eq('user_id',uid);}catch(e){}}
+    if(uid){try{await apiFetch(`/api/orcamentos?id=${encodeURIComponent(id)}`, { method:'DELETE' });}catch(e){}}
     // Remove do cache em memória e localStorage
     _orcas=_orcas.filter(o=>o.id!==id);
     _saveLocalCache();
@@ -768,8 +789,7 @@ async function novoOrcamento(){
   const uid = _getUserId();
   if(uid && uid !== 'demo'){
     try {
-      const { data: uso, error } = await _sb.rpc('meu_uso');
-      if(error) throw error;
+      const { uso } = await apiFetch('/api/me');
       if(!uso.orcamentos_ilimitado && uso.orcamentos_restantes !== null && uso.orcamentos_restantes <= 0){
         alert(`Você atingiu o limite de ${uso.orcamentos_limite} orçamentos do seu plano.\nFaça upgrade para criar mais orçamentos.`);
         return;
@@ -1319,7 +1339,7 @@ async function gerarPortalCliente(){
     token='pt_'+Array.from(crypto.getRandomValues(new Uint8Array(14))).map(b=>b.toString(16).padStart(2,'0')).join('');
     orc.portalToken=token;
     _saveLocalCache();
-    try{await _sb.from('orcamentos').update({portal_token:token,portal_progresso:0,portal_etapa:0}).eq('id',currentId).eq('user_id',uid);}
+    try{await apiFetch(`/api/orcamentos?id=${encodeURIComponent(currentId)}`, { method:'PATCH', body: JSON.stringify({portal_token:token,portal_progresso:0,portal_etapa:0}) });}
     catch(e){console.warn('[MestrePro] Falha ao salvar portal_token:',e);}
   }
 
@@ -1363,7 +1383,7 @@ async function gerarLinkAprovacao(){
     token='ap_'+Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b=>b.toString(16).padStart(2,'0')).join('');
     orc.aprovToken=token;
     _saveLocalCache();
-    try{await _sb.from('orcamentos').update({aprov_token:token,aprov_status:'pendente'}).eq('id',currentId).eq('user_id',uid);}
+    try{await apiFetch(`/api/orcamentos?id=${encodeURIComponent(currentId)}`, { method:'PATCH', body: JSON.stringify({aprov_token:token,aprov_status:'pendente'}) });}
     catch(e){console.warn('[MestrePro] Falha ao salvar aprov_token:',e);}
   }
 
@@ -1408,7 +1428,7 @@ async function gerarLinkAssinatura(){
     orc.sigToken=token;
     _saveLocalCache();
     // Persist token to Supabase
-    try{await _sb.from('orcamentos').update({sig_token:token}).eq('id',currentId).eq('user_id',uid);}
+    try{await apiFetch(`/api/orcamentos?id=${encodeURIComponent(currentId)}`, { method:'PATCH', body: JSON.stringify({sig_token:token}) });}
     catch(e){console.warn('Falha ao salvar token:',e);}
   }
 
@@ -1840,51 +1860,9 @@ async function gerarComIA(){
   document.getElementById('ia-lock-msg').style.display = 'none';
 
   try {
-    // Obter token de autenticação
-    const sbClient = supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
-    const { data: { session } } = await sbClient.auth.getSession();
-    const token = session?.access_token;
-    if(!token) throw new Error('Sessão expirada. Faça login novamente.');
-
-    const edgeFnUrl = `${window.PP.supabaseUrl}/functions/v1/ia-orcamento`;
-    const res = await fetch(edgeFnUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ descricao, tipoImovel, cidade, areas }),
-    });
-
-    const data = await res.json();
-
-    if(!res.ok){
-      if(res.status === 403){
-        document.getElementById('ia-lock-msg').textContent = '🔒 ' + (data.error || 'Plano IA Pro necessário.');
-        document.getElementById('ia-lock-msg').style.display = 'block';
-      } else {
-        alert('Erro: ' + (data.error || 'Tente novamente.'));
-      }
-      return;
-    }
-
-    // Sucesso — mostrar preview
-    _iaServicosGerados = data.servicos;
-    _iaObsGerada = data.observacoes || '';
-
-    const listEl = document.getElementById('ia-result-list');
-    listEl.innerHTML = _iaServicosGerados.map(s =>
-      `<div class="ia-result-item"><span><strong>${s.nome}</strong> — ${s.tipoServico} ${s.valorServico>0?'<span style="color:var(--acc);font-family:DM Mono,monospace"> R$'+s.valorServico.toLocaleString('pt-BR')+'</span>':''}</span></div>`
-    ).join('');
-
-    if(_iaObsGerada){
-      document.getElementById('ia-obs').textContent = '💡 ' + _iaObsGerada;
-    }
-
-    document.getElementById('ia-result-preview').classList.add('show');
-    document.getElementById('ia-btn-aplicar').style.display = '';
-    document.getElementById('ia-btn-gerar').style.display = 'none';
-
+    // TODO(Task 6): ia-orcamento ainda é uma Edge Function do Supabase que exige
+    // um JWT do Supabase Auth — não aceita token do Clerk. Falta portar para /api/*.
+    throw new Error('Geração de orçamento com IA estará disponível em breve nesta versão.');
   } catch(err) {
     alert('Erro ao chamar IA: ' + err.message);
   } finally {
@@ -1962,62 +1940,9 @@ async function analisarFotoPatologia(i){
   if(result) result.innerHTML = '';
 
   try {
-    // Obter token
-    const sbClient = supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
-    const { data: { session } } = await sbClient.auth.getSession();
-    const token = session?.access_token;
-    if(!token) throw new Error('Sessão expirada. Faça login novamente.');
-
-    // Usar a primeira foto (base64 já carregado)
-    const dataUrl  = s.fotosPatologia[0];
-    const parts    = dataUrl.split(',');
-    const mimeType = (parts[0].match(/:(.*?);/) || ['','image/jpeg'])[1];
-    const imgB64   = parts[1];
-
-    const edgeFnUrl = `${window.PP.supabaseUrl}/functions/v1/ia-patologia`;
-    const res = await fetch(edgeFnUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        imageBase64: imgB64,
-        mimeType,
-        ambiente: s.nome || `Ambiente ${i+1}`,
-      }),
-    });
-
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'Erro na análise.');
-
-    // Aplicar resultado ao serviço
-    sS(i, 'tipoPatologia', data.tipoPatologia);
-    if(!s.obsPatologia && data.descricao) sS(i, 'obsPatologia', data.descricao, true);
-
-    // Renderizar card de resultado
-    const sevClass = `ia-pat-sev-${data.severidade}`;
-    const SEV_LABEL = {leve:'🟢 Leve', moderada:'🟡 Moderada', grave:'🔴 Grave'};
-    const PAT_LABEL = {fissuras:'Fissuras/Trincas',umidade:'Umidade/Infiltração',bolor:'Bolor/Fungo',
-      descascamento:'Descascamento/Bolha',eflorescencia:'Eflorescência',corrosao:'Corrosão/Ferrugem',outro:'Outro'};
-    const custoStr = data.custoAdicionalEstimado > 0
-      ? `R$ ${data.custoAdicionalEstimado.toLocaleString('pt-BR')} (tratamento estimado)`
-      : 'Incluído no serviço';
-
-    if(result) result.innerHTML = `
-      <div class="ia-pat-result">
-        <div class="ia-pat-result-head">🔬 Análise IA — ${PAT_LABEL[data.tipoPatologia]||data.tipoPatologia}</div>
-        <div class="ia-pat-row"><strong>Severidade:</strong><span class="${sevClass}">${SEV_LABEL[data.severidade]||data.severidade}</span></div>
-        <div class="ia-pat-row"><strong>Diagnóstico:</strong><span>${data.descricao}</span></div>
-        <div class="ia-pat-row"><strong>Tratamento:</strong><span>${data.tratamento}</span></div>
-        <div class="ia-pat-row"><strong>Custo extra:</strong><span>${custoStr}</span></div>
-        <div style="margin-top:8px">
-          <button class="ia-pat-btn" onclick="aplicarDiagnostico(${i},'${data.tipoPatologia}',\`${data.descricao.replace(/`/g,"'")}\`)">✓ Aplicar diagnóstico ao campo</button>
-        </div>
-      </div>`;
-
-    if(status) status.textContent = '✅ Análise concluída';
-
+    // TODO(Task 6): ia-patologia ainda é uma Edge Function do Supabase que exige
+    // um JWT do Supabase Auth — não aceita token do Clerk. Falta portar para /api/*.
+    throw new Error('Análise de foto com IA estará disponível em breve nesta versão.');
   } catch(err) {
     if(status) status.textContent = '❌ ' + err.message;
     console.error('[ia-patologia]', err);
