@@ -14,7 +14,12 @@
 <title>MestrePro — Entrar</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  async crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_ZGV2b3RlZC1tb25hcmNoLTczLmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://devoted-monarch-73.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <style>
 :root{
   --bg:#f4f6fc;--surf:#ffffff;--surf2:#f0f3fa;--surf3:#e9edf9;
@@ -277,6 +282,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
           Criar conta com Google
         </button>
       </div>
+
+      <!-- VERIFICAR E-MAIL (código enviado pelo Clerk após criar conta) -->
+      <div id="tv" style="display:none">
+        <div class="msg err" id="ev"></div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+          Enviamos um código de 6 dígitos para <strong id="tv-email"></strong>. Digite abaixo para confirmar sua conta.
+        </p>
+        <div class="field">
+          <label>Código de verificação</label>
+          <input id="cod-verif" type="text" inputmode="numeric" maxlength="6" placeholder="000000" onkeydown="if(event.key==='Enter')confirmarCodigoCadastro()">
+        </div>
+        <button class="btn btn-acc" id="btn-verif" onclick="confirmarCodigoCadastro()">Confirmar e-mail</button>
+        <button class="btn btn-out" onclick="setTab('c')">← Voltar</button>
+      </div>
     </div>
 
   </div>
@@ -433,6 +452,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="msg err" id="np-err"></div>
     <div class="msg ok" id="np-ok"></div>
     <div class="field">
+      <label>Código recebido por e-mail</label>
+      <input id="np-codigo" type="text" inputmode="numeric" maxlength="6" placeholder="000000">
+    </div>
+    <div class="field">
       <label>Nova senha</label>
       <input id="np-senha" type="password" placeholder="Nova senha" autocomplete="new-password">
     </div>
@@ -445,8 +468,27 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </div>
 
 <script>
-const {createClient} = supabase;
-const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+// Clerk substitui o supabase-js aqui. window.Clerk é injetado pelo script
+// no <head> (data-clerk-publishable-key) — precisa de Clerk.load() antes de usar.
+let _clerkLoadPromise = null;
+async function ensureClerk(){
+  if(!_clerkLoadPromise) _clerkLoadPromise = window.Clerk.load();
+  await _clerkLoadPromise;
+  return window.Clerk;
+}
+function clerkErrorMsg(err, fallback){
+  return err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || fallback;
+}
+async function apiFetch(path, opts={}){
+  const clerk = await ensureClerk();
+  const token = clerk.session ? await clerk.session.getToken() : null;
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if(token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(path, Object.assign({}, opts, {headers}));
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
+}
 
 // Links e preços vêm de pp-config.js — fonte única de verdade
 const MP = {
@@ -514,11 +556,12 @@ async function loginGoogle(){
   // Detecta qual tab está ativa para mostrar o erro no lugar certo
   const errId = document.getElementById('tc').style.display === 'none' ? 'el' : 'ec';
   try{
-    const{error}=await sb.auth.signInWithOAuth({
-      provider:'google',
-      options:{redirectTo: window.location.origin+'/pintopro-app.html'}
+    const clerk = await ensureClerk();
+    await clerk.client.signIn.authenticateWithRedirect({
+      strategy: 'oauth_google',
+      redirectUrl: window.location.origin + '/pintopro-login.html?oauth=1',
+      redirectUrlComplete: window.location.origin + '/pintopro-app.html',
     });
-    if(error) throw error;
   }catch(err){
     showMsg(errId,'Erro ao conectar com o Google. Tente novamente.','err');
   }
@@ -530,13 +573,15 @@ async function login(){
   if(!email||!senha){showMsg('el','Preencha e-mail e senha.','err');return;}
   setBtn('btn-login','<div class="spin"></div> Entrando...',true);
   try{
-    const{error}=await sb.auth.signInWithPassword({email,password:senha});
-    if(error) throw error;
+    const clerk = await ensureClerk();
+    const attempt = await clerk.client.signIn.create({identifier: email, password: senha});
+    if(attempt.status !== 'complete') throw new Error('Não foi possível entrar. Verifique seus dados.');
+    await clerk.setActive({session: attempt.createdSessionId});
     _track('Login', { method: 'email' });
     await _processarConvitePendente();
     window.location.href='pintopro-app.html';
   }catch(err){
-    showMsg('el',err.message==='Invalid login credentials'?'E-mail ou senha incorretos.':err.message,'err');
+    showMsg('el', clerkErrorMsg(err, 'E-mail ou senha incorretos.'), 'err');
     setBtn('btn-login','Entrar na plataforma',false);
   }
 }
@@ -564,9 +609,10 @@ function formatarCPF(input){
 }
 
 // Cadastro direto com validação de CPF único
+let _pendingSignup = null;
+
 async function cadastrar(){
   const nome=gv('cn'), email=gv('ce'), tel=gv('ct'), cpfRaw=gv('cpf'), cidade=gv('cc'), senha=gv('cs');
-  const perfil = document.getElementById('cp').value || 'pintor';
   hideMsg('ec');
 
   if(!document.getElementById('chk-termos').checked){
@@ -583,89 +629,85 @@ async function cadastrar(){
   setBtn('btn-cad','<div class="spin"></div> Verificando CPF...', true);
   try{
     // Verificar se CPF já tem conta ativa no banco
-    const { data: disponivel, error: cpfErr } = await sb.rpc('verificar_cpf_disponivel', { p_cpf: cpfLimpo });
-    if(cpfErr) throw cpfErr;
-    if(disponivel === false){
+    const cpfResp = await fetch('/api/publico/cpf?cpf='+cpfLimpo).then(r=>r.json());
+    if(cpfResp.disponivel === false){
       showMsg('ec','Este CPF já está vinculado a uma conta MestrePro. Faça login.','err');
       setBtn('btn-cad','Criar conta e escolher plano', false);
       return;
     }
 
-    // Criar conta
+    // Criar conta no Clerk
     setBtn('btn-cad','<div class="spin"></div> Criando conta...', true);
-    const { data: signUpData, error } = await sb.auth.signUp({
-      email, password: senha, options:{ data:{ nome, tel, cidade, perfil } }
+    const clerk = await ensureClerk();
+    const partesNome = nome.trim().split(/\s+/);
+    const signUp = await clerk.client.signUp.create({
+      emailAddress: email, password: senha,
+      firstName: partesNome[0], lastName: partesNome.slice(1).join(' ') || undefined,
     });
-    if(error) throw error;
 
-    // Supabase retorna user.identities=[] para e-mail duplicado (sem revelar que existe).
-    // user+sem session com identities populado = novo usuário aguardando confirmação de e-mail.
-    if(signUpData?.user && (signUpData.user.identities?.length === 0)){
-      showMsg('ec','Este e-mail já está cadastrado. Faça login ou recupere sua senha.','err');
-      setBtn('btn-cad','Criar conta e escolher plano', false);
+    _pendingSignup = { cpf: cpfLimpo, tel, cidade, nome };
+
+    if(signUp.status === 'complete'){
+      await clerk.setActive({session: signUp.createdSessionId});
+      await _finalizarCadastro();
       return;
     }
 
-    if(signUpData?.user?.id){
-      const aceitouMarketing = document.getElementById('chk-marketing').checked;
-      // Captura o IP para compor a prova de consentimento (LGPD Art. 8 §1º)
-      let consentIp = null;
-      try {
-        const ipRes = await fetch('https://api.ipify.org?format=json');
-        if (ipRes.ok) consentIp = (await ipRes.json())?.ip || null;
-      } catch (e) { /* IP é melhor-esforço — não bloqueia o cadastro */ }
-      const { error: profErr } = await sb.from('profiles').upsert({
-        id: signUpData.user.id,
-        nome, tel, cidade, perfil,
-        cpf: cpfLimpo,
-        cpf_verificado: true,
-        plano: 'trial',
-        ativo: true,
-        criado_em: new Date().toISOString(),
-        consentimento_termos_em: new Date().toISOString(),
-        consentimento_termos_ip: consentIp,
-        consentimento_marketing: aceitouMarketing,
-        consentimento_marketing_em: aceitouMarketing ? new Date().toISOString() : null,
-      }, { onConflict: 'id' });
-      if(profErr) console.warn('[MestrePro] upsert profiles:', profErr.message);
-      sessionStorage.setItem('pp_user_id', signUpData.user.id);
-
-      // ── Registrar indicação se usuário veio de um link de referral ──
-      const savedRef = sessionStorage.getItem('pp_ref_code');
-      if(savedRef){
-        try {
-          const { data: indData, error: indErr } = await sb.rpc('registrar_indicacao', {
-            p_ref_code:      savedRef,
-            p_indicado_id:   signUpData.user.id,
-            p_indicado_email: email,
-          });
-          if(indErr) console.warn('[MestrePro] registrar_indicacao erro:', indErr.message);
-          else if(indData?.ok) {
-            console.log('[MestrePro] Indicação registrada. Comissão:', indData.comissao_pct + '%');
-            sessionStorage.removeItem('pp_ref_code'); // consumir após uso
-          } else {
-            console.warn('[MestrePro] registrar_indicacao:', indData?.erro);
-          }
-        } catch(e) {
-          console.warn('[MestrePro] registrar_indicacao exception:', e);
-        }
-      }
-    }
-
-    if(sessionStorage.getItem('pp_convite_pendente')){
-      setBtn('btn-cad','⏳ Entrando na equipe...',true);
-      await _processarConvitePendente();
-      window.location.href='pintopro-app.html';
-      return;
-    }
-
-    _track('CompleteRegistration', { method: 'email', content_name: perfil });
-    document.getElementById('psub').textContent=`Bem-vindo, ${nome.split(' ')[0]}! Escolha seu plano abaixo.`;
-    showS('scr-planos');
+    // Fluxo padrão do Clerk: precisa confirmar e-mail por código de 6 dígitos
+    await clerk.client.signUp.prepareEmailAddressVerification({strategy:'email_code'});
+    document.getElementById('tv-email').textContent = email;
+    document.getElementById('tl').style.display='none';
+    document.getElementById('tc').style.display='none';
+    document.getElementById('tv').style.display='block';
+    setBtn('btn-cad','Criar conta e escolher plano', false);
   }catch(err){
-    showMsg('ec', err.message || 'Erro ao criar conta. Tente novamente.','err');
+    showMsg('ec', clerkErrorMsg(err, 'Erro ao criar conta. Tente novamente.'), 'err');
     setBtn('btn-cad','Criar conta e escolher plano', false);
   }
+}
+
+async function confirmarCodigoCadastro(){
+  const codigo = gv('cod-verif');
+  hideMsg('ev');
+  if(!codigo){ showMsg('ev','Digite o código recebido.','err'); return; }
+  setBtn('btn-verif','<div class="spin"></div> Confirmando...', true);
+  try{
+    const clerk = await ensureClerk();
+    const attempt = await clerk.client.signUp.attemptEmailAddressVerification({code: codigo});
+    if(attempt.status !== 'complete') throw new Error('Código incorreto ou expirado.');
+    await clerk.setActive({session: attempt.createdSessionId});
+    await _finalizarCadastro();
+  }catch(err){
+    showMsg('ev', clerkErrorMsg(err, 'Código incorreto ou expirado.'), 'err');
+    setBtn('btn-verif','Confirmar e-mail', false);
+  }
+}
+
+// Roda depois que o Clerk já tem uma sessão ativa (verificado ou não, conforme
+// config do app): grava CPF/consentimento LGPD/indicação no Neon via API
+// (substitui o INSERT direto que o cliente fazia com a service/anon key do Supabase).
+async function _finalizarCadastro(){
+  const p = _pendingSignup || {};
+  const marketing = document.getElementById('chk-marketing').checked;
+  const refCode = sessionStorage.getItem('pp_ref_code');
+  try{
+    const r = await apiFetch('/api/signup-extra', {method:'POST', body: JSON.stringify({
+      cpf: p.cpf, tel: p.tel, cidade: p.cidade, marketing, refCode,
+    })});
+    if(refCode && r?.indicacao?.ok) sessionStorage.removeItem('pp_ref_code');
+  }catch(e){
+    console.warn('[MestrePro] signup-extra:', e.message);
+  }
+
+  if(sessionStorage.getItem('pp_convite_pendente')){
+    await _processarConvitePendente();
+    window.location.href='pintopro-app.html';
+    return;
+  }
+
+  _track('CompleteRegistration', { method: 'email' });
+  document.getElementById('psub').textContent=`Bem-vindo, ${(p.nome||'').split(' ')[0]}! Escolha seu plano abaixo.`;
+  showS('scr-planos');
 }
 
 function irRecuperar(){
@@ -677,44 +719,51 @@ function irRecuperar(){
   showS('scr-rec');
 }
 
+// Clerk usa código de 6 dígitos por e-mail (não link mágico como o Supabase) —
+// por isso a tela de nova senha agora também pede o código (ver scr-newpass).
 async function enviarRecuperacao(){
   const email=document.getElementById('rec-email').value.trim();
   if(!email){document.getElementById('rec-err').textContent='Digite seu e-mail.';document.getElementById('rec-err').classList.add('show');return;}
   setBtn('btn-rec','<div class="spin"></div> Enviando...',true);
   try{
-    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
-    if(error) throw error;
-    document.getElementById('rec-ok').textContent='Link enviado! Verifique sua caixa de entrada (e o spam).';
+    const clerk = await ensureClerk();
+    await clerk.client.signIn.create({strategy:'reset_password_email_code', identifier: email});
+    document.getElementById('rec-ok').textContent='Código enviado! Verifique seu e-mail (e o spam) e informe-o na próxima tela.';
     document.getElementById('rec-ok').classList.add('show');
     document.getElementById('rec-field').style.display='none';
     setBtn('btn-rec','',false);
     document.getElementById('btn-rec').style.display='none';
+    setTimeout(()=> showS('scr-newpass'), 1200);
   }catch(err){
-    document.getElementById('rec-err').textContent='Erro ao enviar. Verifique o e-mail e tente novamente.';
+    document.getElementById('rec-err').textContent = clerkErrorMsg(err, 'Erro ao enviar. Verifique o e-mail e tente novamente.');
     document.getElementById('rec-err').classList.add('show');
     setBtn('btn-rec','Enviar link de recuperação',false);
   }
 }
 
 async function definirNovaSenha(){
+  const codigo=document.getElementById('np-codigo').value.trim();
   const s1=document.getElementById('np-senha').value;
   const s2=document.getElementById('np-senha2').value;
   const err=document.getElementById('np-err'), ok=document.getElementById('np-ok');
   err.classList.remove('show'); ok.classList.remove('show');
+  if(!codigo){ err.textContent='Digite o código recebido por e-mail.'; err.classList.add('show'); return; }
   if(!s1 || s1.length<6){ err.textContent='A senha deve ter pelo menos 6 caracteres.'; err.classList.add('show'); return; }
   if(s1!==s2){ err.textContent='As senhas não conferem.'; err.classList.add('show'); return; }
   setBtn('btn-np','<div class="spin"></div> Salvando...',true);
   try{
-    const { error } = await sb.auth.updateUser({ password: s1 });
-    if(error) throw error;
+    const clerk = await ensureClerk();
+    const attempt = await clerk.client.signIn.attemptFirstFactor({
+      strategy: 'reset_password_email_code', code: codigo, password: s1,
+    });
+    if(attempt.status !== 'complete') throw new Error('Código inválido ou expirado.');
+    await clerk.setActive({session: attempt.createdSessionId});
     ok.textContent='Senha alterada com sucesso! Redirecionando...';
     ok.classList.add('show');
-    // Limpa o hash de recuperação da URL e entra no app
-    history.replaceState(null,'',window.location.pathname);
     setTimeout(()=>{ window.location.href='pintopro-app.html'; }, 1200);
   }catch(e){
     setBtn('btn-np','Salvar nova senha',false);
-    err.textContent = (e?.message||'').includes('same') ? 'A nova senha não pode ser igual à anterior.' : 'Não foi possível alterar a senha. O link pode ter expirado — solicite um novo.';
+    err.textContent = clerkErrorMsg(e, 'Código inválido/expirado ou a senha é igual à anterior. Solicite um novo código.');
     err.classList.add('show');
   }
 }
@@ -738,9 +787,7 @@ async function validarConvite(codigo) {
   const subEl   = document.getElementById('conv-subtitulo');
 
   try {
-    const { data, error } = await sb.rpc('validar_convite_equipe', { p_codigo: _conviteCodigo });
-    if (error) throw error;
-    const row = Array.isArray(data) ? data[0] : data;
+    const row = await fetch('/api/equipe-convite?codigo='+encodeURIComponent(_conviteCodigo)).then(r=>r.json());
 
     if (!row || !row.valido) {
       loading.style.display = 'none';
@@ -780,9 +827,7 @@ async function _processarConvitePendente() {
   if (!codigo) return false;
   sessionStorage.removeItem('pp_convite_pendente');
   try {
-    const { data, error } = await sb.rpc('entrar_equipe', { p_codigo: codigo });
-    if (error) throw error;
-    const r = data;
+    const r = await apiFetch('/api/equipe-convite', {method:'PUT', body: JSON.stringify({codigo})});
     if (r.ok) {
       // Mostra mensagem de sucesso antes de redirecionar
       console.log('[Convite] Entrou na equipe com sucesso:', r);
@@ -797,26 +842,18 @@ async function _processarConvitePendente() {
 
 // ══════════════════════════════════════════════════════════════
 
-// ── Recuperação de senha: ao voltar do link, NÃO redireciona para o app;
-//    mostra a tela de definir nova senha. (Supabase coloca type=recovery no hash) ──
-let _recoveryMode = false;
-sb.auth.onAuthStateChange((event) => {
-  if (event === 'PASSWORD_RECOVERY') {
-    _recoveryMode = true;
-    showS('scr-newpass');
-  }
-});
-if (window.location.hash.includes('type=recovery')) {
-  _recoveryMode = true;
-}
+// Nota: o fluxo de recuperação do Clerk é por código de 6 dígitos (não por
+// link mágico com hash como no Supabase), então não há mais necessidade de
+// detectar type=recovery no hash — a tela scr-newpass já pede o código.
 
 (async()=>{
+  const clerk = await ensureClerk();
   const params=new URLSearchParams(window.location.search);
 
-  // Se é fluxo de recuperação de senha, mostra a tela de nova senha e para aqui
-  if (_recoveryMode || window.location.hash.includes('type=recovery')) {
-    showS('scr-newpass');
-    return;
+  // Retorno do redirect de OAuth (Google) — Clerk completa a sessão sozinho
+  // ao carregar a página em redirectUrl; só tratamos erro aqui.
+  if (params.get('oauth') === '1') {
+    try { await clerk.handleRedirectCallback({}); } catch(e) { /* segue o fluxo normal abaixo */ }
   }
 
   // Detecta link de convite de equipe
@@ -824,8 +861,7 @@ if (window.location.hash.includes('type=recovery')) {
   if (convite) {
     showS('scr-convite');
     // Se já logado, processa direto
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) {
+    if (clerk.session) {
       document.getElementById('conv-loading').style.display = '';
       document.getElementById('conv-acoes').style.display = 'none';
       _conviteCodigo = convite.toUpperCase();
@@ -847,9 +883,8 @@ if (window.location.hash.includes('type=recovery')) {
   }
 
   const isUpgrade=params.get('upgrade')==='1';
-  const{data:{session}}=await sb.auth.getSession();
-  if(session&&!isUpgrade){window.location.href='pintopro-app.html';return;}
-  if(session&&isUpgrade){
+  if(clerk.session && !isUpgrade){window.location.href='pintopro-app.html';return;}
+  if(clerk.session && isUpgrade){
     document.getElementById('psub').textContent='Você está logado. Escolha o plano para fazer upgrade.';
     showS('scr-planos');
   }

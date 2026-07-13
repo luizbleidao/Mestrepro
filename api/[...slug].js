@@ -18,6 +18,7 @@ const routes = {
   'equipe-membros': require('./_lib/handlers/equipe-membros'),
   'equipe-info': require('./_lib/handlers/equipe-info'),
   'portal-progresso': require('./_lib/handlers/portal-progresso'),
+  'signup-extra': require('./_lib/handlers/signup-extra'),
 };
 
 function resolveSlug(req) {

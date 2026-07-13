@@ -3,6 +3,7 @@ const routes = {
   assinar: require('../_lib/handlers/publico-assinar'),
   portal: require('../_lib/handlers/publico-portal'),
   aprovacao: require('../_lib/handlers/publico-aprovacao'),
+  cpf: require('../_lib/handlers/publico-cpf'),
 };
 
 function resolveSlug(req) {
