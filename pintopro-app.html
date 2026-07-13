@@ -16,7 +16,12 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
 <script src="pp-modules.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  async crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_ZGV2b3RlZC1tb25hcmNoLTczLmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <style>
 [data-theme="dark"]{--bg:#070c1a;--surf:#0f1729;--surf2:#152033;--surf3:#1a2a45;--border:#1e3060;--text:#eef0fb;--text2:#7c90bb;--text3:#3d5080;--sh:0 4px 24px rgba(0,0,0,.6);--card-sh:0 1px 3px rgba(0,0,0,.4);}
 [data-theme="light"]{--bg:#f4f6fc;--surf:#ffffff;--surf2:#f0f3fa;--surf3:#e6ebf8;--border:#e6eaf5;--text:#171c30;--text2:#5d6b8d;--text3:#9aa6c2;--sh:0 8px 32px rgba(54,68,120,.10);--card-sh:0 1px 3px rgba(54,68,120,.06),0 4px 16px rgba(54,68,120,.05);}
@@ -967,8 +972,37 @@ window._IFRAME_LOADED={};
 </div>
 
 <script>
-const {createClient} = supabase;
-const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+// ── Clerk (substitui supabase-js) ──────────────────────────────────────────
+function _waitForClerkGlobal(timeoutMs){
+  timeoutMs = timeoutMs || 10000;
+  return new Promise((resolve, reject) => {
+    if (window.Clerk) { resolve(window.Clerk); return; }
+    const inicio = Date.now();
+    const iv = setInterval(() => {
+      if (window.Clerk) { clearInterval(iv); resolve(window.Clerk); }
+      else if (Date.now() - inicio > timeoutMs) { clearInterval(iv); reject(new Error('Não foi possível carregar o sistema de login. Verifique sua conexão e recarregue a página.')); }
+    }, 50);
+  });
+}
+let _clerkLoadPromise = null;
+async function ensureClerk(){
+  if(!_clerkLoadPromise) _clerkLoadPromise = _waitForClerkGlobal().then(clerk => clerk.load());
+  await _clerkLoadPromise;
+  return window.Clerk;
+}
+function clerkErrorMsg(err, fallback){
+  return err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || fallback;
+}
+async function apiFetch(path, opts={}){
+  const clerk = await ensureClerk();
+  const token = clerk.session ? await clerk.session.getToken() : null;
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if(token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(path, Object.assign({}, opts, {headers}));
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
+}
 
 const CFG = {
   gratuito: {
@@ -1042,7 +1076,7 @@ const NAV = [
 const TITLES = {dashboard:'Dashboard',orcamentos:'Orçamentos',laudos:'Laudos Técnicos',financeiro:'Financeiro',agenda:'Agenda',ia_pro:'IA Pro',indicacao:'Indicar & Ganhar',configuracoes:'Configurações'};
 const BTNS   = {dashboard:'+ Nova ação',orcamentos:'+ Novo orçamento',laudos:'+ Novo laudo',financeiro:'+ Nova transação',agenda:'+ Agendar',ia_pro:'Explorar IA',indicacao:'Compartilhar link',configuracoes:'Salvar'};
 
-let USER=null, PROFILE=null, PLANO='gratuito', cfg=CFG.gratuito;
+let USER=null, PROFILE=null, PLANO='gratuito', cfg=CFG.gratuito, USO=null;
 
 async function init(){
   const demoRaw = sessionStorage.getItem('pp_demo');
@@ -1054,19 +1088,21 @@ async function init(){
       PLANO=_resolverPlano(d.plano); setup(); return;
     }catch{}
   }
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session){window.location.href='pintopro-login.html';return;}
-  USER=session.user;
-  try { await sb.rpc('verificar_expiracao_trial', { p_user_id: USER.id }); } catch(e) {}
-  const {data:profile}=await sb.from('profiles').select('id,nome,plano,perfil,is_admin,criado_em,trial_fim,cidade,tel,sig_profissional,empresa_data,preferencias,lgpd_aceito,equipe_owner_id,laudos_mes,orcamentos_total,ativo,conta_excluir_em').eq('id',USER.id).single();
-  if(!profile && USER.id !== 'demo'){
-    // Primeiro login via OAuth (Google) — cria perfil automaticamente
-    const nome = USER.user_metadata?.full_name || USER.user_metadata?.nome || USER.email?.split('@')[0] || 'Usuário';
-    const novoProfile = { id: USER.id, nome, perfil: 'pintor', plano: 'trial', ativo: true, criado_em: new Date().toISOString() };
-    await sb.from('profiles').upsert(novoProfile, { onConflict: 'id' }).catch(()=>{});
-    profile = novoProfile; // usa os dados recém-criados sem re-fetch
+  let clerk;
+  try { clerk = await ensureClerk(); } catch(e) { _mostrarErroCritico(e.message); return; }
+  if(!clerk.session){window.location.href='pintopro-login.html';return;}
+  USER={id: clerk.user.id, email: clerk.user.primaryEmailAddress?.emailAddress || ''};
+  let me;
+  try {
+    me = await apiFetch('/api/me');
+  } catch(e) {
+    // Perfil ainda não provisionado (webhook do Clerk pode levar alguns segundos) — tenta 1x depois de esperar.
+    await new Promise(r => setTimeout(r, 1500));
+    try { me = await apiFetch('/api/me'); }
+    catch(e2) { _mostrarErroCritico('Não foi possível carregar seu perfil. Tente recarregar a página em instantes.'); return; }
   }
-  PROFILE=profile||{nome:USER.user_metadata?.full_name||USER.user_metadata?.nome||USER.email,perfil:'pintor',plano:'gratuito',criado_em:USER.created_at,trial_fim:null};
+  PROFILE = me.profile || {nome: USER.email, perfil:'pintor', plano:'gratuito', criado_em:new Date().toISOString(), trial_fim:null};
+  USO = me.uso || null;
   PLANO=_resolverPlano(PROFILE.plano||'gratuito');
 
   // ── Detectar upgrade de plano e disparar evento Purchase ─────────────────
@@ -1234,13 +1270,15 @@ async function loadDashboard(){
   let orcCount = 0;
   try{
     // Buscar orçamentos, laudos e uso em paralelo — meu_uso() é fonte de verdade para limites
-    const [{data:orcsDb}, {data:laudosDb}, {data:uso}] = await Promise.all([
-      sb.from('orcamentos').select('id,numero,cliente,status,total').eq('user_id',USER.id).order('criado_em',{ascending:false}),
-      sb.from('laudos').select('id,cliente,criticidade,data').eq('user_id',USER.id).order('data',{ascending:false}).limit(5),
-      sb.rpc('meu_uso')
+    const [orcsRes, laudosRes, me] = await Promise.all([
+      apiFetch('/api/orcamentos'),
+      apiFetch('/api/laudos'),
+      apiFetch('/api/me'),
     ]);
-    orcs   = orcsDb   || [];
-    laudos = laudosDb || [];
+    orcs   = orcsRes.orcamentos   || [];
+    laudos = (laudosRes.laudos || []).slice(0,5);
+    const uso = me.uso;
+    USO = uso;
 
     // ── Orçamentos (fonte: meu_uso RPC) ──
     orcCount = uso?.orcamentos_total ?? orcs.length;
@@ -1476,30 +1514,24 @@ async function loadIndicacao() {
   if (!wrap) return;
   wrap.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:24px">⏳</div><div>Carregando...</div></div>`;
 
-  // Link de indicação: baseia-se no email ou ID do usuário (sem expor service key)
   const uid = USER?.id;
   const email = USER?.email || '';
-  // Código de referral: hash simples do UID (8 chars)
-  const refCode = uid && uid !== 'demo'
-    ? uid.replace(/-/g,'').slice(0,8).toUpperCase()
-    : 'DEMO1234';
-  const refLink = `${window.location.origin}/pintopro-login.html?ref=${refCode}`;
 
-  // Buscar stats (quantos indicados, comissão acumulada)
-  let indicados = 0, comissao = 0;
+  // Buscar stats + código de referral no servidor — o ref_code é derivado do
+  // profileId (UUID no Neon), não do id do Clerk, então precisa vir da API
+  // (meu_programa_indicacao) em vez de ser calculado no cliente.
+  let indicados = 0, comissao = 0, refCode = 'DEMO1234';
   if (uid && uid !== 'demo') {
     try {
-      const { data } = await sb.from('indicacoes')
-        .select('id, status, comissao_brl')
-        .eq('referrer_id', uid);
-      if (data) {
-        indicados = data.length;
-        comissao = data.filter(r=>r.status==='pago').reduce((s,r)=>s+(r.comissao_brl||0), 0);
-      }
+      const stats = await apiFetch('/api/indicacoes');
+      indicados = stats.total || 0;
+      comissao = Number(stats.comissao || 0);
+      refCode = stats.ref_code || refCode;
     } catch(e) {
       // Tabela pode não existir ainda — mostrar zero sem erro
     }
   }
+  const refLink = `${window.location.origin}/pintopro-login.html?ref=${refCode}`;
 
   const pct = 20;
 
@@ -1719,7 +1751,7 @@ async function abrirModalPlanos(){
   document.getElementById('up-modal').classList.add('open');
   // Atualizar preços do banco antes de renderizar
   try {
-    const { data } = await sb.rpc('get_planos_config');
+    const { planos: data } = await apiFetch('/api/publico/planos');
     if(data && data.length) {
       data.filter(c=>c.ativo).forEach(c => {
         const p = PLANOS_CONFIG.find(x=>x.id===c.id);
@@ -1777,30 +1809,13 @@ async function irCheckout(planoId, anual){
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Gerando checkout...'; }
 
   try {
-    // Sempre refreshar para garantir token válido
-    const { data: refreshed } = await sb.auth.refreshSession();
-    let session = refreshed?.session;
-    // Fallback: tentar getSession se refresh falhar (token ainda válido)
-    if(!session?.access_token) {
-      const { data: gs } = await sb.auth.getSession();
-      session = gs?.session;
-    }
-    if(!session?.access_token) throw new Error('Sessão expirada. Faça login novamente em mestrepro.space');
-
-    const res = await fetch(`${window.PP.supabaseUrl}/functions/v1/criar-preferencia-mp`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${session.access_token}` },
-      body: JSON.stringify({ plano_id: planoId, periodo: anual ? 'anual' : 'mensal' }),
-    });
-    const data = await res.json();
-
-    if(!res.ok || !data.init_point) throw new Error(data.error || 'sem init_point');
-
-    fecharModalPlanos();
-    window.location.href = data.init_point;
+    // TODO(Task 6): checkout Mercado Pago ainda depende da Edge Function
+    // Supabase `criar-preferencia-mp`, que valida um JWT do Supabase Auth —
+    // não aceita token do Clerk. Falta portar essa function para /api/*.
+    throw new Error('Checkout de planos estará disponível em breve nesta versão. Fale com o suporte para assinar agora.');
   } catch(e) {
     if(btn){ btn.disabled = false; btn.textContent = `Assinar ${planoId} →`; }
-    notif('❌ Erro ao gerar checkout: ' + e.message, 'err');
+    notif('❌ ' + e.message, 'err');
   }
 }
 
@@ -1874,7 +1889,7 @@ function checkTrialCountdown(){
 
 async function sair(){
   sessionStorage.removeItem('pp_demo');
-  await sb.auth.signOut();
+  try { const clerk = await ensureClerk(); await clerk.signOut(); } catch(e) {}
   window.location.href='pintopro-login.html';
 }
 
@@ -1947,8 +1962,8 @@ async function saveProfSig() {
   document.getElementById('sig-saved-wrap').style.display = 'block';
 
   if (USER?.id && USER.id !== 'demo') {
-    try { await sb.from('profiles').update({ sig_profissional: base64 }).eq('id', USER.id); }
-    catch(e) { console.warn('Falha ao salvar sig no Supabase:', e); }
+    try { await apiFetch('/api/me', { method:'PATCH', body: JSON.stringify({ sig_profissional: base64 }) }); }
+    catch(e) { console.warn('Falha ao salvar assinatura:', e); }
   }
   showCfgMsg('cfg-sig-msg', '✅ Assinatura salva! Será inserida automaticamente nos PDFs.', 'ok');
   notif('✍️ Assinatura salva!');
@@ -2071,8 +2086,8 @@ async function saveAccountData() {
   if (!nome) { showCfgMsg('cfg-conta-msg', 'O nome não pode ficar vazio.', 'err'); return; }
 
   if (USER?.id !== 'demo') {
-    const { error } = await sb.from('profiles').update({ nome, tel, cidade }).eq('id', USER.id);
-    if (error) { showCfgMsg('cfg-conta-msg', 'Erro ao salvar: ' + error.message, 'err'); return; }
+    try { await apiFetch('/api/me', { method:'PATCH', body: JSON.stringify({ nome, tel, cidade }) }); }
+    catch(e) { showCfgMsg('cfg-conta-msg', 'Erro ao salvar: ' + e.message, 'err'); return; }
   }
   if (PROFILE) { PROFILE.nome = nome; PROFILE.tel = tel; PROFILE.cidade = cidade; }
   setupUser();
@@ -2086,8 +2101,10 @@ async function changePassword() {
   if (!nova || nova.length < 6) { showCfgMsg('cfg-senha-msg', 'A nova senha deve ter pelo menos 6 caracteres.', 'err'); return; }
   if (nova !== conf) { showCfgMsg('cfg-senha-msg', 'As senhas não coincidem.', 'err'); return; }
   if (USER?.id === 'demo') { showCfgMsg('cfg-senha-msg', 'Modo demonstração — não é possível alterar senha.', 'err'); return; }
-  const { error } = await sb.auth.updateUser({ password: nova });
-  if (error) { showCfgMsg('cfg-senha-msg', 'Erro: ' + error.message, 'err'); return; }
+  try {
+    const clerk = await ensureClerk();
+    await clerk.user.updatePassword({ newPassword: nova });
+  } catch(e) { showCfgMsg('cfg-senha-msg', 'Erro: ' + clerkErrorMsg(e, 'não foi possível alterar a senha'), 'err'); return; }
   document.getElementById('cfg-senha-nova').value = '';
   document.getElementById('cfg-senha-conf').value = '';
   showCfgMsg('cfg-senha-msg', '✅ Senha alterada com sucesso!', 'ok');
@@ -2099,8 +2116,7 @@ async function exportarMeusDados() {
   if (USER?.id === 'demo') { showCfgMsg('cfg-lgpd-msg', 'Disponível apenas em conta real.', 'warn'); return; }
   const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Gerando...';
   try {
-    const { data, error } = await sb.rpc('exportar_meus_dados');
-    if (error) throw error;
+    const data = await apiFetch('/api/lgpd', { method:'POST', body: JSON.stringify({ acao: 'exportar' }) });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2120,8 +2136,7 @@ async function revogarMarketing() {
   if (!confirm('Deseja cancelar o recebimento de e-mails de marketing? Você continuará recebendo apenas comunicações essenciais da sua conta.')) return;
   const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳...';
   try {
-    const { error } = await sb.rpc('revogar_consentimento_marketing');
-    if (error) throw error;
+    await apiFetch('/api/lgpd', { method:'POST', body: JSON.stringify({ acao: 'revogar-marketing' }) });
     showCfgMsg('cfg-lgpd-msg', '✅ Consentimento de marketing revogado. Você não receberá mais esses e-mails.', 'ok');
   } catch (e) {
     console.error('[MestrePro] Erro ao revogar marketing:', e.message || e);
@@ -2137,8 +2152,7 @@ async function excluirMinhaConta() {
   if (confirma !== 'EXCLUIR') { showCfgMsg('cfg-lgpd-msg', 'Exclusão cancelada.', 'info'); return; }
   const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳...';
   try {
-    const { error } = await sb.rpc('solicitar_exclusao_conta');
-    if (error) throw error;
+    await apiFetch('/api/lgpd', { method:'POST', body: JSON.stringify({ acao: 'excluir-conta' }) });
     showCfgMsg('cfg-lgpd-msg', '✅ Exclusão agendada. Sua conta e dados serão removidos em 30 dias. Faça login nesse período para cancelar.', 'ok');
     notif('🗑️ Exclusão de conta agendada.', 'warn');
   } catch (e) {
@@ -2168,10 +2182,10 @@ async function saveCompanyData() {
   localStorage.setItem('empresaSalva', JSON.stringify(emp));
   // Salvar no Supabase (fonte de verdade — persiste entre dispositivos)
   if (USER?.id && USER.id !== 'demo') {
-    const { error } = await sb.from('profiles').update({ empresa_data: emp }).eq('id', USER.id);
-    if (error) {
-      console.error('[MestrePro] Erro ao salvar empresa no Supabase:', error.message);
-      showCfgMsg('cfg-empresa-msg', '⚠️ Salvo localmente, mas houve erro ao sincronizar: ' + error.message, 'err');
+    try { await apiFetch('/api/me', { method:'PATCH', body: JSON.stringify({ empresa_data: emp }) }); }
+    catch(e) {
+      console.error('[MestrePro] Erro ao salvar empresa:', e.message);
+      showCfgMsg('cfg-empresa-msg', '⚠️ Salvo localmente, mas houve erro ao sincronizar: ' + e.message, 'err');
       return;
     }
     if (PROFILE) PROFILE.empresa_data = emp;
@@ -2189,9 +2203,8 @@ async function savePreferences() {
   };
   localStorage.setItem('pp_preferencias', JSON.stringify(pref));
   if (USER?.id && USER.id !== 'demo') {
-    const { error } = await sb.from('profiles').update({ preferencias: pref }).eq('id', USER.id);
-    if (error) console.error('[MestrePro] Erro ao salvar preferências:', error.message);
-    else if (PROFILE) PROFILE.preferencias = pref;
+    try { await apiFetch('/api/me', { method:'PATCH', body: JSON.stringify({ preferencias: pref }) }); if (PROFILE) PROFILE.preferencias = pref; }
+    catch(e) { console.error('[MestrePro] Erro ao salvar preferências:', e.message); }
   }
   showCfgMsg('cfg-pref-msg', '✅ Preferências salvas com sucesso!', 'ok');
   notif('⚙️ Preferências atualizadas!');
@@ -2211,8 +2224,7 @@ async function loadEquipeTab() {
   cards.forEach(c => { const el=document.getElementById(c); if(el) el.style.display='none'; });
 
   try {
-    const { data, error } = await sb.rpc('get_minha_equipe_info');
-    if (error) throw error;
+    const data = await apiFetch('/api/equipe-info');
     _equipeInfo = data;
     if (data.role === 'dono') _renderEquipeDono(data);
     else if (data.role === 'membro') _renderEquipeMembro(data);
@@ -2250,8 +2262,7 @@ async function _carregarMembros() {
     return;
   }
   try {
-    const { data, error } = await sb.rpc('listar_membros_equipe');
-    if (error) throw error;
+    const { membros: data } = await apiFetch('/api/equipe-membros');
     if (!data || data.length === 0) {
       lista.innerHTML = `<div style="text-align:center;color:var(--text3);font-size:13px;padding:24px">
         <div style="font-size:28px;margin-bottom:8px">👤</div>
@@ -2317,8 +2328,7 @@ async function gerarConvite() {
   const btn = document.getElementById('btn-gerar-convite');
   btn.textContent = '⏳ Gerando...'; btn.disabled = true;
   try {
-    const { data, error } = await sb.rpc('criar_convite_equipe');
-    if (error) throw error;
+    const { codigo: data } = await apiFetch('/api/equipe-convite', { method:'POST' });
     _setEquipeLink(data);
     document.getElementById('btn-revogar-convite').style.display = '';
     if (_equipeInfo) _equipeInfo.codigo = data;
@@ -2334,7 +2344,7 @@ async function revogarConvite() {
   if (!confirm('Revogar o link?')) return;
   if (USER?.id === 'demo') { notif('Demo: link revogado!'); return; }
   try {
-    await sb.from('equipe_convites').update({ativo:false}).eq('dono_id', USER.id);
+    await apiFetch('/api/equipe-convite', { method:'DELETE' });
     document.getElementById('equipe-link-input').value = '';
     document.getElementById('btn-copiar-link').style.display = 'none';
     document.getElementById('btn-wpp-link').style.display = 'none';
@@ -2364,8 +2374,7 @@ async function removerMembro(membroId, nome) {
   if (!confirm(`Remover ${nome} da equipe?`)) return;
   if (USER?.id === 'demo') { notif('Demo: membro removido!'); await _carregarMembros(); return; }
   try {
-    const { data, error } = await sb.rpc('remover_membro_equipe', { p_membro_id: membroId });
-    if (error) throw error;
+    const data = await apiFetch(`/api/equipe-membros?membro_id=${encodeURIComponent(membroId)}`, { method:'DELETE' });
     if (!data.ok) throw new Error(data.erro);
     notif(`✅ ${nome} removido da equipe.`);
     const lim = cfg.multiUserLim || 5;
@@ -2379,11 +2388,10 @@ async function sairEquipe() {
   if (!confirm('Sair da equipe?')) return;
   if (USER?.id === 'demo') { notif('Demo: saiu da equipe!'); return; }
   try {
-    const { data, error } = await sb.rpc('sair_equipe');
-    if (error) throw error;
+    const data = await apiFetch('/api/equipe-membros', { method:'DELETE' });
     if (!data.ok) throw new Error(data.erro);
     notif('✅ Você saiu da equipe.');
-    const { data: pdata } = await sb.from('profiles').select('plano').eq('id', USER.id).single();
+    const { profile: pdata } = await apiFetch('/api/me');
     if (pdata) { PROFILE.plano = pdata.plano; PLANO = _resolverPlano(pdata.plano); cfg = CFG[PLANO]||CFG.gratuito; setup(); }
     loadEquipeTab();
   } catch(e) { alert('Erro: ' + e.message); }

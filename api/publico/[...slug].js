@@ -4,6 +4,7 @@ const routes = {
   portal: require('../_lib/handlers/publico-portal'),
   aprovacao: require('../_lib/handlers/publico-aprovacao'),
   cpf: require('../_lib/handlers/publico-cpf'),
+  planos: require('../_lib/handlers/publico-planos'),
 };
 
 function resolveSlug(req) {

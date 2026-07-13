@@ -41,5 +41,15 @@ module.exports = async (req, res) => {
     return;
   }
 
+  if (req.method === 'DELETE') {
+    // Revoga o(s) convite(s) do dono — substitui
+    // sb.from('equipe_convites').update({ativo:false}).eq('dono_id', USER.id).
+    await withUser(auth.profileId, (client) =>
+      client.query('UPDATE equipe_convites SET ativo = false WHERE dono_id = $1', [auth.profileId])
+    );
+    res.status(200).json({ ok: true });
+    return;
+  }
+
   res.status(405).json({ error: 'method not allowed' });
 };
