@@ -10,7 +10,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="pp-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  async crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_ZGV2b3RlZC1tb25hcmNoLTczLmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -663,22 +668,34 @@ const CONSULTOR = new Proxy({}, {
   get(_,k){ return getConsultor()[k]||''; }
 });
 
-// ═══════════════ SUPABASE SYNC ═══════════════
-// Criação segura do cliente Supabase — não quebra se credenciais estiverem vazias
-let _lpSb = null;
-(function(){
-  try {
-    const url = window.PP?.supabaseUrl;
-    const key = window.PP?.supabaseKey;
-    if (url && key && url.startsWith('https://')) {
-      _lpSb = supabase.createClient(url, key);
-    } else {
-      console.info('[Laudos] Credenciais Supabase não configuradas — modo local ativado.');
-    }
-  } catch(e) {
-    console.warn('[Laudos] Falha ao iniciar Supabase:', e.message);
-  }
-})();
+// ═══════════════ CLERK + API SYNC ═══════════════
+function _waitForClerkGlobal(timeoutMs){
+  timeoutMs = timeoutMs || 10000;
+  return new Promise((resolve, reject) => {
+    if (window.Clerk) { resolve(window.Clerk); return; }
+    const inicio = Date.now();
+    const iv = setInterval(() => {
+      if (window.Clerk) { clearInterval(iv); resolve(window.Clerk); }
+      else if (Date.now() - inicio > timeoutMs) { clearInterval(iv); reject(new Error('Não foi possível carregar autenticação.')); }
+    }, 50);
+  });
+}
+let _clerkLoadPromise = null;
+async function ensureClerk(){
+  if(!_clerkLoadPromise) _clerkLoadPromise = _waitForClerkGlobal().then(clerk => clerk.load());
+  await _clerkLoadPromise;
+  return window.Clerk;
+}
+async function apiFetch(path, opts={}){
+  const clerk = await ensureClerk();
+  const token = clerk.session ? await clerk.session.getToken() : null;
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if(token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(path, Object.assign({}, opts, {headers}));
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
+}
 
 function _lpGetUserId(){ return sessionStorage.getItem('pp_user_id')||null; }
 
@@ -689,11 +706,10 @@ function _laudosKey(){ return LAUDOS_KEY + '_' + (_lpGetUserId()||'anon'); }
 function _lpNotifyParent(){ try{ window.parent.postMessage({type:'pp_ldo_updated'}, window.location.origin); }catch(e){} }
 
 async function _syncLaudoSupabase(snap){
-  const userId=_lpGetUserId(); if(!userId || !_lpSb)return;
+  const userId=_lpGetUserId(); if(!userId)return;
   try{
-    await _lpSb.from('laudos').upsert({
+    await apiFetch('/api/laudos', { method:'POST', body: JSON.stringify({
       id:String(snap.id),
-      user_id:userId,
       numero:snap.numero||'',
       cliente:snap.cliente||'',
       obra:snap.obra||'',
@@ -702,9 +718,9 @@ async function _syncLaudoSupabase(snap){
       criticidade:snap.criticidade||'MODERADO',
       status:snap.status||'rascunho',
       pat_count:snap.sel?Object.keys(snap.sel).length:0,
-      updated_at:new Date().toISOString()
-    },{onConflict:'id'});
-  }catch(e){console.warn('Sync laudo Supabase falhou (não crítico):',e.message);}
+      dados:snap,
+    })});
+  }catch(e){console.warn('Sync laudo falhou (não crítico):',e.message);}
 }
 
 // ═══════════════ UTILS ═══════════════
@@ -1019,12 +1035,10 @@ async function gerarLinkAssinaturaLaudo(laudoId){
     laudo.sigToken = token;
     // Salvar com chave correta (inclui userId para não colidir entre usuários)
     saveLaudos();
-    // Persistir token no Supabase se disponível
-    if (_lpSb) {
-      try{
-        await _lpSb.from('laudos').update({sig_token: token}).eq('id', laudoId).eq('user_id', uid);
-      }catch(e){ console.warn('Falha ao salvar sig_token no laudo:', e); }
-    }
+    // Persistir token via API
+    try{
+      await apiFetch(`/api/laudos?id=${encodeURIComponent(laudoId)}`, { method:'PATCH', body: JSON.stringify({sig_token: token}) });
+    }catch(e){ console.warn('Falha ao salvar sig_token no laudo:', e); }
   }
 
   const url = `${window.PP.appUrl}${window.PP.assinarPath}?token=${token}`;
@@ -1047,11 +1061,10 @@ async function gerarLinkAssinaturaLaudo(laudoId){
 // Merge sig fields from Supabase into local laudos
 async function _syncSigTokens(){
   const uid=sessionStorage.getItem('pp_user_id');
-  if(!uid || !_lpSb)return;
+  if(!uid)return;
   try{
-    const{data}=await _lpSb.from('laudos')
-      .select('id,sig_token,sig_cliente,sig_cliente_at,sig_cliente_nome')
-      .eq('user_id',uid).not('sig_token','is',null);
+    const{laudos}=await apiFetch('/api/laudos');
+    const data=(laudos||[]).filter(r=>r.sig_token);
     if(data&&data.length){
       let changed=false;
       data.forEach(row=>{
@@ -1076,8 +1089,8 @@ async function startNewLaudo(){
   const uid = _lpGetUserId();
   if(uid && uid !== 'demo'){
     try{
-      const { data: res, error } = await _lpSb.rpc('check_laudo_permitido');
-      if(error) throw error;
+      const { uso } = await apiFetch('/api/me');
+      const res = { permitido: uso.laudos_ilimitado || (uso.laudos_restantes === null) || uso.laudos_restantes > 0, limite: uso.laudos_limite_mes, restantes: uso.laudos_restantes };
       if(res && res.permitido === false){
         const lim  = res.limite  ?? '?';
         const rest = res.restantes ?? 0;

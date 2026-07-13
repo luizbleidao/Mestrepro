@@ -6,7 +6,6 @@
 <title>MestrePro — Gerador de Posts IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#0b0f1a;--bg2:#111827;--bg3:#1c2537;--border:#2a3550;
@@ -276,30 +275,9 @@ async function gerarPost() {
   btn.innerHTML = '<div class="spin"></div> Gerando...';
 
   try {
-    const sbClient = supabase.createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
-    const { data: { session } } = await sbClient.auth.getSession();
-    const token = session?.access_token;
-    if (!token) throw new Error('Sessão expirada. Faça login novamente.');
-
-    const res = await fetch(`${window.PP.supabaseUrl}/functions/v1/ia-posts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        nicho: 'pintor/prestador de serviços de pintura',
-        tipo: tipoSelecionado,
-        tema, tom, cidade, nomeEmpresa,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erro ao gerar post.');
-
-    exibirResultado(data, tema);
-    salvarHistorico({ tipo: tipoSelecionado, tema, ...data, ts: Date.now() });
-
+    // TODO(Task 6): ia-posts ainda é uma Edge Function do Supabase que exige
+    // um JWT do Supabase Auth — não aceita token do Clerk. Falta portar para /api/*.
+    throw new Error('Gerador de posts com IA estará disponível em breve nesta versão.');
   } catch (err) {
     alert('Erro: ' + err.message);
   } finally {
