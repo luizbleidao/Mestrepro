@@ -1850,7 +1850,12 @@ async function gerarComIA(){
   }
   const tipoImovel = document.getElementById('ia-tipo').value;
   const cidade     = document.getElementById('ia-cidade').value.trim() || 'Brasil';
-  const areas      = document.getElementById('ia-area').value.trim();
+  const areasTxt   = document.getElementById('ia-area').value.trim();
+
+  // A API espera area_m2 numérico — soma os números encontrados no texto livre
+  // (ex: "120m² de parede + 40m² de teto" -> 160).
+  const numeros = (areasTxt.match(/\d+([.,]\d+)?/g) || []).map(n => parseFloat(n.replace(',', '.')));
+  const areaM2 = numeros.length ? numeros.reduce((a,b) => a+b, 0) : null;
 
   // UI: modo gerando
   document.getElementById('ia-btn-gerar').disabled = true;
@@ -1860,11 +1865,43 @@ async function gerarComIA(){
   document.getElementById('ia-lock-msg').style.display = 'none';
 
   try {
-    // TODO(Task 6): ia-orcamento ainda é uma Edge Function do Supabase que exige
-    // um JWT do Supabase Auth — não aceita token do Clerk. Falta portar para /api/*.
-    throw new Error('Geração de orçamento com IA estará disponível em breve nesta versão.');
+    if(!areaM2){ throw new Error('Informe a metragem no campo de área (ex: 120m²).'); }
+
+    const data = await apiFetch('/api/ia-orcamento', { method:'POST', body: JSON.stringify({
+      area_m2: areaM2,
+      tipo_servico: `${tipoImovel} — ${descricao}`,
+      estado_superficie: descricao,
+      cidade,
+      observacoes: descricao,
+    })});
+
+    // Sucesso — mostrar preview (mapeando itens_orcamento -> formato de serviços do orçamento)
+    _iaServicosGerados = (data.itens_orcamento || []).map(item => ({
+      nome: item.descricao,
+      tipoServico: item.unidade || 'serviço',
+      valorServico: Number(item.valor_unitario || 0) * Number(item.quantidade || 1),
+    }));
+    _iaObsGerada = [data.justificativa, ...(data.alertas||[]).map(a=>'⚠️ '+a)].filter(Boolean).join('\n');
+
+    const listEl = document.getElementById('ia-result-list');
+    listEl.innerHTML = _iaServicosGerados.map(s =>
+      `<div class="ia-result-item"><span><strong>${s.nome}</strong> — ${s.tipoServico} ${s.valorServico>0?'<span style="color:var(--acc);font-family:DM Mono,monospace"> R$'+s.valorServico.toLocaleString('pt-BR')+'</span>':''}</span></div>`
+    ).join('');
+
+    if(_iaObsGerada){
+      document.getElementById('ia-obs').textContent = '💡 ' + _iaObsGerada;
+    }
+
+    document.getElementById('ia-result-preview').classList.add('show');
+    document.getElementById('ia-btn-aplicar').style.display = '';
+    document.getElementById('ia-btn-gerar').style.display = 'none';
   } catch(err) {
-    alert('Erro ao chamar IA: ' + err.message);
+    if(String(err.message||'').includes('IA Pro')){
+      document.getElementById('ia-lock-msg').textContent = '🔒 ' + err.message;
+      document.getElementById('ia-lock-msg').style.display = 'block';
+    } else {
+      alert('Erro ao chamar IA: ' + err.message);
+    }
   } finally {
     document.getElementById('ia-btn-gerar').disabled = false;
     document.getElementById('ia-btn-gerar').textContent = '✨ Gerar com IA';
