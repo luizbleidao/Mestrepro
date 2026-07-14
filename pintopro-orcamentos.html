@@ -1977,9 +1977,39 @@ async function analisarFotoPatologia(i){
   if(result) result.innerHTML = '';
 
   try {
-    // TODO(Task 6): ia-patologia ainda é uma Edge Function do Supabase que exige
-    // um JWT do Supabase Auth — não aceita token do Clerk. Falta portar para /api/*.
-    throw new Error('Análise de foto com IA estará disponível em breve nesta versão.');
+    const dataUrl  = s.fotosPatologia[0];
+    const parts    = dataUrl.split(',');
+    const mimeType = (parts[0].match(/:(.*?);/) || ['','image/jpeg'])[1];
+    const imgB64   = parts[1];
+
+    const data = await apiFetch('/api/ia-patologia', { method:'POST', body: JSON.stringify({
+      imageBase64: imgB64, mimeType, ambiente: s.nome || `Ambiente ${i+1}`,
+    })});
+
+    sS(i, 'tipoPatologia', data.tipoPatologia);
+    if(!s.obsPatologia && data.descricao) sS(i, 'obsPatologia', data.descricao, true);
+
+    const sevClass = `ia-pat-sev-${data.severidade}`;
+    const SEV_LABEL = {leve:'🟢 Leve', moderada:'🟡 Moderada', grave:'🔴 Grave'};
+    const PAT_LABEL = {fissuras:'Fissuras/Trincas',umidade:'Umidade/Infiltração',bolor:'Bolor/Fungo',
+      descascamento:'Descascamento/Bolha',eflorescencia:'Eflorescência',corrosao:'Corrosão/Ferrugem',outro:'Outro'};
+    const custoStr = data.custoAdicionalEstimado > 0
+      ? `R$ ${data.custoAdicionalEstimado.toLocaleString('pt-BR')} (tratamento estimado)`
+      : 'Incluído no serviço';
+
+    if(result) result.innerHTML = `
+      <div class="ia-pat-result">
+        <div class="ia-pat-result-head">🔬 Análise IA — ${PAT_LABEL[data.tipoPatologia]||data.tipoPatologia}</div>
+        <div class="ia-pat-row"><strong>Severidade:</strong><span class="${sevClass}">${SEV_LABEL[data.severidade]||data.severidade}</span></div>
+        <div class="ia-pat-row"><strong>Diagnóstico:</strong><span>${data.descricao}</span></div>
+        <div class="ia-pat-row"><strong>Tratamento:</strong><span>${data.tratamento}</span></div>
+        <div class="ia-pat-row"><strong>Custo extra:</strong><span>${custoStr}</span></div>
+        <div style="margin-top:8px">
+          <button class="ia-pat-btn" onclick="aplicarDiagnostico(${i},'${data.tipoPatologia}',\`${data.descricao.replace(/`/g,"'")}\`)">✓ Aplicar diagnóstico ao campo</button>
+        </div>
+      </div>`;
+
+    if(status) status.textContent = '✅ Análise concluída';
   } catch(err) {
     if(status) status.textContent = '❌ ' + err.message;
     console.error('[ia-patologia]', err);

@@ -26,6 +26,14 @@ const routes = {
   'admin-painel': require('./_lib/handlers/admin-painel'),
   checkout: require('./_lib/handlers/checkout'),
   'ia-orcamento': require('./_lib/handlers/ia-orcamento'),
+  'ia-mensagem': require('./_lib/handlers/ia-mensagem'),
+  'ia-diagnostico': require('./_lib/handlers/ia-diagnostico'),
+  'ia-preco': require('./_lib/handlers/ia-preco'),
+  'ia-laudo': require('./_lib/handlers/ia-laudo'),
+  'ia-resumo-cliente': require('./_lib/handlers/ia-resumo-cliente'),
+  'ia-followup': require('./_lib/handlers/ia-followup'),
+  'ia-patologia': require('./_lib/handlers/ia-patologia'),
+  'ia-posts': require('./_lib/handlers/ia-posts'),
 };
 
 function resolveSlug(req) {

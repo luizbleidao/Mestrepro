@@ -6,6 +6,12 @@
 <title>MestrePro — Gerador de Posts IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
+<script
+  async crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_ZGV2b3RlZC1tb25hcmNoLTczLmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <style>
 :root{
   --bg:#0b0f1a;--bg2:#111827;--bg3:#1c2537;--border:#2a3550;
@@ -223,6 +229,34 @@ const HIST_KEY = 'pp_posts_hist_' + (sessionStorage.getItem('pp_user_id') || 'an
 function _getSession(){ return sessionStorage; }
 function _getUserPlano(){ return sessionStorage.getItem('pp_user_plano') || 'gratuito'; }
 
+function _waitForClerkGlobal(timeoutMs){
+  timeoutMs = timeoutMs || 10000;
+  return new Promise((resolve, reject) => {
+    if (window.Clerk) { resolve(window.Clerk); return; }
+    const inicio = Date.now();
+    const iv = setInterval(() => {
+      if (window.Clerk) { clearInterval(iv); resolve(window.Clerk); }
+      else if (Date.now() - inicio > timeoutMs) { clearInterval(iv); reject(new Error('Não foi possível carregar autenticação.')); }
+    }, 50);
+  });
+}
+let _clerkLoadPromise = null;
+async function ensureClerk(){
+  if(!_clerkLoadPromise) _clerkLoadPromise = _waitForClerkGlobal().then(clerk => clerk.load());
+  await _clerkLoadPromise;
+  return window.Clerk;
+}
+async function apiFetch(path, opts={}){
+  const clerk = await ensureClerk();
+  const token = clerk.session ? await clerk.session.getToken() : null;
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if(token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(path, Object.assign({}, opts, {headers}));
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
+}
+
 // ─── Init ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   // Sinaliza ao pai que o iframe está pronto — pai responde com syncUser
@@ -275,9 +309,14 @@ async function gerarPost() {
   btn.innerHTML = '<div class="spin"></div> Gerando...';
 
   try {
-    // TODO(Task 6): ia-posts ainda é uma Edge Function do Supabase que exige
-    // um JWT do Supabase Auth — não aceita token do Clerk. Falta portar para /api/*.
-    throw new Error('Gerador de posts com IA estará disponível em breve nesta versão.');
+    const data = await apiFetch('/api/ia-posts', { method:'POST', body: JSON.stringify({
+      nicho: 'pintor/prestador de serviços de pintura',
+      tipo: tipoSelecionado,
+      tema, tom, cidade, nomeEmpresa,
+    })});
+
+    exibirResultado(data, tema);
+    salvarHistorico({ tipo: tipoSelecionado, tema, ...data, ts: Date.now() });
   } catch (err) {
     alert('Erro: ' + err.message);
   } finally {

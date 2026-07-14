@@ -478,10 +478,6 @@ function inicializarEventos() {
 }
 
 // ── Utilitários ───────────────────────────────────────────────────────────
-// TODO(Task 6): as 7 features de IA Pro (orçamento, mensagem, diagnóstico,
-// preço, laudo, resumo de cliente, follow-up) ainda são Edge Functions do
-// Supabase que exigem um JWT do Supabase Auth — não aceitam token do Clerk.
-// Falta portar cada uma para /api/*.
 async function chamarIA(endpoint, body, btnId) {
   const btn = document.getElementById(btnId);
   const txtEl = document.getElementById(btnId + '-txt');
@@ -491,7 +487,7 @@ async function chamarIA(endpoint, body, btnId) {
   txtEl.innerHTML = '<span class="spin"></span> Processando...';
 
   try {
-    throw new Error('Este recurso de IA estará disponível em breve nesta versão.');
+    return await apiFetch(`/api/${endpoint}`, { method: 'POST', body: JSON.stringify(body) });
   } catch (err) {
     notif('❌ ' + err.message);
     return null;
