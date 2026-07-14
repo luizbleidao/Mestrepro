@@ -1809,13 +1809,13 @@ async function irCheckout(planoId, anual){
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Gerando checkout...'; }
 
   try {
-    // TODO(Task 6): checkout Mercado Pago ainda depende da Edge Function
-    // Supabase `criar-preferencia-mp`, que valida um JWT do Supabase Auth —
-    // não aceita token do Clerk. Falta portar essa function para /api/*.
-    throw new Error('Checkout de planos estará disponível em breve nesta versão. Fale com o suporte para assinar agora.');
+    const data = await apiFetch('/api/checkout', { method:'POST', body: JSON.stringify({ plano_id: planoId, periodo: anual ? 'anual' : 'mensal' }) });
+    if(!data.init_point) throw new Error(data.error || 'sem init_point');
+    fecharModalPlanos();
+    window.location.href = data.init_point;
   } catch(e) {
     if(btn){ btn.disabled = false; btn.textContent = `Assinar ${planoId} →`; }
-    notif('❌ ' + e.message, 'err');
+    notif('❌ Erro ao gerar checkout: ' + e.message, 'err');
   }
 }
 

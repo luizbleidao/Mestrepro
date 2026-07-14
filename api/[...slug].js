@@ -24,6 +24,7 @@ const routes = {
   'admin-usuarios': require('./_lib/handlers/admin-usuarios'),
   'admin-pagamentos': require('./_lib/handlers/admin-pagamentos'),
   'admin-painel': require('./_lib/handlers/admin-painel'),
+  checkout: require('./_lib/handlers/checkout'),
 };
 
 function resolveSlug(req) {
