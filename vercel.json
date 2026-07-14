@@ -1,6 +1,9 @@
 {
   "buildCommand": "node inject-env.js",
   "outputDirectory": ".",
+  "crons": [
+    { "path": "/api/cron/email-sender", "schedule": "0 12 * * *" }
+  ],
   "rewrites": [
     { "source": "/entrar",  "destination": "/pintopro-login.html"   },
     { "source": "/app",     "destination": "/pintopro-app.html"     },

@@ -30,6 +30,7 @@ const PLANO_MAP = {
 };
 
 const VALOR_MINIMO = { basico: 4900, pro: 9700, equipe: 19700, 'ia-pro': 29700 };
+const PLANO_NOME = { basico: 'Básico', pro: 'Pro', equipe: 'Equipe', 'ia-pro': 'IA Pro' };
 
 async function validarAssinaturaMP(req, dataId) {
   const secret = process.env.MP_WEBHOOK_SECRET;
@@ -144,6 +145,20 @@ module.exports = async (req, res) => {
         }
       } catch (e) {
         console.warn('[webhook-mp] creditar_comissao aviso (não crítico):', e.message);
+      }
+
+      try {
+        const prof = await client.query('SELECT email, nome FROM profiles WHERE id = $1', [userId]);
+        const p = prof.rows[0];
+        if (p) {
+          await client.query(
+            `INSERT INTO email_queue (user_id, email, nome, template, dados, agendado_para)
+             VALUES ($1,$2,$3,'confirmacao_assinatura',$4,now())`,
+            [userId, p.email, p.nome, JSON.stringify({ plano_nome: PLANO_NOME[planoInfo.plano] || planoInfo.plano })]
+          );
+        }
+      } catch (e) {
+        console.warn('[webhook-mp] enfileirar email confirmacao_assinatura falhou (não crítico):', e.message);
       }
     });
   } catch (err) {
