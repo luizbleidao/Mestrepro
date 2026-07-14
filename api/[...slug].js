@@ -21,6 +21,9 @@ const routes = {
   'signup-extra': require('./_lib/handlers/signup-extra'),
   lgpd: require('./_lib/handlers/lgpd'),
   indicacoes: require('./_lib/handlers/indicacoes'),
+  'admin-usuarios': require('./_lib/handlers/admin-usuarios'),
+  'admin-pagamentos': require('./_lib/handlers/admin-pagamentos'),
+  'admin-painel': require('./_lib/handlers/admin-painel'),
 };
 
 function resolveSlug(req) {

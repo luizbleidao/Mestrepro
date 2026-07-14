@@ -13,7 +13,12 @@
 <link rel="apple-touch-icon" href="/meta-app-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="pp-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  async crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_ZGV2b3RlZC1tb25hcmNoLTczLmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <style>
 /* ── TEMAS ── */
 [data-theme="dark"]{
@@ -579,11 +584,38 @@ tbody td:first-child{color:var(--text);font-weight:500;}
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────
-// As credenciais vêm de pp-config.js (sem hardcode aqui).
 // A autorização de admin é verificada no banco (perfil = 'admin'),
 // não por e-mail hardcoded no código-fonte.
-const { createClient } = supabase;
-const sb = createClient(window.PP.supabaseUrl, window.PP.supabaseKey);
+function _waitForClerkGlobal(timeoutMs){
+  timeoutMs = timeoutMs || 10000;
+  return new Promise((resolve, reject) => {
+    if (window.Clerk) { resolve(window.Clerk); return; }
+    const inicio = Date.now();
+    const iv = setInterval(() => {
+      if (window.Clerk) { clearInterval(iv); resolve(window.Clerk); }
+      else if (Date.now() - inicio > timeoutMs) { clearInterval(iv); reject(new Error('Não foi possível carregar autenticação.')); }
+    }, 50);
+  });
+}
+let _clerkLoadPromise = null;
+async function ensureClerk(){
+  if(!_clerkLoadPromise) _clerkLoadPromise = _waitForClerkGlobal().then(clerk => clerk.load());
+  await _clerkLoadPromise;
+  return window.Clerk;
+}
+function clerkErrorMsg(err, fallback){
+  return err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || fallback;
+}
+async function apiFetch(path, opts={}){
+  const clerk = await ensureClerk();
+  const token = clerk.session ? await clerk.session.getToken() : null;
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if(token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(path, Object.assign({}, opts, {headers}));
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
+}
 
 const PLANO_LABEL = { gratuito:'Gratuito', pro:'Pro', equipe:'Equipe', 'ia-pro':'IA Pro', ia_pro:'IA Pro', trial:'Trial' };
 const PLANO_VALOR = { pro:99, equipe:179, 'ia-pro':249, ia_pro:249 };
@@ -607,9 +639,13 @@ async function adminLogin(){
   document.getElementById('btn-adm-login').innerHTML = '<div class="spin"></div> Entrando...';
   document.getElementById('btn-adm-login').disabled = true;
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
-  if(error){
-    err.textContent = error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message;
+  let clerk, attempt;
+  try {
+    clerk = await ensureClerk();
+    attempt = await clerk.client.signIn.create({ identifier: email, password: senha });
+    await clerk.setActive({ session: attempt.createdSessionId });
+  } catch(e){
+    err.textContent = clerkErrorMsg(e, 'E-mail ou senha incorretos.');
     err.classList.add('show');
     document.getElementById('btn-adm-login').innerHTML = 'Entrar no painel';
     document.getElementById('btn-adm-login').disabled = false;
@@ -617,9 +653,10 @@ async function adminLogin(){
   }
 
   // Verificar perfil no banco — nunca confiar em e-mail hardcoded
-  const { data: profile } = await sb.from('profiles').select('perfil, is_admin').eq('id', data.user.id).single();
+  let profile;
+  try { ({ profile } = await apiFetch('/api/me')); } catch(e) { profile = null; }
   if(!profile || (profile.perfil !== 'admin' && !profile.is_admin)){
-    await sb.auth.signOut();
+    await clerk.signOut();
     err.textContent = 'Acesso negado. Conta sem permissão de administrador.';
     err.classList.add('show');
     document.getElementById('btn-adm-login').innerHTML = 'Entrar no painel';
@@ -627,7 +664,7 @@ async function adminLogin(){
     return;
   }
 
-  adminUser = data.user;
+  adminUser = clerk.user;
   document.getElementById('adm-nome-top').textContent = email;
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display  = 'block';
@@ -635,7 +672,7 @@ async function adminLogin(){
   loadAll();
 }
 
-function adminLogout(){ sb.auth.signOut(); location.reload(); }
+async function adminLogout(){ const clerk = await ensureClerk(); await clerk.signOut(); location.reload(); }
 
 // ── Carregar tudo ─────────────────────────────────────────
 async function loadAll(){
@@ -647,10 +684,10 @@ async function loadAll(){
 
 // ── Usuários ──────────────────────────────────────────────
 async function loadUsers(){
-  // Usa a função RPC segura (só retorna dados para perfil = 'admin')
-  const { data, error } = await sb.rpc('get_usuarios_completos');
-
-  if(error){
+  // Usa a rota segura (só retorna dados para perfil = 'admin')
+  let data;
+  try { ({ usuarios: data } = await apiFetch('/api/admin-usuarios')); }
+  catch(error){
     console.error('loadUsers error:', error);
     document.getElementById('users-table-wrap').innerHTML =
       `<div class="tbl-empty">⚠️ Erro ao carregar: ${error.message}</div>`;
@@ -741,8 +778,8 @@ function openUser(id){
 
 async function salvarObs(id){
   const obs = document.getElementById('obs-inp-'+id)?.value || '';
-  const { error } = await sb.from('profiles').update({ obs_admin: obs }).eq('id', id);
-  if(error){ notif('⚠️ Erro ao salvar'); return; }
+  try { await apiFetch(`/api/admin-usuarios?id=${id}`, { method:'PATCH', body: JSON.stringify({ obs_admin: obs }) }); }
+  catch(e){ notif('⚠️ Erro ao salvar'); return; }
   const u = allUsers.find(x=>x.id===id); if(u) u.obs_admin=obs;
   notif('✅ Observação salva!');
 }
@@ -755,18 +792,16 @@ async function toggleAtivo(id, atualAtivo){
     if(!ok) return;
   }
 
-  // 1. Atualiza ativo
-  const { error } = await sb.from('profiles').update({ ativo: !atualAtivo }).eq('id', id);
-  if(error){ notif('⚠️ Erro ao alterar status'); return; }
-
-  // 2. Registra data no obs_admin
+  const body = { ativo: !atualAtivo };
   if(suspendendo){
     const u2 = allUsers.find(x=>x.id===id);
     const obsAtual = u2?.obs_admin || '';
-    const novaObs = (obsAtual ? obsAtual + '\n' : '') +
+    body.obs_admin = (obsAtual ? obsAtual + '\n' : '') +
       '[' + new Date().toLocaleDateString('pt-BR') + '] Conta suspensa pelo admin.';
-    await sb.from('profiles').update({ obs_admin: novaObs }).eq('id', id);
   }
+  try { await apiFetch(`/api/admin-usuarios?id=${id}`, { method:'PATCH', body: JSON.stringify(body) }); }
+  catch(e){ notif('⚠️ Erro ao alterar status'); return; }
+  if(body.obs_admin){ const u2 = allUsers.find(x=>x.id===id); if(u2) u2.obs_admin = body.obs_admin; }
 
   const u = allUsers.find(x=>x.id===id);
   if(u){ u.ativo = !atualAtivo; }
@@ -810,10 +845,8 @@ async function confirmarPlano(id){
   const novoPlano = document.getElementById('novo-plano-sel').value;
   const isBrinde  = document.getElementById('plano-brinde-chk')?.checked || false;
   const motivo    = document.getElementById('plano-motivo')?.value?.trim() || null;
-  const { error } = await sb.rpc('admin_alterar_plano', {
-    p_user_id: id, p_plano: novoPlano, p_brinde: isBrinde, p_motivo: motivo
-  });
-  if(error){ notif('❌ ' + error.message); return; }
+  try { await apiFetch(`/api/admin-usuarios?id=${id}`, { method:'PATCH', body: JSON.stringify({ plano: novoPlano, brinde: isBrinde, motivo }) }); }
+  catch(e){ notif('❌ ' + e.message); return; }
   const u = allUsers.find(x=>x.id===id); if(u) u.plano=novoPlano;
   closeModal('modal-usr');
   renderUsersTable(allUsers);
@@ -823,11 +856,9 @@ async function confirmarPlano(id){
 
 // ── Pagamentos ────────────────────────────────────────────
 async function loadPagamentos(){
-  const { data, error } = await sb.from('pagamentos')
-    .select('*')
-    .order('criado_em', { ascending: false });
-
-  if(error){
+  let data;
+  try { ({ pagamentos: data } = await apiFetch('/api/admin-pagamentos')); }
+  catch(error){
     console.error('loadPagamentos error:', error);
     document.getElementById('pags-table-wrap').innerHTML =
       `<div class="tbl-empty">⚠️ Erro: ${error.message}</div>`;
@@ -897,12 +928,8 @@ function renderPagsPendentes(list){
 async function aprovarPag(pagId){
   const pag = allPags.find(p=>p.id===pagId); if(!pag) return;
   if(!confirm(`Confirmar aprovação do pagamento e ativar o plano ${PLANO_LABEL[pag.plano]||pag.plano} para este usuário?`)) return;
-  // 1. Aprovar pagamento
-  const { error:e1 } = await sb.from('pagamentos').update({ status:'aprovado', aprovado_em: new Date().toISOString() }).eq('id', pagId);
-  if(e1){ notif('⚠️ Erro ao aprovar'); return; }
-  // 2. Ativar plano no profile
-  const { error:e2 } = await sb.from('profiles').update({ plano: pag.plano }).eq('id', pag.user_id);
-  if(e2){ notif('⚠️ Pagamento aprovado mas erro ao ativar plano'); return; }
+  try { await apiFetch(`/api/admin-pagamentos?id=${pagId}`, { method:'PATCH', body: JSON.stringify({ status:'aprovado' }) }); }
+  catch(e){ notif('⚠️ Erro ao aprovar'); return; }
   // Atualizar local
   pag.status='aprovado'; pag.aprovado_em=new Date().toISOString();
   const u = allUsers.find(x=>x.id===pag.user_id); if(u) u.plano=pag.plano;
@@ -914,8 +941,8 @@ async function aprovarPag(pagId){
 
 async function cancelarPag(pagId){
   if(!confirm('Confirmar o cancelamento deste pagamento?')) return;
-  const { error } = await sb.from('pagamentos').update({ status:'cancelado' }).eq('id', pagId);
-  if(error){ notif('⚠️ Erro'); return; }
+  try { await apiFetch(`/api/admin-pagamentos?id=${pagId}`, { method:'PATCH', body: JSON.stringify({ status:'cancelado' }) }); }
+  catch(e){ notif('⚠️ Erro'); return; }
   const pag = allPags.find(p=>p.id===pagId); if(pag) pag.status='cancelado';
   renderPagsTable(allPags);
   renderPagsPendentes(allPags.filter(p=>p.status==='pendente'));
@@ -935,14 +962,11 @@ async function salvarPagamento(){
   const obs    = document.getElementById('pag-obs').value.trim();
   if(!userId){ notif('Selecione um usuário'); return; }
 
-  const novoPag = { user_id:userId, plano, valor, observacao:obs, status:'aprovado', aprovado_em:new Date().toISOString() };
-  const { data, error:e1 } = await sb.from('pagamentos').insert(novoPag).select().single();
-  if(e1){ notif('⚠️ Erro ao registrar'); return; }
+  let data;
+  try { ({ pagamento: data } = await apiFetch('/api/admin-pagamentos', { method:'POST', body: JSON.stringify({ user_id:userId, plano, valor, observacao:obs }) })); }
+  catch(e){ notif('⚠️ Erro ao registrar'); return; }
 
-  const { error:e2 } = await sb.from('profiles').update({ plano }).eq('id', userId);
-  if(e2){ notif('Pag registrado mas erro ao ativar plano'); return; }
-
-  allPags.unshift({...novoPag, id:data.id, criado_em:new Date().toISOString()});
+  allPags.unshift(data);
   const u = allUsers.find(x=>x.id===userId); if(u) u.plano=plano;
   closeModal('modal-pag');
   renderPagsTable(allPags);
@@ -970,8 +994,9 @@ function updateStats(){
 // ── Métricas ──────────────────────────────────────────────
 async function loadMetricas(){
   // ── Totais via count exato ────────────────────────────────
-  const { count: totalOrcs   } = await sb.from('orcamentos').select('*', {count:'exact', head:true});
-  const { count: totalLaudos } = await sb.from('laudos').select('*', {count:'exact', head:true});
+  let totalOrcs, totalLaudos, producao;
+  try { ({ totalOrcs, totalLaudos, producao } = await apiFetch('/api/admin-painel?tipo=metricas')); }
+  catch(e) { totalOrcs = null; totalLaudos = null; producao = []; }
 
   document.getElementById('mt-orcs').textContent   = totalOrcs   ?? '—';
   document.getElementById('mt-laudos').textContent = totalLaudos ?? '—';
@@ -994,10 +1019,8 @@ async function loadMetricas(){
   allUsers.forEach(u=>{ const p=u.perfil||'pintor'; perfilCounts[p]=(perfilCounts[p]||0)+1; });
   renderBarChart('chart-perfis', Object.entries(perfilCounts).map(([k,v])=>({label:k,val:v})), allUsers.length);
 
-  // ── Produção por usuário via RPC seguro ───────────────────
-  const { data: producao, error: errProd } = await sb.rpc('get_producao_por_usuario');
-
-  if(errProd || !producao?.length){
+  // ── Produção por usuário via rota segura ──────────────────
+  if(!producao?.length){
     const msg = '<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Sem dados ainda</div>';
     document.getElementById('chart-top-orcs').innerHTML   = msg;
     document.getElementById('chart-top-laudos').innerHTML = msg;
@@ -1103,8 +1126,9 @@ function el(id){ return document.getElementById(id); }
 
 // ── MRR/ARR ───────────────────────────────────────────────
 async function loadMRR(){
-  const { data, error } = await sb.rpc('admin_get_mrr_stats');
-  if(error||!data) return;
+  let data;
+  try { data = await apiFetch('/api/admin-painel?tipo=mrr'); } catch(e) { return; }
+  if(!data) return;
   el('st-mrr').textContent = `R$${Number(data.mrr||0).toLocaleString('pt-BR')}`;
   el('st-arr').textContent = `R$${Number(data.arr||0).toLocaleString('pt-BR')}`;
 }
@@ -1114,8 +1138,9 @@ let allIndicacoes = [];
 async function loadIndicacoes(){
   const wrap = el('ind-table-wrap');
   if(wrap) wrap.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>';
-  const { data, error } = await sb.rpc('admin_get_indicacoes');
-  if(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
+  let data;
+  try { ({ indicacoes: data } = await apiFetch('/api/admin-painel?tipo=indicacoes')); }
+  catch(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
   allIndicacoes = data||[];
   const conv  = allIndicacoes.filter(i=>['ativo','pago'].includes(i.status)).length;
   const pago  = allIndicacoes.filter(i=>i.payout_status==='enviado').length;
@@ -1154,10 +1179,9 @@ let allAssinaturas = [];
 async function loadAssinaturas(){
   const wrap = el('ass-table-wrap');
   if(wrap) wrap.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>';
-  const { data, error } = await sb.from('assinaturas')
-    .select('id, user_id, plano, status, criado_em, atualizado_em')
-    .order('criado_em',{ascending:false}).limit(300);
-  if(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
+  let data;
+  try { ({ assinaturas: data } = await apiFetch('/api/admin-painel?tipo=assinaturas')); }
+  catch(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
   allAssinaturas = data||[];
   const pagos  = allAssinaturas.filter(a=>['pro','equipe','ia-pro','ia_pro'].includes(a.plano));
   const gratis = allAssinaturas.filter(a=>!['pro','equipe','ia-pro','ia_pro'].includes(a.plano));
@@ -1225,8 +1249,8 @@ async function confirmarAlterarPlano(userId, assId){
   if(!novoPlano){ notif('⚠️ Selecione o plano'); return; }
   const isBrinde = el('ass-brinde-chk')?.checked || false;
   const motivo   = el('novo-plano-motivo')?.value?.trim() || null;
-  const { error } = await sb.rpc('admin_alterar_plano', { p_user_id: userId, p_plano: novoPlano, p_brinde: isBrinde, p_motivo: motivo });
-  if(error){ notif('❌ ' + error.message); return; }
+  try { await apiFetch(`/api/admin-usuarios?id=${userId}`, { method:'PATCH', body: JSON.stringify({ plano: novoPlano, brinde: isBrinde, motivo }) }); }
+  catch(e){ notif('❌ ' + e.message); return; }
   const u = allUsers.find(x=>x.id===userId); if(u) u.plano=novoPlano;
   closeModal('modal-usr');
   notif('✅ Plano alterado para ' + (PLANO_LABEL[novoPlano]||novoPlano));
@@ -1234,8 +1258,8 @@ async function confirmarAlterarPlano(userId, assId){
 }
 async function cancelarAssinatura(assId, userId){
   if(!confirm('Cancelar esta assinatura? O usuário será rebaixado para o plano gratuito.')) return;
-  const { error } = await sb.rpc('admin_alterar_plano', { p_user_id: userId, p_plano: 'gratuito' });
-  if(error){ notif('❌ ' + error.message); return; }
+  try { await apiFetch(`/api/admin-usuarios?id=${userId}`, { method:'PATCH', body: JSON.stringify({ plano: 'gratuito' }) }); }
+  catch(e){ notif('❌ ' + e.message); return; }
   const u = allUsers.find(x=>x.id===userId); if(u) u.plano='gratuito';
   notif('✅ Assinatura cancelada — plano rebaixado para gratuito');
   loadAssinaturas();
@@ -1246,8 +1270,9 @@ let allIaUso = [];
 async function loadIaUso(){
   const wrap = el('ia-table-wrap');
   if(wrap) wrap.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>';
-  const { data, error } = await sb.rpc('admin_get_ia_uso');
-  if(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
+  let data;
+  try { ({ ia_uso: data } = await apiFetch('/api/admin-painel?tipo=ia-uso')); }
+  catch(error){ if(wrap) wrap.innerHTML=`<div class="tbl-empty">⚠️ ${error.message}</div>`; return; }
   allIaUso = data||[];
   if(!allIaUso.length){ wrap.innerHTML='<div class="tbl-empty">Nenhum uso de IA registrado ainda</div>'; return; }
   const featureIcon = {'ia-orcamento':'💰','ia-mensagem':'💬','ia-diagnostico':'🔍','ia-preco':'📊','ia-laudo':'📋','ia-resumo-cliente':'👤','ia-followup':'📩','ia-posts':'📸','ia-patologia':'🔬'};
@@ -1269,28 +1294,15 @@ async function loadIaUso(){
 async function loadRetencao(){
   const wraps = ['ret-churn-wrap','ret-novos-wrap','ret-atividade-wrap'];
   wraps.forEach(id=>{ const w=el(id); if(w) w.innerHTML='<div class="loading-full"><div class="spin"></div> Carregando...</div>'; });
-  const agora = new Date();
-  const h24 = new Date(agora-24*60*60*1000).toISOString();
-  const d7  = new Date(agora-7*24*60*60*1000).toISOString();
-  const d14 = new Date(agora-14*24*60*60*1000).toISOString();
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
 
-  // Orçamentos hoje
-  const { count: orcsHoje } = await sb.from('orcamentos').select('*',{count:'exact',head:true}).gte('criado_em',hoje.toISOString());
+  let orcsHoje, ativosHoje, ativos7d, churnRisk, novos, orcsDias;
+  try {
+    ({ orcsHoje, ativosHoje, ativos7d, churnRisk, novos, orcsDias } = await apiFetch('/api/admin-painel?tipo=retencao'));
+  } catch(e) { return; }
+
   if(el('ret-orcs-hoje')) el('ret-orcs-hoje').textContent = orcsHoje??'—';
-
-  // Usuários ativos (via profiles.updated_at como proxy)
-  const { count: ativosHoje } = await sb.from('profiles').select('*',{count:'exact',head:true}).gte('updated_at',h24);
-  const { count: ativos7d   } = await sb.from('profiles').select('*',{count:'exact',head:true}).gte('updated_at',d7);
   if(el('ret-hoje')) el('ret-hoje').textContent = ativosHoje??'—';
   if(el('ret-7d'))   el('ret-7d').textContent   = ativos7d??'—';
-
-  // Churn risk: pagos sem atividade há 14d+
-  const { data: churnRisk } = await sb.from('profiles')
-    .select('id,nome,plano,updated_at')
-    .in('plano',['pro','equipe','ia-pro','ia_pro'])
-    .lt('updated_at',d14)
-    .order('updated_at',{ascending:true}).limit(50);
   if(el('ret-inativos')) el('ret-inativos').textContent = churnRisk?.length??'—';
   const churnWrap = el('ret-churn-wrap');
   if(churnWrap){
@@ -1300,16 +1312,13 @@ async function loadRetencao(){
       churnWrap.innerHTML=`<table><thead><tr><th>Nome</th><th>Plano</th><th>Última atividade</th><th>Ação</th></tr></thead><tbody>${churnRisk.map(r=>`<tr>
         <td>${esc(r.nome)||'—'}</td>
         <td><span class="badge b-green">${esc(r.plano)}</span></td>
-        <td style="font-size:11px;color:var(--red)">${fmtHora(r.updated_at)}</td>
+        <td style="font-size:11px;color:var(--red)">${fmtHora(r.atualizado_em)}</td>
         <td><button class="btn btn-sm btn-ghost" onclick="openUser('${r.id}')">👁 Ver</button></td>
       </tr>`).join('')}</tbody></table>`;
     }
   }
 
   // Novos esta semana
-  const { data: novos } = await sb.from('profiles')
-    .select('id,nome,plano,criado_em').gte('criado_em',d7)
-    .order('criado_em',{ascending:false}).limit(20);
   const novosWrap = el('ret-novos-wrap');
   if(novosWrap){
     if(!novos?.length){
@@ -1326,7 +1335,6 @@ async function loadRetencao(){
   // Atividade últimos 7 dias — orçamentos por dia
   const atividadeWrap = el('ret-atividade-wrap');
   if(atividadeWrap){
-    const { data: orcsDias } = await sb.from('orcamentos').select('criado_em').gte('criado_em',d7);
     if(orcsDias?.length){
       const cnt = {};
       orcsDias.forEach(o=>{ const d=o.criado_em.slice(0,10); cnt[d]=(cnt[d]||0)+1; });
@@ -1365,20 +1373,22 @@ function exportCSV(data, filename){
 // ── Verificar sessão ──────────────────────────────────────
 applyTheme();
 (async()=>{
-  const { data:{ session } } = await sb.auth.getSession();
-  if(!session){ document.getElementById('auth-screen').style.display='flex'; return; }
+  let clerk;
+  try { clerk = await ensureClerk(); } catch(e) { document.getElementById('auth-screen').style.display='flex'; return; }
+  if(!clerk.session){ document.getElementById('auth-screen').style.display='flex'; return; }
 
   // Verificar perfil no banco (não confiar em dados do lado do cliente)
-  const { data: profile } = await sb.from('profiles').select('perfil, is_admin').eq('id', session.user.id).single();
+  let profile;
+  try { ({ profile } = await apiFetch('/api/me')); } catch(e) { profile = null; }
   if(profile && (profile.perfil === 'admin' || profile.is_admin)){
-    adminUser = session.user;
-    document.getElementById('adm-nome-top').textContent = session.user.email;
+    adminUser = clerk.user;
+    document.getElementById('adm-nome-top').textContent = clerk.user.primaryEmailAddress?.emailAddress || '';
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app-screen').style.display='block';
     loadAll();
   } else {
     // Sessão válida mas sem permissão de admin — encerrar silenciosamente
-    await sb.auth.signOut();
+    await clerk.signOut();
     document.getElementById('auth-screen').style.display='flex';
   }
 })();
@@ -1392,8 +1402,9 @@ async function loadPlanosConfig(){
   const wrap = document.getElementById('planos-config-wrap');
   wrap.innerHTML = '<div class="loading-full"><div class="spin"></div> Carregando planos...</div>';
 
-  const { data, error } = await sb.rpc('get_planos_config');
-  if(error){
+  let data;
+  try { ({ planos: data } = await apiFetch('/api/publico/planos')); }
+  catch(error){
     wrap.innerHTML = `<div class="loading-full" style="color:var(--red)">Erro: ${error.message}</div>`;
     return;
   }
@@ -1542,15 +1553,18 @@ async function salvarPlanoConfig(id, btn){
   const validade = valStr    ? new Date(valStr).toISOString()    : null;
   btn.disabled=true; btn.textContent='Salvando...';
 
-  const { error } = await sb.rpc('admin_atualizar_plano_config',{
-    p_id:id, p_nome:nome, p_descricao:desc,
-    p_preco_mensal:mensal, p_preco_anual:anual,
-    p_desconto_pct:pct, p_promo_inicio:inicio, p_promo_validade:validade,
-    p_promo_label:label||null, p_ativo:ativo
-  });
+  try {
+    await apiFetch('/api/admin-painel?tipo=plano-config', { method:'PATCH', body: JSON.stringify({
+      id, nome, descricao:desc, preco_mensal:mensal, preco_anual:anual,
+      desconto_pct:pct, promo_inicio:inicio, promo_validade:validade,
+      promo_label:label||null, ativo,
+    })});
+  } catch(e) {
+    btn.disabled=false; btn.textContent='✓ Salvar alterações';
+    notif('Erro: '+e.message,'err'); return;
+  }
 
   btn.disabled=false; btn.textContent='✓ Salvar alterações';
-  if(error){ notif('Erro: '+error.message,'err'); return; }
 
   const agora = new Date();
   const idx = planosConfigData.findIndex(x=>x.id===id);
