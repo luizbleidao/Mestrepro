@@ -19,3 +19,8 @@ node_modules/
 dist/
 .cache/
 playstore/
+
+# ── Docs internos (contêm detalhes de arquitetura/segurança — não expor no repo público) ──
+CLAUDE.md
+SECRETS.md
+SECURITY.md
